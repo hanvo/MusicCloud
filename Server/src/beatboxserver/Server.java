@@ -9,6 +9,7 @@ package beatboxserver;
 import beatboxserver.Message;
 import beatboxserver.Message.MessageType;
 import beatboxserver.Client;
+import beatboxserver.Client.ClientType;
 
 import java.util.Hashtable;
 import java.util.concurrent.ConcurrentHashMap;
@@ -26,24 +27,61 @@ public class Server {
     public Server(int port) {
         
         // Create data structures
-        listeners = new Hashtable<MessageType, MessageListener>();
+        listeners = new Hashtable<String, MessageListener>();
         clients = new ConcurrentHashMap<String, Client>();
         outboundMessages = new ConcurrentHashMap<String, ConcurrentLinkedQueue<Message>>();
+        messageRegistrations = new ConcurrentHashMap<String, Class>();
         
         // Create reading and writing thread
         
     }
     
+    /**
+     * 
+     */
+    public void startServer() {
+       // TODO, starting running reading and writing thread at this point 
+    }
     
-    public void registerListener(MessageType type, MessageListener listener) {
+    /**
+     * 
+     * @param type
+     * @param listener 
+     */
+    public void registerListener(String type, MessageListener listener) {
         listeners.put(type, listener);
     }
     
-    public void sendMessage(Message message) {
+    /**
+     * 
+     * @param type
+     * @param messageClass 
+     */
+    public void registerMessage(String type, Class messageClass) {
+        
+    }
+    
+    /**
+     * 
+     * @param client
+     * @param message 
+     */
+    public void sendMessage(Client client, Message message) {
+        
+    }
+    
+    
+    /**
+     * 
+     * @param client
+     * @param message 
+     */
+    public void broadcastMessage(ClientType client, Message message) {
+        
     }
     
     // TODO Consider multiple listeners
-    private Hashtable<MessageType, MessageListener> listeners;
+    private Hashtable<String, MessageListener> listeners;
     
     /**
      * Map client IDs to client objects
@@ -55,6 +93,11 @@ public class Server {
      * Map client IDs to outbound message queues
      */
     private ConcurrentHashMap<String, ConcurrentLinkedQueue<Message>> outboundMessages;
+    
+    /**
+     * Register given message names with implementation classes
+     */
+    private ConcurrentHashMap<String, Class> messageRegistrations;
     
     /**
      * Queue of messages queued for processing

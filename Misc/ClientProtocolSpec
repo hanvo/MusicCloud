@@ -50,7 +50,7 @@ Sequencing:
 	Before sending the next request, it must wait for the server to respond to the first request.
 
 Client to Server messages:
-	AUTHENTICATE:
+	AUTHENTICATE_CLIENT:
 		Description:
 			Attempt to log in to the server
 		Format:
@@ -91,12 +91,6 @@ Client to Server messages:
 			 SONGID: <SongID>\n\n"
 		Remarks:
 
-	REQUEST_CURRENT_SONG:
-		Description:
-			Requests the current song information from the server.
-		Format:
-			"REQUEST_CURRENT_SONG <MessageID> <ClientID>\n\n"
-		Remarks:
 
 	REQUEST_LIKE_UPDATE:
 		Description:
@@ -130,34 +124,30 @@ Server to Client messages:
 			"AUTHENTICATED <MessageID>\n
 			 CLIENTID: <ClientID>\n\n"
 		Remarks:
-
-
-	NEW_SONG:
-		Description:
-			Indicates a new song is about to begin playback.
-			Wait for SONG_UPDATE message to indicate playback.
-		Format:
-			"NEW_SONG <MessageID>\n
-			 NAME: <Song Name>\n
-			 ARTIST: <Artist>\n
-			 ALBUM: <Album>\n
-			 LENGTH: <Length>\n
-			(PHOTO_LENGTH: <Length>\n\n<Length bytes of image data>)?"
-		Remarks:
-			The PHOTO_LENGTH portion of the message is optional.
-			Additionally, the format (JPEG, GIF) hasn't been determined.
-			Pending additional research.
+			
 
 	SONG_UPDATE:
 		Description:
 			Indicates the current state of song playback.
 		Format:
 			"SONG_UPDATE <MessageID>\n
+			 NAME: <Song Name>\n
+			 ARTIST: <Artist>\n
+			 ALBUM: <Album>\n
+			 LENGTH: <Length>\n
 			 STATUS: (PLAYING|PAUSED)\n
 			 POSITION: <Playback Position>\n"
+			(PHOTO_LENGTH: <Length>\n\n<Length bytes of image data>)?"
 		Remarks:
 			Playback position is formatted as an integer indicating the number of milliseconds
 			the song has played up to the point of the update.
+			The PHOTO_LENGTH portion of the message is optional.
+			Additionally, the format (JPEG, GIF) hasn't been determined.
+			Pending additional research.
+		Notes:
+			The App should cache the Photo for a given song because
+			the server may decide to save bandwidth by only sending
+			photos when the song changes, not for status updates
 
 	VOTE_UPDATE:
 		Description:

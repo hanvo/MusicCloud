@@ -17,11 +17,14 @@ import java.nio.channels.*;
  */
 public class Client {
     
+    public enum ClientType {SPEAKER, PHONE};
+    
     public Client(String id, SocketChannel chan, ConcurrentLinkedQueue<Message> queue) {
         if (id != null && chan != null && queue != null) {
             clientID = id;
             channel = chan;
             messageQueue = queue;
+            lastMessageID = -1;
         } else {
             throw new IllegalArgumentException();
         }
@@ -37,6 +40,7 @@ public class Client {
     
     protected ConcurrentLinkedQueue<Message> messageQueue;
     
+    protected int lastMessageID;
     protected String clientID;
     protected SocketChannel channel;
 }
