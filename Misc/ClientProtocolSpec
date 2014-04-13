@@ -26,7 +26,9 @@ Message ID:
 	For every message the client send to the server, a sequentially increasing
 	unique non-negative integer ID should be included so the server can respond
 	appropriately. Note, that in messages the server sends to the client without
-    solicitation, the <MessageID> field (if any) in the field will be set to -1.
+	solicitation, the <MessageID> field (if any) in the field will be set to -1.
+	Note that the <MessageID> field in messages from server to client are the ID
+	of the message the server is repsonding to.
 	
 Song ID:
 	Song IDs will never change, even if the Song List Version changes. 
@@ -117,6 +119,14 @@ Client to Server messages:
 
 
 Server to Client messages:
+	AUTHENTICATED:
+		Description:
+			Response to a successful authenicate message from the client
+		Format:
+			"AUTHENTICATED <MessageID> <ClientID>\n"
+		Remarks:
+
+
 	NEW_SONG:
 		Description:
 			Indicates a new song is about to begin playback.
