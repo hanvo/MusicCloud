@@ -24,7 +24,9 @@ Song List Version:
 
 Message ID:
 	For every message the client send to the server, a sequentially increasing
-	unique integer ID should be included so the server can respond appropriately
+	unique non-negative integer ID should be included so the server can respond
+	appropriately. Note, that in messages the server sends to the client without
+    solicitation, the <MessageID> field (if any) in the field will be set to -1.
 	
 Song ID:
 	Song IDs will never change, even if the Song List Version changes. 
