@@ -1,4 +1,7 @@
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> a647c5e10102aacce02f2e64aa038c9ffbc81a44
 /*
 * Raspberry Pi MusicCloud/Pij/BeatBox
 * 
@@ -129,6 +132,7 @@ Client:
 
 
 
+<<<<<<< HEAD
 =======
 # CocoaPods
 #
@@ -138,4 +142,6 @@ Client:
 #
 # Pods/
 >>>>>>> parent of ffd5748... README
+=======
+>>>>>>> a647c5e10102aacce02f2e64aa038c9ffbc81a44
 
