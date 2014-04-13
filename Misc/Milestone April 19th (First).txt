@@ -1,0 +1,38 @@
+CHECK POINT 19th of April
+
+Raspberry Pi:
+Anant And Don 
+
+Play Song
+Get From Server Song Selection
+Socket Connection 
+
+DataBase:
+Don
+
+Crawler
+-ID
+-Title
+-Artist
+-Album
+-Time
+-Size(Bytes)
+-Abs Path
+
+Server:
+Jason 
+
+Push Requests
+Access DB
+List Songs
+New Song Selection
+
+Client:
+Josh
+
+Front Page
+Song Title
+Song List
+
+Logo Artist:
+Anant (Sorry Your On Your Own)
