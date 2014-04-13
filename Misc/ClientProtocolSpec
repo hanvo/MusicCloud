@@ -132,7 +132,7 @@ Server to Client messages:
 			Indicates a new song is about to begin playback.
 			Wait for SONG_UPDATE message to indicate playback.
 		Format:
-			"NEW_SONG <CurrentEpoch>\n
+			"NEW_SONG <MessageID>\n
 			 NAME: <Song Name>\n
 			 ARTIST: <Artist>\n
 			 ALBUM: <Album>\n
@@ -147,7 +147,7 @@ Server to Client messages:
 		Description:
 			Indicates the current state of song playback.
 		Format:
-			"SONG_UPDATE\n
+			"SONG_UPDATE <MessageID>\n
 			 STATUS: (PLAYING|PAUSED)\n
 			 POSITION: <Playback Position>\n"
 		Remarks:
@@ -168,7 +168,7 @@ Server to Client messages:
 		Description:
 			Indicates the current balance of likes/dislikes for a song
 		Format:
-			"LIKE_UPDATE <SongID> <Likes> <Dislikes> <Balance>\n"
+			"LIKE_UPDATE <MessageID> <SongID> <Likes> <Dislikes> <Balance>\n"
 		Remarks:
 			Likes and dislikes are integers, while balance is a double in the interval [-1,1]
 			Likes and dislikes are the raw data, while balance has been computed by the server.
@@ -180,7 +180,7 @@ Server to Client messages:
 		Description:
 			A listing of the songs currently in the set list
 		Format:
-			"SONG_LIST <SongListVersion> <Count>\n
+			"SONG_LIST <MessageID> <SongListVersion> <Count>\n
 			(ID: <SongID>\n
 			 NAME: <SongName>\n
 			 ARTIST: <SongArtist>\n
