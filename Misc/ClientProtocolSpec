@@ -1,0 +1,218 @@
+
+
+The following is the draft specification for the Server-Phone communication protocol
+
+Definitions:
+	Client: The iPhone/iPad device contacting the server
+	Client ID: A unique per device identifier sent to the client from the server
+	Server: Our crazy server doing *stuff*
+
+Format:
+	The formats use psuedo regular expression syntax to describe a format.
+	Note that {n} indicates repetition and ()? indicates zero or one occurences of ()
+	<Value> refers to a placeholder that should be replaced with an actual value,
+	not a literal <Value>
+
+Encoding:
+	The protocol is a text based protocol, we will use ASCII encoding for simplicity.
+
+Song List Version:
+	In consideration of the possibility of a song list being changed mid operation
+	(A song is considered terrible and the DJ swiftly removes it from the setlist)
+	the song list will have a version associated with it. This will be used to provide
+	versioning between client and server. Don't expect it to change much.
+
+Message ID:
+	For every message the client send to the server, a sequentially increasing
+	unique non-negative integer ID should be included so the server can respond
+	appropriately. Note, that in messages the server sends to the client without
+	solicitation, the <MessageID> field (if any) in the field will be set to -1.
+	Note that the <MessageID> field in messages from server to client are the ID
+	of the message the server is repsonding to.
+	
+Song ID:
+	Song IDs will never change, even if the Song List Version changes. 
+	
+Epoch:
+	The concept of an epoch has been removed as a simplification
+
+Connection Behavior:
+	Unless otherwise noted, the connection between the client and the server should
+	be persistent and held open. In the event of an unexpected disconnection between the client
+	and the server, the connection should be reopened and the previous client ID and message ID
+	should be reused for continued communication.
+
+Connection Protocol:
+	We will use TCP over Port <Decide Later>
+
+Sequencing:
+	The client should only have one request sent to the server outstanding at a time.
+	Before sending the next request, it must wait for the server to respond to the first request.
+
+Client to Server messages:
+	AUTHENTICATE:
+		Description:
+			Attempt to log in to the server
+		Format:
+			"AUTHENTICATE <MessageID>\n
+			 PIN: <Pin>\n\n"
+		Remarks:
+
+	REQUEST_SONG_LIST:
+		Description:
+			Sent to the server to request the current song list
+		Format:
+			"REQUEST_SONG_LIST <MessageID> <ClientID>\n\n"
+		Remarks:
+	
+
+	VOTE:
+		Description:
+			Sent to the server to vote on a song
+		Format:
+			"VOTE <MessageID> <ClientID>\n
+			 SONGID: <SongID>\n\n"
+		Remarks:
+ 
+	LIKE:
+		Description:
+			Sent to the server to like the current song
+		Format:
+			"LIKE <MessageID> <ClientID>\n
+			 SONGID: <SongID>\n\n"
+		Remarks:
+	
+
+	DISLIKE:
+		Description:
+			Sent to the server to dislike the current song
+		Format:
+			"DISLIKE <MessageID> <ClientID>\n
+			 SONGID: <SongID>\n\n"
+		Remarks:
+
+	REQUEST_CURRENT_SONG:
+		Description:
+			Requests the current song information from the server.
+		Format:
+			"REQUEST_CURRENT_SONG <MessageID> <ClientID>\n\n"
+		Remarks:
+
+	REQUEST_LIKE_UPDATE:
+		Description:
+			Ask the server to send a like update
+		Format:
+			"REQUEST_LIST_UPDATE <MessageID> <ClientID>\n\n"
+		Remarks:
+
+	REQUEST_VOTE_UPDATE:
+		Description:
+			Ask the server to send a vote update
+		Format:
+			"REQUEST_VOTE_UPDATE <MessageID> <ClientID>\n\n"
+		Remarks:
+
+	REQUEST_SONG_UPDATE:
+		Description:
+			Ask the server to send a song update
+		Format:
+			"REQUEST_SONG_UPDATE <MessageID> <ClientID>\n"
+		Remarks:
+		
+		
+
+
+Server to Client messages:
+	AUTHENTICATED:
+		Description:
+			Response to a successful authenicate message from the client
+		Format:
+			"AUTHENTICATED <MessageID>\n
+			 CLIENTID: <ClientID>\n\n"
+		Remarks:
+
+
+	NEW_SONG:
+		Description:
+			Indicates a new song is about to begin playback.
+			Wait for SONG_UPDATE message to indicate playback.
+		Format:
+			"NEW_SONG <MessageID>\n
+			 NAME: <Song Name>\n
+			 ARTIST: <Artist>\n
+			 ALBUM: <Album>\n
+			 LENGTH: <Length>\n
+			(PHOTO_LENGTH: <Length>\n\n<Length bytes of image data>)?"
+		Remarks:
+			The PHOTO_LENGTH portion of the message is optional.
+			Additionally, the format (JPEG, GIF) hasn't been determined.
+			Pending additional research.
+
+	SONG_UPDATE:
+		Description:
+			Indicates the current state of song playback.
+		Format:
+			"SONG_UPDATE <MessageID>\n
+			 STATUS: (PLAYING|PAUSED)\n
+			 POSITION: <Playback Position>\n"
+		Remarks:
+			Playback position is formatted as an integer indicating the number of milliseconds
+			the song has played up to the point of the update.
+
+	VOTE_UPDATE:
+		Description:
+			Indicates the current voting results.
+		Format:
+			"VOTE_UPDATE <MessageID\n
+			 VOTES: <Count>\n
+			(<SongID>: <VoteCount>\n){Count}\n"
+		Remarks:
+		
+
+	LIKE_UPDATE:
+		Description:
+			Indicates the current balance of likes/dislikes for a song
+		Format:
+			"LIKE_UPDATE <MessageID>\n
+			 SONGID: <SongID>\n
+			 LIKES: <Likes>\n
+			 DISLIKES: <Dislikes>\n
+			 BALANCE: <Balance>\n\n"
+		Remarks:
+			Likes and dislikes are integers, while balance is a double in the interval [-1,1]
+			Likes and dislikes are the raw data, while balance has been computed by the server.
+		Note:
+			If the <SongID> doesn't match the song ID the app thinks is playing,
+			it would be prudent to refresh that information
+
+	SONG_LIST:
+		Description:
+			A listing of the songs currently in the set list
+		Format:
+			"SONG_LIST <MessageID>\n
+			 VERSION<SongListVersion>\n
+			 COUNT: <Count>\n
+			(ID: <SongID>\n
+			 NAME: <SongName>\n
+			 ARTIST: <SongArtist>\n
+			 ALBUM: <SongAlbum>\n
+			 VOTES: <VoteCount>\n){Count}\n"			
+		Remarks:
+
+	FAILED:
+		Description:
+			A message to indicate to the client that an operation failed
+		Format:
+			"FAILED <MessageID>\n
+			 CODE: <ErrorCode>\n
+			 MESSAGE: <Message>\n\n"
+		Remarks:
+			
+	SUCCESS:
+		Description:
+			For Client->Server messages not requesting a particular resource, indicate success
+		Format:
+			"SUCCESS <MessageID>\n\n"
+			
+
+
