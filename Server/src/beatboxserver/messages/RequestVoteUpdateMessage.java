@@ -14,4 +14,9 @@ import beatboxserver.Message;
  */
 public class RequestVoteUpdateMessage extends Message {
     
+    public RequestVoteUpdateMessage(int messageID, String clientID) {
+        super(messageName, messageID, clientID);
+    }
+    
+    public final static String messageName = "REQUEST_VOTE_UPDATE";
 }

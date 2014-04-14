@@ -14,4 +14,9 @@ import beatboxserver.Message;
  */
 public class VoteMessage extends Message {
     
+    public VoteMessage(int messageID, String clientID) {
+        super(messageName, messageID, clientID);
+    }
+    
+    public final static String messageName = "VOTE";
 }

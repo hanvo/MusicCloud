@@ -13,4 +13,9 @@ import beatboxserver.Message;
  */
 public class AuthenticatedMessage extends Message {
     
+    public AuthenticatedMessage(int messageID, String clientID) {
+        super(messageName, messageID, clientID);
+    }
+    
+    public static final String messageName = "AUTHENTICATED";
 }

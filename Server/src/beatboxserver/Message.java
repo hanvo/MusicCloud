@@ -20,52 +20,13 @@ import java.nio.channels.Channels;
  * @author rahmanj
  */
 public abstract class Message {
-
-    /**
-     * 
-     */
-    public enum MessageType {AUTHENTICATE_CLIENT,
-                             AUTHENTICATE_SPEAKER,
-                             AUTHENTICATED,
-                             NEW_SONG,
-                             REQUEST_CURRENT_SONG,
-                             SONG_UPDATE,
-                             REQUEST_SONG_UPDATE,
-                             LIKE,
-                             DISLIKE,
-                             LIKE_UPDATE,
-                             REQUEST_LIKE_UPDATE,
-                             VOTE,
-                             VOTE_UPDATE,
-                             REQUEST_VOTE_UPDATE,
-                             SONG_LIST,
-                             REQUEST_SONG_LIST,
-                             SUCCESS,
-                             FAILURE
-                             }
     
-    /**
-     * 
-     * @param type
-     * @return 
-     */
-    public static String getMessageName(MessageType type) {
-        return type.name();
-    }
     
-    /**
-     * 
-     * @param name
-     * @return 
-     */
-    public static MessageType getMessageType(String name) {
-        return MessageType.valueOf(name);
-    }
     
-    protected Message(MessageType type, int id, String client) {
-        messageID = id;
-        messageType = type;
-        clientID = client;
+    protected Message(String messageType, int messageID, String clientID) {
+        this.messageID = messageID;
+        this.messageType = messageType;
+        this.clientID = clientID;
     }
     
     
@@ -96,7 +57,7 @@ public abstract class Message {
         Scanner scan = new Scanner(headerLine);
         
         // Read in the standard "MessageType MessageID ClientID\n" header
-        messageType = MessageType.valueOf(scan.next());
+        messageType = scan.next();
         messageID = scan.nextInt();
         clientID = scan.next();
         
@@ -156,12 +117,12 @@ public abstract class Message {
      * @return 
      */
     protected ByteBuffer createHeader() throws UnsupportedEncodingException {
-        String header = Message.getMessageName(messageType);
+        String header = messageType;
         header = header + " " + messageID + "\n";
         byte[] bytes = header.getBytes("US-ASCII");
         return ByteBuffer.wrap(bytes);
     }
     
-    protected Message.MessageType messageType;
+    protected String messageType;
     protected int messageID;
 }

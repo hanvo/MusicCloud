@@ -14,4 +14,9 @@ import beatboxserver.Message;
  */
 public class CurrentSongMessage extends Message {
     
+    public CurrentSongMessage(int messageID, String clientID) {
+        super(messageName, messageID, clientID);
+    }
+    
+    public final static String messageName = "CURRENT_SONG";
 }

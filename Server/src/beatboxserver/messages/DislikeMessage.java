@@ -14,4 +14,9 @@ import beatboxserver.Message;
  */
 public class DislikeMessage extends Message {
     
+    public DislikeMessage(int messageID, String clientID) {
+        super(messageName, messageID, clientID);
+    }
+    
+    public final static String messageName = "DISLIKE";
 }

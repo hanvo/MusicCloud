@@ -6,12 +6,17 @@
 
 package beatboxserver.messages;
 
-import beatbox.Message;
+import beatboxserver.Message;
 
 /**
  *
  * @author rahmanj
  */
 public class FailedMessage extends Message {
+ 
+    public FailedMessage(int messageID, String clientID) {
+        super(messageName, messageID, clientID);
+    }
     
+    public final static String messageName = "FAILED";
 }

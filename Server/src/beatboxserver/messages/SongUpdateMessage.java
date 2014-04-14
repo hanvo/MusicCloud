@@ -13,5 +13,10 @@ import beatboxserver.Message;
  * @author rahmanj
  */
 public class SongUpdateMessage extends Message {
+ 
+    public SongUpdateMessage(int messageID, String clientID) {
+        super(messageName, messageID, clientID);
+    }
     
+    public final static String messageName = "SONG_UDPATE";
 }

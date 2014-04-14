@@ -14,4 +14,9 @@ import beatboxserver.Message;
  */
 public class LikeMessage extends Message {
     
+    public LikeMessage(int messageID, String clientID) {
+        super(messageName, messageID, clientID);
+    }
+    
+    public final static String messageName = "LIKE";
 }

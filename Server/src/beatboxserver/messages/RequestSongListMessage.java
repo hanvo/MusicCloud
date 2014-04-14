@@ -12,5 +12,10 @@ import beatboxserver.Message;
  * @author rahmanj
  */
 public class RequestSongListMessage extends Message {
+ 
+    public RequestSongListMessage(int messageID, String clientID) {
+        super(messageName, messageID, clientID);
+    }
     
+    public final static String messageName = "REQUEST_SONG_LIST";
 }

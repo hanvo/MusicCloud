@@ -14,4 +14,9 @@ import beatboxserver.Message;
  */
 public class RequestLikeUpdateMessage extends Message {
     
+    public RequestLikeUpdateMessage(int messageID, String clientID) {
+        super(messageName, messageID, clientID);
+    }
+    
+    public final static String messageName = "REQUEST_LIST_UPDATE";
 }

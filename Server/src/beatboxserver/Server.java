@@ -7,9 +7,10 @@
 package beatboxserver;
 
 import beatboxserver.Message;
-import beatboxserver.Message.MessageType;
+import beatboxserver.Message;
 import beatboxserver.Client;
 import beatboxserver.Client.ClientType;
+import beatboxserver.ServerReadTask;
 
 import java.util.Hashtable;
 import java.util.concurrent.ConcurrentHashMap;
@@ -31,8 +32,11 @@ public class Server {
         clients = new ConcurrentHashMap<String, Client>();
         outboundMessages = new ConcurrentHashMap<String, ConcurrentLinkedQueue<Message>>();
         messageRegistrations = new ConcurrentHashMap<String, Class>();
+        inboundMessages = new ConcurrentLinkedQueue<Message>();
         
         // Create reading and writing thread
+        readThread = new Thread(new ServerReadTask(inboundMessages, clients, messageRegistrations));
+        readThread.start();
         
     }
     
@@ -67,16 +71,20 @@ public class Server {
      * @param message 
      */
     public void sendMessage(Client client, Message message) {
-        
-    }
+        if (client != null && message != null) {
+            client.sendMessage(message);
+        } else {
+            throw new IllegalArgumentException();
+        }
+    } 
     
     
     /**
      * 
-     * @param client
+     * @param type
      * @param message 
      */
-    public void broadcastMessage(ClientType client, Message message) {
+    public void broadcastMessage(ClientType type, Message message) {
         
     }
     
@@ -103,6 +111,16 @@ public class Server {
      * Queue of messages queued for processing
      */
     private ConcurrentLinkedQueue<Message> inboundMessages;
+    
+    /**
+     * 
+     */
+    private Thread readThread;
+    
+    /**
+     * 
+     */
+    private Thread writeThread;
 }
 
 interface MessageListener {
