@@ -36,7 +36,7 @@ public final class ServerReadTask implements Runnable {
     
     /**
      * Create a message object using reflection from a set of registered classes
-     * @param name
+     * @param type
      * @param messageID
      * @param clientID
      * @return
@@ -45,10 +45,10 @@ public final class ServerReadTask implements Runnable {
      * @throws IllegalAccessException
      * @throws InvocationTargetException 
      */
-    protected Message createMessage(String name, int messageID, String clientID) throws
+    protected Message createMessage(String type, int messageID, String clientID) throws
                 NoSuchMethodException, InstantiationException, IllegalAccessException, InvocationTargetException {
-        if (name != null) {
-            Class c = messageRegistrations.get(name);
+        if (type != null) {
+            Class c = messageRegistrations.get(type);
             
             if (!Message.class.isAssignableFrom(c)) {
                 throw new ClassCastException();

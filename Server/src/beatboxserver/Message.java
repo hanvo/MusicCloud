@@ -15,11 +15,14 @@ import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 import java.nio.channels.Channels;
 
+
+
+
 /**
  *
  * @author rahmanj
  */
-public abstract class Message {
+public abstract class Message implements ParsableMessage, WritableMessage {
     
     
     
@@ -30,14 +33,11 @@ public abstract class Message {
     }
     
     
-    
-    
     /**
      * 
      * @param channel 
      */
-    public void parseMessage(SocketChannel channel) {
-        parseHeader(channel);
+    public final void parseMessage(SocketChannel channel) {
         parseHeaderContent(channel);
         parseBody(channel);
     }
@@ -50,11 +50,7 @@ public abstract class Message {
     protected final Message parseHeader(SocketChannel channel) {
         InputStream s = Channels.newInputStream(channel);
         InputStreamReader reader = new InputStreamReader(s);
-        
-        // TODO Read in input and parse
-        
-        String headerLine = "";
-        Scanner scan = new Scanner(headerLine);
+        Scanner scan = new Scanner(reader);
         
         // Read in the standard "MessageType MessageID ClientID\n" header
         messageType = scan.next();
@@ -65,18 +61,6 @@ public abstract class Message {
         return null;
     }
     
-    /**
-     * 
-     * @param channel 
-     */
-    protected void parseHeaderContent(SocketChannel channel) {}
-    
-    /**
-     * Optional method to read and parse body content.
-     * Override in derived class if desired
-     * @param channel 
-     */
-    protected void parseBody(SocketChannel channel) {}
     
     
     public String getClientID() {
@@ -100,17 +84,6 @@ public abstract class Message {
         }
     }
     
-    /**
-     * Write the bulk of the header content.
-     * Override in derived class.
-     */
-    protected void writeHeaderContent(SocketChannel channel) {}
-    
-    /**
-     * Write body content after the end of the header.
-     * Override in derived class if desired
-     */
-    protected void writeBody(SocketChannel channel) {}
     
     /**
      * Create a buffer to be sent via socket to the client

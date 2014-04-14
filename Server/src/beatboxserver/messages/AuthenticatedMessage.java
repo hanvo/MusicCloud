@@ -7,6 +7,9 @@
 package beatboxserver.messages;
 
 import beatboxserver.Message;
+
+import java.nio.channels.SocketChannel;
+
 /**
  *
  * @author rahmanj
@@ -16,6 +19,12 @@ public class AuthenticatedMessage extends Message {
     public AuthenticatedMessage(int messageID, String clientID) {
         super(messageName, messageID, clientID);
     }
+    
+    public void parseHeaderContent(SocketChannel channel) {}
+    public void parseBody(SocketChannel channel) {}
+    
+    public void writeHeaderContent(SocketChannel channel) {}
+    public void writeBody(SocketChannel channel) {}
     
     public static final String messageName = "AUTHENTICATED";
 }

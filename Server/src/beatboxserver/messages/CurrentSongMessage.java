@@ -8,6 +8,8 @@ package beatboxserver.messages;
 
 import beatboxserver.Message;
 
+import java.nio.channels.SocketChannel;
+
 /**
  *
  * @author rahmanj
@@ -17,6 +19,12 @@ public class CurrentSongMessage extends Message {
     public CurrentSongMessage(int messageID, String clientID) {
         super(messageName, messageID, clientID);
     }
+    
+    public void parseHeaderContent(SocketChannel channel) {}
+    public void parseBody(SocketChannel channel) {}
+    
+    public void writeHeaderContent(SocketChannel channel) {}
+    public void writeBody(SocketChannel channel) {}
     
     public final static String messageName = "CURRENT_SONG";
 }
