@@ -18,8 +18,9 @@ import java.util.Hashtable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
+import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SelectionKey;
-
+import java.net.InetSocketAddress;
 
 
 /**
@@ -32,20 +33,25 @@ public class Server {
         
         // Create data structures for global state
         listeners = new Hashtable<String, MessageListener>();
-        clientManager = new ClientManager();
+       
         
         // Create message queues
         outboundMessages = new ConcurrentHashMap<String, ConcurrentLinkedQueue<Message>>();
         inboundMessages = new ConcurrentLinkedQueue<Message>();
         
-        // Create message reader
+        // Create manager objects
         messageManager = new MessageManager();
+        selectorManager = new SelectorManager();
+        clientManager = new ClientManager();
         
         // TODO Create ServerSocketChannel
         
+        ServerSocketChannel chan = ServerSocketChannel.open();
+        chan.bind(new InetSocketAddress(port));
+        
         // Create reading and writing thread
-        readThread = new Thread(new ServerReadTask(inboundMessages, clientManager, messageManager, null));
-        writeThread = new Thread();
+        readThread = new Thread(new ServerReadTask(clientManager, messageManager, selectorManager, chan));
+        writeThread = new Thread(new ServerWriteTask());
         
     }
     
@@ -114,6 +120,11 @@ public class Server {
      * 
      */
     private MessageManager messageManager;
+    
+    /**
+     * 
+     */
+    private SelectorManager selectorManager;
     
     // TODO Consider multiple listeners
     private Hashtable<String, MessageListener> listeners;

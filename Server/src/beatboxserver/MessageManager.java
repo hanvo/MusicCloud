@@ -9,6 +9,7 @@ package beatboxserver;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.nio.channels.SocketChannel;
 import java.util.Scanner;
 
@@ -19,13 +20,27 @@ import java.util.Scanner;
 public class MessageManager {
     
     public MessageManager() {
-        messageRegistrations = new ConcurrentHashMap<String, Class>();
+        messageRegistrations = new ConcurrentHashMap<>();
+        inboundMessages = new ConcurrentLinkedQueue<>();
+    }
+    
+    public void enqueueMessage(Message message) {
+        if (message != null) {
+            inboundMessages.add(message);
+        } else {
+            throw new IllegalArgumentException();
+        }
+    }
+    
+    public Message dequeueMessage() {
+        return inboundMessages.poll();
     }
     
     
-    public Message readMessage(SocketChannel channel) {
+    public Message readMessage(Client client) {
         try {
-            if (channel != null) {
+            if (client != null) {
+                SocketChannel channel = client.getChannel(); 
                 Message message = readHeader(channel);
                 message.readMessage(channel);
                 return message;
@@ -115,4 +130,9 @@ public class MessageManager {
      * Register given message names with implementation classes
      */
     private final ConcurrentHashMap<String, Class> messageRegistrations;
+    
+    /**
+     * Inbound message queue
+     */
+    private final ConcurrentLinkedQueue<Message> inboundMessages;
 }
