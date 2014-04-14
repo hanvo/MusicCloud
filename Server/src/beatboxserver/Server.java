@@ -12,9 +12,12 @@ import beatboxserver.Client;
 import beatboxserver.Client.ClientType;
 import beatboxserver.ServerReadTask;
 
+import java.io.IOException;
+
 import java.util.Hashtable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
+
 import java.nio.channels.SelectionKey;
 
 
@@ -25,21 +28,23 @@ import java.nio.channels.SelectionKey;
  */
 public class Server {
     
-    public Server(int port) {
+    public Server(int port) throws IOException {
         
         // Create data structures for global state
         listeners = new Hashtable<String, MessageListener>();
-        clients = new ConcurrentHashMap<String, Client>();
+        clientManager = new ClientManager();
         
         // Create message queues
         outboundMessages = new ConcurrentHashMap<String, ConcurrentLinkedQueue<Message>>();
         inboundMessages = new ConcurrentLinkedQueue<Message>();
         
         // Create message reader
-        messageReader = new MessageReader();
+        messageManager = new MessageManager();
+        
+        // TODO Create ServerSocketChannel
         
         // Create reading and writing thread
-        readThread = new Thread(new ServerReadTask(inboundMessages, clients, messageReader));
+        readThread = new Thread(new ServerReadTask(inboundMessages, clientManager, messageManager, null));
         writeThread = new Thread();
         
     }
@@ -74,7 +79,7 @@ public class Server {
      */
     public void registerMessage(String type, Class messageClass) {
         if (type != null && messageClass != null) {
-            messageReader.registerMessage(type, messageClass);
+            messageManager.registerMessage(type, messageClass);
         } else {
             throw new IllegalArgumentException();
         }
@@ -103,18 +108,15 @@ public class Server {
         
     }
     
+    private ClientManager clientManager;
+    
     /**
      * 
      */
-    private MessageReader messageReader;
+    private MessageManager messageManager;
     
     // TODO Consider multiple listeners
     private Hashtable<String, MessageListener> listeners;
-    
-    /**
-     * Map client IDs to client objects
-     */
-    private ConcurrentHashMap<String, Client> clients;
 
     
     /**

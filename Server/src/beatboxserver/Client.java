@@ -36,6 +36,20 @@ public class Client {
      */
     public void sendMessage(Message message) {
         
+        lastMessageID = lastMessageID + 1;
+    }
+    
+    
+    public String getClientID() {
+        return clientID;
+    }
+    
+    public int lastMessageID() {
+        return lastMessageID;
+    }
+    
+    public SocketChannel getChannel() {
+        return channel;
     }
     
     protected ConcurrentLinkedQueue<Message> messageQueue;

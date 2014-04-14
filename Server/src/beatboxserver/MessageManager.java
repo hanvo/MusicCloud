@@ -6,13 +6,8 @@
 
 package beatboxserver;
 
-import beatboxserver.Message;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
-import java.nio.channels.Channels;
 import java.util.concurrent.ConcurrentHashMap;
 import java.nio.channels.SocketChannel;
 import java.util.Scanner;
@@ -21,9 +16,9 @@ import java.util.Scanner;
  *
  * @author rahmanj
  */
-public class MessageReader {
+public class MessageManager {
     
-    public MessageReader() {
+    public MessageManager() {
         messageRegistrations = new ConcurrentHashMap<String, Class>();
     }
     
@@ -119,5 +114,5 @@ public class MessageReader {
     /**
      * Register given message names with implementation classes
      */
-    private ConcurrentHashMap<String, Class> messageRegistrations;
+    private final ConcurrentHashMap<String, Class> messageRegistrations;
 }
