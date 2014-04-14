@@ -39,7 +39,6 @@ public class Client {
     }
     
     protected ConcurrentLinkedQueue<Message> messageQueue;
-    
     protected int lastMessageID;
     protected String clientID;
     protected SocketChannel channel;

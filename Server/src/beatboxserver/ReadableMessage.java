@@ -12,17 +12,17 @@ import java.nio.channels.SocketChannel;
  *
  * @author rahmanj
  */
-public interface ParsableMessage {
+public interface ReadableMessage {
     /**
      * 
      * @param channel 
      */
-    void parseHeaderContent(SocketChannel channel);
+    void readHeaderContent(SocketChannel channel);
     
     /**
      * Optional method to read and parse body content.
      * Override in derived class if desired
      * @param channel 
      */
-    void parseBody(SocketChannel channel);   
+    void readBody(SocketChannel channel);   
 }

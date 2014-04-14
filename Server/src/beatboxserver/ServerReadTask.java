@@ -19,11 +19,14 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public final class ServerReadTask implements Runnable {
     
-    public ServerReadTask(ConcurrentLinkedQueue<Message> queue, ConcurrentHashMap<String, Client> clients, ConcurrentHashMap<String, Class> messageList) {
+    public ServerReadTask(ConcurrentLinkedQueue<Message> queue, ConcurrentHashMap<String, Client> clients, MessageReader reader) {
         if (queue != null && clients != null) {
             this.clients = clients;
             this.recievedMessages = queue;
-            this.messageRegistrations = messageList;
+            this.messageReader = reader;
+            
+            nextClientID = 0;
+            
         } else {
             throw new IllegalArgumentException();
         }
@@ -34,38 +37,9 @@ public final class ServerReadTask implements Runnable {
         
     }
     
-    /**
-     * Create a message object using reflection from a set of registered classes
-     * @param type
-     * @param messageID
-     * @param clientID
-     * @return
-     * @throws NoSuchMethodException
-     * @throws InstantiationException
-     * @throws IllegalAccessException
-     * @throws InvocationTargetException 
-     */
-    protected Message createMessage(String type, int messageID, String clientID) throws
-                NoSuchMethodException, InstantiationException, IllegalAccessException, InvocationTargetException {
-        if (type != null) {
-            Class c = messageRegistrations.get(type);
-            
-            if (!Message.class.isAssignableFrom(c)) {
-                throw new ClassCastException();
-            }
-            
-            Class types[] = {int.class, String.class};
-            Constructor con = c.getConstructor(types);
-            
-            Object args[] = {messageID, clientID};
-            return (Message)con.newInstance(args);
-            
-        } else {
-            throw new IllegalArgumentException();
-        }
-    }
+    protected int nextClientID;
     
     protected ConcurrentHashMap<String, Client> clients;
     protected ConcurrentLinkedQueue<Message> recievedMessages;
-    protected ConcurrentHashMap<String, Class> messageRegistrations;
+    protected MessageReader messageReader;
 }

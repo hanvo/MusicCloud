@@ -20,8 +20,8 @@ public class AuthenticatedMessage extends Message {
         super(messageName, messageID, clientID);
     }
     
-    public void parseHeaderContent(SocketChannel channel) {}
-    public void parseBody(SocketChannel channel) {}
+    public void readHeaderContent(SocketChannel channel) {}
+    public void readBody(SocketChannel channel) {}
     
     public void writeHeaderContent(SocketChannel channel) {}
     public void writeBody(SocketChannel channel) {}

@@ -27,16 +27,20 @@ public class Server {
     
     public Server(int port) {
         
-        // Create data structures
+        // Create data structures for global state
         listeners = new Hashtable<String, MessageListener>();
         clients = new ConcurrentHashMap<String, Client>();
+        
+        // Create message queues
         outboundMessages = new ConcurrentHashMap<String, ConcurrentLinkedQueue<Message>>();
-        messageRegistrations = new ConcurrentHashMap<String, Class>();
         inboundMessages = new ConcurrentLinkedQueue<Message>();
         
+        // Create message reader
+        messageReader = new MessageReader();
+        
         // Create reading and writing thread
-        readThread = new Thread(new ServerReadTask(inboundMessages, clients, messageRegistrations));
-        readThread.start();
+        readThread = new Thread(new ServerReadTask(inboundMessages, clients, messageReader));
+        writeThread = new Thread();
         
     }
     
@@ -44,7 +48,10 @@ public class Server {
      * 
      */
     public void startServer() {
-       // TODO, starting running reading and writing thread at this point 
+       // TODO, starting running reading and writing thread at this point
+        
+        writeThread.start();
+        readThread.start();
     }
     
     /**
@@ -53,7 +60,11 @@ public class Server {
      * @param listener 
      */
     public void registerListener(String type, MessageListener listener) {
-        listeners.put(type, listener);
+        if (type != null && listener != null) {
+            listeners.put(type, listener);
+        } else {
+            throw new IllegalArgumentException();
+        }
     }
     
     /**
@@ -62,7 +73,11 @@ public class Server {
      * @param messageClass 
      */
     public void registerMessage(String type, Class messageClass) {
-        
+        if (type != null && messageClass != null) {
+            messageReader.registerMessage(type, messageClass);
+        } else {
+            throw new IllegalArgumentException();
+        }
     }
     
     /**
@@ -88,6 +103,11 @@ public class Server {
         
     }
     
+    /**
+     * 
+     */
+    private MessageReader messageReader;
+    
     // TODO Consider multiple listeners
     private Hashtable<String, MessageListener> listeners;
     
@@ -102,10 +122,6 @@ public class Server {
      */
     private ConcurrentHashMap<String, ConcurrentLinkedQueue<Message>> outboundMessages;
     
-    /**
-     * Register given message names with implementation classes
-     */
-    private ConcurrentHashMap<String, Class> messageRegistrations;
     
     /**
      * Queue of messages queued for processing
@@ -121,10 +137,6 @@ public class Server {
      * 
      */
     private Thread writeThread;
-}
-
-interface MessageListener {
-    public void MessageRecieved(Message message, Client client);
 }
 
 

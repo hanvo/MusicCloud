@@ -22,7 +22,7 @@ import java.nio.channels.Channels;
  *
  * @author rahmanj
  */
-public abstract class Message implements ParsableMessage, WritableMessage {
+public abstract class Message implements ReadableMessage, WritableMessage {
     
     
     
@@ -37,37 +37,19 @@ public abstract class Message implements ParsableMessage, WritableMessage {
      * 
      * @param channel 
      */
-    public final void parseMessage(SocketChannel channel) {
-        parseHeaderContent(channel);
-        parseBody(channel);
-    }
-    
-    /**
-     * 
-     * @param channel
-     * @return 
-     */
-    protected final Message parseHeader(SocketChannel channel) {
-        InputStream s = Channels.newInputStream(channel);
-        InputStreamReader reader = new InputStreamReader(s);
-        Scanner scan = new Scanner(reader);
-        
-        // Read in the standard "MessageType MessageID ClientID\n" header
-        messageType = scan.next();
-        messageID = scan.nextInt();
-        clientID = scan.next();
-        
-        // TODO Use message type to construct derived type message
-        return null;
-    }
-    
+    public final void readMessage(SocketChannel channel) {
+        readHeaderContent(channel);
+        readBody(channel);
+    }   
     
     
     public String getClientID() {
         return clientID;
     }
     
-    private String clientID;
+    public int getMessageID() {
+        return messageID;
+    }
     
     public final void writeMessage(SocketChannel channel) throws IOException {
         writeHeader(channel);
@@ -87,7 +69,8 @@ public abstract class Message implements ParsableMessage, WritableMessage {
     
     /**
      * Create a buffer to be sent via socket to the client
-     * @return 
+     * @return
+     * @throws UnsupportedEncodingException
      */
     protected ByteBuffer createHeader() throws UnsupportedEncodingException {
         String header = messageType;
@@ -98,4 +81,5 @@ public abstract class Message implements ParsableMessage, WritableMessage {
     
     protected String messageType;
     protected int messageID;
+    private String clientID;
 }
