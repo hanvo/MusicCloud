@@ -4,9 +4,9 @@
  * and open the template in the editor.
  */
 
-package beatboxserver;
+package beatboxserver.old;
 
-import beatboxserver.messages.FailedMessage;
+import beatboxserver.old.messages.FailedMessage;
 
 import java.nio.channels.Selector;
 import java.nio.channels.SelectionKey;

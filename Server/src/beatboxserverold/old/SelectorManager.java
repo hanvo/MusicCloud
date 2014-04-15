@@ -4,10 +4,10 @@
  * and open the template in the editor.
  */
 
-package beatboxserver;
+package beatboxserver.old;
 
-import beatboxserver.Client;
-import beatboxserver.messages.FailedMessage;
+import beatboxserver.old.Client;
+import beatboxserver.old.messages.FailedMessage;
 
 import java.util.Iterator;
 

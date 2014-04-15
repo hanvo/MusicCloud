@@ -4,13 +4,13 @@
  * and open the template in the editor.
  */
 
-package beatboxserver;
+package beatboxserver.old;
 
 /**
  *
  * @author rahmanj
  */
-public class BeatBoxServer {
+public class BeatBoxServerOld {
 
     /**
      * @param args the command line arguments

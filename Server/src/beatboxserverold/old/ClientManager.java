@@ -4,9 +4,9 @@
  * and open the template in the editor.
  */
 
-package beatboxserver;
+package beatboxserver.old;
 
-import beatboxserver.Client;
+import beatboxserver.old.Client;
 
 import java.nio.channels.SocketChannel;
 

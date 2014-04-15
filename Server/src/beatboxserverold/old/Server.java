@@ -4,13 +4,12 @@
  * and open the template in the editor.
  */
 
-package beatboxserver;
+package beatboxserver.old;
 
-import beatboxserver.Message;
-import beatboxserver.Message;
-import beatboxserver.Client;
-import beatboxserver.Client.ClientType;
-import beatboxserver.ServerReadTask;
+import beatboxserver.old.Message;
+import beatboxserver.old.Client;
+import beatboxserver.old.Client.ClientType;
+import beatboxserver.old.ServerReadTask;
 
 import java.io.IOException;
 
@@ -33,7 +32,6 @@ public class Server {
         
         // Create data structures for global state
         listeners = new Hashtable<String, MessageListener>();
-       
         
         // Create message queues
         outboundMessages = new ConcurrentHashMap<String, ConcurrentLinkedQueue<Message>>();

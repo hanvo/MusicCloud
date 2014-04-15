@@ -4,7 +4,7 @@
  * and open the template in the editor.
  */
 
-package beatboxserver;
+package beatboxserver.old;
 
 import java.nio.channels.SelectionKey;
 

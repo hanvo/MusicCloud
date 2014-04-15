@@ -4,9 +4,9 @@
  * and open the template in the editor.
  */
 
-package beatboxserver;
+package beatboxserver.old;
 
-import beatboxserver.Message;
+import beatboxserver.old.Message;
 
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.nio.channels.*;
