@@ -29,7 +29,7 @@ Song ID:
 
 Connection Behavior:
 	Unless otherwise noted, the connection between the client and the server should
-	be persistent and held open. Use the HTTP Connection: keep-alive" option when making requests.
+	be persistent and held open. Use the HTTP "Connection: keep-alive" header when making requests.
 	In the event of an unexpected disconnection between the client
 	and the server, the connection should be reopened and the previous client ID
 	should be reused for continued communication.
@@ -43,19 +43,34 @@ Client to Server messages:
 		Description:
 			Attempt to log in to the server
 		Format:
-			"POST authenticate HTTP/1.1\r\n
+			"POST authenticate_client HTTP/1.1\r\n
 			(<Key>: <Value>\r\n)*
 			 Content-Type: application/json\r\n
-			 Content-Length: <JsonLength>
+			 Content-Length: <JsonLength>\r\n
 			 \r\n
 			 { "Pin": "<Pin>" }
 		Remarks:
+
+	DEAUTHENTICATE_CLIENT:
+		Description:
+			Deauthenticate when logging out. Recommended so
+			the server can release client related resources.
+		Format:
+			"POST deauthenticate_client HTTP/1.1\r\n
+			(<Key>: <Value>\r\n)*
+			 Content-Type: application/json\r\n
+			 Content-Length: <JsonLength>\r\n
+			 \r\n
+			 {"ClientID": "<ClientID>"}
+		Remarks:
+			After succesfully making this request, <ClientID>
+			should no longer be used
 
 	REQUEST_SONG_LIST:
 		Description:
 			Sent to the server to request the current song list
 		Format:
-			"GET request_song_list HTTP/1.1\r\n
+			"GET /request_song_list?<ClientID> HTTP/1.1\r\n
 			(<Key>: <Value>\r\n)*
 			 \r\n"
 		Remarks:
@@ -65,24 +80,24 @@ Client to Server messages:
 		Description:
 			Sent to the server to vote on a song
 		Format:
-			"POST vote HTTP/1.1\r\n
+			"POST /vote?<ClientID> HTTP/1.1\r\n
 			(<Key>: <Value>\r\n)*
 			 Content-Type: application/json\r\n
 			 Content-Length: <JsonLength>\r\n
 			 \r\n
-			 {"ClientID": "<ClientID>", "SongID": SongID}"
+			 {"SongID": SongID}"
 		Remarks:
  
 	LIKE:
 		Description:
 			Sent to the server to like the current song
 		Format:
-			"POST like HTTP/1.1\r\n
+			"POST /like?<ClientID> HTTP/1.1\r\n
 			(<Key>: <Value>\r\n)*
 			 Content-Type: application/json\r\n
 			 Content-Length: <JsonLength>\r\n
 			 \r\n
-			 {"ClientID": "<ClientID>", "SongID": <SongID>}"
+			 {"SongID": <SongID>}"
 		Remarks:
 	
 
@@ -90,11 +105,11 @@ Client to Server messages:
 		Description:
 			Sent to the server to dislike the current song
 		Format:
-			"POST dislike HTTP/1.1\r\n
+			"POST /dislike?<ClientID> HTTP/1.1\r\n
 			 Content-Type: application/json\r\n
 			 Content-Length: <JsonLength>\r\n
 			 \r\n
-			 {"ClientID": "<Client>", "SongID": "<SongID>"}"
+			 {"SongID": "<SongID>"}"
 		Remarks:
 
 
@@ -102,7 +117,7 @@ Client to Server messages:
 		Description:
 			Request any new updates from the server.
 		Format:
-			"GET request_update HTTP/1.1\r\n
+			"GET /request_update?<ClientID> HTTP/1.1\r\n
 			(<Key>: <Value>\r\n)*
 			 \r\n"
 		Remarks:
@@ -116,7 +131,7 @@ Client to Server messages:
 		Description:
 			Ask the server to send a like update
 		Format:
-			"GET request_like_update HTTP/1.1\r\n
+			"GET /request_like_update?<ClientID> HTTP/1.1\r\n
 			 (<Key>: <Value>\r\n)*
 			 \r\n"
 		Remarks:
@@ -125,7 +140,7 @@ Client to Server messages:
 		Description:
 			Ask the server to send a vote update
 		Format:
-			"GET request_vote_update HTTP/1.1\r\n
+			"GET /request_vote_update?<ClientID> HTTP/1.1\r\n
 			(<Key>: <Value>\r\n)*
 			 \r\n"
 		Remarks:
@@ -134,7 +149,7 @@ Client to Server messages:
 		Description:
 			Ask the server to send a song update
 		Format:
-			"GET request_song_update HTTP/1.1\r\n
+			"GET /request_song_update?<ClientID> HTTP/1.1\r\n
 			(<Key>: <Value>\r\n)*
 			 \r\n"
 		Remarks:
@@ -160,6 +175,7 @@ Server to Client messages:
 		Description:
 			Indicates the current state of song playback.
 			The particular message will very likely be changed.
+			Probably move to a multipart encoded message, JSON and image data
 		Format:
 			"HTTP/1.1 200 Update Available\r\n
 			 (<Key>: <Value>\r\n)*
@@ -180,7 +196,7 @@ Server to Client messages:
 			The photo image data will be given in the response body
 			while other information will be given in the header
 		Notes:
-			The App should cache the Photo for a given song because
+			The client should cache the photo for a given song because
 			the server may decide to save bandwidth by only sending
 			photos when the song changes, not for status updates
 
