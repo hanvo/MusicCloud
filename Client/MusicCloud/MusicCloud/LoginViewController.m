@@ -11,9 +11,11 @@
 #import "SWRevealViewController.h"
 #import "PartyViewController.h"
 
-#define MAX_PIN_LENGTH 5
+#define MAX_PIN_LENGTH 4
 
 @interface LoginViewController ()
+
+@property (strong, nonatomic) UIView *overlay;
 
 @end
 
@@ -23,8 +25,27 @@
 {
     [super viewDidLoad];
     
+    [[ClientSession sharedSession] setDelegate:self];
+    
     UITapGestureRecognizer *tap = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(viewTapped:)];
     [self.view addGestureRecognizer:tap];
+    
+    _overlay = [[UIView alloc] initWithFrame:self.view.bounds];
+    [_overlay setBackgroundColor:[UIColor colorWithWhite:0.2 alpha:0.5]];
+    [_overlay setAlpha:0];
+    
+    UIActivityIndicatorView *spinner = [[UIActivityIndicatorView alloc] initWithActivityIndicatorStyle:UIActivityIndicatorViewStyleWhiteLarge];
+    [spinner setCenter:CGPointMake(_enterButton.center.x, _enterButton.center.y)];
+    [spinner startAnimating];
+    [_overlay addSubview:spinner];
+    
+    [self.view addSubview:_overlay];
+}
+
+- (void)viewWillAppear:(BOOL)animated {
+    [super viewWillAppear:animated];
+    
+    [_overlay setAlpha:0.0];
 }
 
 - (void)didReceiveMemoryWarning
@@ -33,11 +54,9 @@
     // Dispose of any resources that can be recreated.
 }
 
-// In a storyboard-based application, you will often want to do a little preparation before navigation
-- (void)prepareForSegue:(UIStoryboardSegue *)segue sender:(id)sender
-{
+- (void)prepareForSegue:(UIStoryboardSegue *)segue sender:(id)sender {
     if ([segue.identifier isEqualToString:@"PartySegue"]) {
-        PartyViewController *partyVC = segue.destinationViewController;
+        //PartyViewController *partyVC = segue.destinationViewController;
         
         UIBarButtonItem *backButtonItem = [[UIBarButtonItem alloc] initWithTitle:@"Leave" style:UIBarButtonItemStylePlain target:nil action:nil];
         [self.navigationItem setBackBarButtonItem:backButtonItem];
@@ -69,14 +88,31 @@
     return YES;
 }
 
-#pragma mark - IBAction
+#pragma mark - ClientSessionDelegate
 
-- (IBAction)pinFieldEditingDidEnd:(id)sender {
-    [_enterButton sendActionsForControlEvents:UIControlEventTouchUpInside];
+- (void)clientDidAuthenticate:(BOOL)auth {
+    if (auth) {
+        [self performSegueWithIdentifier:@"PartySegue" sender:self];
+    } else {
+        [UIView animateWithDuration:0.3 animations:^{
+            [_overlay setAlpha:0.0];
+        } completion:^(BOOL finished) {
+            UIAlertView *alert = [[UIAlertView alloc] initWithTitle:@"MusicCloud Error" message:@"Invalid PIN" delegate:nil cancelButtonTitle:nil otherButtonTitles:@"OK", nil];
+            [alert show];
+        }];
+    }
 }
 
+#pragma mark - IBAction
+
 - (IBAction)enterPressed:(id)sender {
-    [self performSegueWithIdentifier:@"PartySegue" sender:self];
+    [UIView animateWithDuration:0.3 animations:^{
+        [self.view endEditing:YES];
+        [_overlay setAlpha:1.0];
+    }];
+    
+    NSString *pin = _pinField.text;
+    [[ClientSession sharedSession] authenticateClient:pin];
 }
 
 @end

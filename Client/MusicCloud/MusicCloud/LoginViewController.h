@@ -7,13 +7,13 @@
 //
 
 #import <UIKit/UIKit.h>
+#import "ClientSession.h"
 
 @class BorderButton;
 
-@interface LoginViewController : UIViewController <UITextFieldDelegate>
+@interface LoginViewController : UIViewController <UITextFieldDelegate, ClientSessionDelegate>
 
+@property (weak, nonatomic) IBOutlet UITextField *pinField;
 @property (weak, nonatomic) IBOutlet BorderButton *enterButton;
-
-- (IBAction)enterPressed:(id)sender;
 
 @end

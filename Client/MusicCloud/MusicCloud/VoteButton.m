@@ -38,7 +38,7 @@
     [self.circleLayer setPosition:CGPointMake(CGRectGetMidX(self.bounds), CGRectGetMidY(self.bounds))];
     [self.circleLayer setStrokeColor:[[UIColor whiteColor] CGColor]];
     [self.circleLayer setLineWidth:1.0];
-    [self.circleLayer setFillColor:[[UIColor clearColor] CGColor]];
+    [self.circleLayer setFillColor:[[UIColor blackColor] CGColor]];
     
     UIBezierPath *circlePath = [UIBezierPath bezierPathWithOvalInRect:self.bounds];
     [self.circleLayer setPath:[circlePath CGPath]];
