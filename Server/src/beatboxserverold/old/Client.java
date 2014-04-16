@@ -4,9 +4,9 @@
  * and open the template in the editor.
  */
 
-package beatboxserver;
+package beatboxserver.old;
 
-import beatboxserver.Message;
+import beatboxserver.old.Message;
 
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.nio.channels.*;
@@ -17,11 +17,14 @@ import java.nio.channels.*;
  */
 public class Client {
     
+    public enum ClientType {SPEAKER, PHONE};
+    
     public Client(String id, SocketChannel chan, ConcurrentLinkedQueue<Message> queue) {
         if (id != null && chan != null && queue != null) {
             clientID = id;
             channel = chan;
             messageQueue = queue;
+            lastMessageID = -1;
         } else {
             throw new IllegalArgumentException();
         }
@@ -33,10 +36,24 @@ public class Client {
      */
     public void sendMessage(Message message) {
         
+        lastMessageID = lastMessageID + 1;
+    }
+    
+    
+    public String getClientID() {
+        return clientID;
+    }
+    
+    public int lastMessageID() {
+        return lastMessageID;
+    }
+    
+    public SocketChannel getChannel() {
+        return channel;
     }
     
     protected ConcurrentLinkedQueue<Message> messageQueue;
-    
+    protected int lastMessageID;
     protected String clientID;
     protected SocketChannel channel;
 }

@@ -4,7 +4,7 @@
  * and open the template in the editor.
  */
 
-package beatboxserver;
+package beatboxserver.old;
 
 import java.io.*;
 import javax.jmdns.JmDNS;
@@ -18,20 +18,12 @@ public class RegisterService {
     
     public final static String serviceName = "_beatbox._tcp.local";
     
-    public static void registerService() {
-        try {
-            JmDNS dns = JmDNS.create();
+    public static void registerService() throws IOException {
+        JmDNS dns = JmDNS.create();
             
-            ServiceInfo info = ServiceInfo.create(RegisterService.serviceName, "BeatBox Server", 5050, "BeatBox Central Server");
+        ServiceInfo info = ServiceInfo.create(RegisterService.serviceName, "BeatBox Server", 5050, "BeatBox Central Server");
             
-            
-            dns.registerService(info);
-            
-
-        } catch (IOException e) {
-            // TODO Handle
-        }
-        
+        dns.registerService(info); 
     }
     
 }
