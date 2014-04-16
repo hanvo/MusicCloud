@@ -4,7 +4,8 @@
 import os 
 import sys
 import sqlite3
-from mutagen import mp3
+
+from mutagen.mp3 import mp3
 
 def main():
     crawl()
@@ -21,20 +22,30 @@ def crawl():
 
     #for loop that will recursivly go through the file given
     #Currently just outputs a list of songs within a folder
-    
+    x = "root"
+    y = "song name"
+    count = 0
     for root, dirnames, filenames in os.walk(r'C:\Users\QuakeZ\Desktop\Music Folder'):
+        x = root
         print "Root: ", root
         print "\n"
         print "Song List: \n"
         print '\n'.join(filenames)
-        print '\n'
+        print '\n'       
+        y = filenames[count]
+        count = count + 1
 
+        
         print "File Paths: \n"
         for filename in filenames:
             print "Path: ", os.path.join(root,filename)
-            print 
 
-
+    temp = "%s\%s" %(x,y)
+    print "\n"
+    print temp
+        
+    metadata = mp3.Open(temp)    
+        
 
 
 
