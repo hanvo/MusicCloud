@@ -35,7 +35,26 @@ Connection Behavior:
 	should be reused for continued communication.
 
 Connection Protocol:
-	We will use TCP/HTTP over port <Decide Later>.
+	We will use TCP/HTTP over port 42422
+	Port is temporary, likely to switch to Bonjour for auto-discover of port and IP.
+
+General Protocol:
+	The protocol is based on the server sending updates to the phone as votes and likes change
+	Additionally, the phone can request needed information from the server.
+
+	For update listening, the following is the general flow:
+		1. Client sends REQUEST_CLIENT_UPDATE request using HTTP long polling
+			1.A Client holds connection open
+			1.B If connection times out, resend request
+		2. Server sends response
+			2.A Either JSON or image data, use Content-Type to disambiguate
+		3. Client processes update and performs needed behavior
+		4. goto step 1
+
+	Ideally, only one REQUEST_CLIENT_UPDATE request should be active for a given clientID.
+	This suggestion does not apply to other request types, any other request may be issued
+		while a REQUEST_CLIENT_UPDATE request is still pending
+
 
 
 Client to Server messages:
@@ -43,12 +62,12 @@ Client to Server messages:
 		Description:
 			Attempt to log in to the server
 		Format:
-			"POST authenticate_client HTTP/1.1\r\n
+			"POST /authenticate_client HTTP/1.1\r\n
 			(<Key>: <Value>\r\n)*
 			 Content-Type: application/json\r\n
 			 Content-Length: <JsonLength>\r\n
 			 \r\n
-			 { "Pin": "<Pin>" }
+			 { "pin": "<Pin>" }
 		Remarks:
 
 	DEAUTHENTICATE_CLIENT:
@@ -56,12 +75,12 @@ Client to Server messages:
 			Deauthenticate when logging out. Recommended so
 			the server can release client related resources.
 		Format:
-			"POST deauthenticate_client HTTP/1.1\r\n
+			"POST /deauthenticate_client HTTP/1.1\r\n
 			(<Key>: <Value>\r\n)*
 			 Content-Type: application/json\r\n
 			 Content-Length: <JsonLength>\r\n
 			 \r\n
-			 {"ClientID": "<ClientID>"}
+			 {"id": "<ClientID>"}
 		Remarks:
 			After succesfully making this request, <ClientID>
 			should no longer be used
@@ -70,7 +89,7 @@ Client to Server messages:
 		Description:
 			Sent to the server to request the current song list
 		Format:
-			"GET /request_song_list?<ClientID> HTTP/1.1\r\n
+			"GET /request_song_list?clientID=<ClientID> HTTP/1.1\r\n
 			(<Key>: <Value>\r\n)*
 			 \r\n"
 		Remarks:
@@ -80,24 +99,24 @@ Client to Server messages:
 		Description:
 			Sent to the server to vote on a song
 		Format:
-			"POST /vote?<ClientID> HTTP/1.1\r\n
+			"POST /vote?clientID=<ClientID> HTTP/1.1\r\n
 			(<Key>: <Value>\r\n)*
 			 Content-Type: application/json\r\n
 			 Content-Length: <JsonLength>\r\n
 			 \r\n
-			 {"SongID": SongID}"
+			 {"id": <SongID>}"
 		Remarks:
  
 	LIKE:
 		Description:
 			Sent to the server to like the current song
 		Format:
-			"POST /like?<ClientID> HTTP/1.1\r\n
+			"POST /like?clientID=<ClientID> HTTP/1.1\r\n
 			(<Key>: <Value>\r\n)*
 			 Content-Type: application/json\r\n
 			 Content-Length: <JsonLength>\r\n
 			 \r\n
-			 {"SongID": <SongID>}"
+			 {"id": <SongID>}"
 		Remarks:
 	
 
@@ -105,19 +124,19 @@ Client to Server messages:
 		Description:
 			Sent to the server to dislike the current song
 		Format:
-			"POST /dislike?<ClientID> HTTP/1.1\r\n
+			"POST /dislike?clientID=<ClientID> HTTP/1.1\r\n
 			 Content-Type: application/json\r\n
 			 Content-Length: <JsonLength>\r\n
 			 \r\n
-			 {"SongID": "<SongID>"}"
+			 {"id": "<SongID>"}"
 		Remarks:
 
 
-	REQUEST_UPDATE:
+	REQUEST_CLIENT_UPDATE:
 		Description:
 			Request any new updates from the server.
 		Format:
-			"GET /request_update?<ClientID> HTTP/1.1\r\n
+			"GET /request_client_update?clientID=<ClientID> HTTP/1.1\r\n
 			(<Key>: <Value>\r\n)*
 			 \r\n"
 		Remarks:
@@ -131,7 +150,7 @@ Client to Server messages:
 		Description:
 			Ask the server to send a like update
 		Format:
-			"GET /request_like_update?<ClientID> HTTP/1.1\r\n
+			"GET /request_like_update?clientID=<ClientID> HTTP/1.1\r\n
 			 (<Key>: <Value>\r\n)*
 			 \r\n"
 		Remarks:
@@ -140,19 +159,34 @@ Client to Server messages:
 		Description:
 			Ask the server to send a vote update
 		Format:
-			"GET /request_vote_update?<ClientID> HTTP/1.1\r\n
+			"GET /request_vote_update?clientID=<ClientID> HTTP/1.1\r\n
 			(<Key>: <Value>\r\n)*
 			 \r\n"
 		Remarks:
 
+
 	REQUEST_SONG_UPDATE:
 		Description:
-			Ask the server to send a song update
+			Ask the server to send a song update about the current song.
+			Response to this request will be the SONG_UPDATE message.
 		Format:
-			"GET /request_song_update?<ClientID> HTTP/1.1\r\n
+			"GET /request_song_update?clientID=<ClientID> HTTP/1.1\r\n
 			(<Key>: <Value>\r\n)*
 			 \r\n"
 		Remarks:
+
+
+	REQUEST_PHOTO:
+		Description:
+			Ask the server to send a photo for the song with the given id
+		Format:
+			"GET /request_photo?clientID=<ClientID>&songID=<SongID> HTTP/1.1\r\n
+			(<Key>: <Value>\r\n)*
+			\r\n"
+		Remarks:
+			Song artwork will frequently not be available, so be prepared
+			to handle 404 status responses indicating that a song doesn't
+			have artwork available
 		
 		
 
@@ -167,7 +201,7 @@ Server to Client messages:
 			 Content-Type: application/json\r\n
 			 Content-Length: <JsonLength>\r\n
 			 \r\n
-			 { "ClientID": "<ClientID>"}"
+			 { "id": "<ClientID>"}"
 		Remarks:
 			
 
@@ -178,27 +212,27 @@ Server to Client messages:
 			Probably move to a multipart encoded message, JSON and image data
 		Format:
 			"HTTP/1.1 200 Update Available\r\n
-			 (<Key>: <Value>\r\n)*
-			 SongID: <SongID>\r\n
-			 Song-Name: <Song Name>\r\n
-			 Song-Artist: <Artist>\r\n
-			 Song-Album: <Album>\r\n
-			 Song-Length: <Length>\r\n
-			 Song-Status: (Playing|Paused)\r\n
-			 Song-Position: <Playback Position\r\n
-			(Content-Type: image/<ImageType>\r\n
-			 Content-Length: <ImageLength>\r\n)?
+			(<Key>: <Value>\r\n)*
+			 Content-Type: application/json\r\n
+			 Content-Length: <JsonLength>\r\n
 			 \r\n
-			(Binary image data if ImageLength > 0 and ImageType available)"
+			 { "update_type": "current_song",
+			   "values": {
+				   "id": <SongID>,
+				   "name": "<SongName>",
+				   "artist": "<Artist>",
+				   "album": "<Album>",
+				   "length": <Length>,
+				   "status": "(Playing|Paused)",
+				   "position": <Playback Position>
+				}
+			}"
 		Remarks:
 			Playback position is formatted as an integer indicating the number of milliseconds
 			the song has played up to the point of the update.
-			The photo image data will be given in the response body
-			while other information will be given in the header
 		Notes:
-			The client should cache the photo for a given song because
-			the server may decide to save bandwidth by only sending
-			photos when the song changes, not for status updates
+			The client should use the REQUEST_PHOTO request to get
+			album or song artwork.
 
 	VOTE_UPDATE:
 		Description:
@@ -208,7 +242,7 @@ Server to Client messages:
 			(<Key>: <Value>\r\n)*
 			 Content-Type: application/json\r\n
 			 Content-Length: <JsonLength>\r\n\r\n
-			 {"votes": [({"SongID": "<Votes>"})*]}"
+			 {"update_type": "votes", "values": [({"id": "<Votes>"})*]}"
 		Remarks:
 		
 
@@ -219,8 +253,10 @@ Server to Client messages:
 			"HTTP/1.1 200 Update Available\r\n
 			(<Key>: <Value>\r\n)*
 			 Content-Type: application/json\r\n
+			 Content-Length: <JsonLength>\r\n
 			 \r\n
-			 { "likes": [({"SongID": <SongID>, "Likes": <Likes>, "Dislikes": <Dislikes>, "Balance": <Balance>}*]}
+			 { "update_type": "likes",
+			   "values": [({"id": <SongID>, "likes": <Likes>, "dislikes": <Dislikes>, "Balance": <Balance>})*]}"
 		Remarks:
 			Likes and dislikes are integers, while balance is a double in the interval [-1,1]
 			Likes and dislikes are the raw data, while balance has been computed by the server.
@@ -237,13 +273,29 @@ Server to Client messages:
 			 Content-Type: application/json\r\n
 			 Content-Length: <JsonLength>\r\n
 			 \r\n
-			 {"songs": [({"SongID": <SongID>,
-						  "SongName": "<SongName>",
-						  "SongArtist": "<SongArtist>",
-						  "SongAlbum": "<SongAlbum>",
-						  "Votes": <Votes>})*]
+			 {"update_type": "song_list",
+			  "songs": [({"id": <SongID>,
+						  "name": "<SongName>",
+						  "artist": "<SongArtist>",
+						  "album": "<SongAlbum>",
+						  "votes": <Votes>})*]
 			 }"			
 		Remarks:
+
+	SONG_PHOTO:
+		Description:
+			Response to REQUEST_SONG request
+		Format:
+			"HTTP/1.1 200 Photo Available\r\n
+			(<Key>: <Value>\r\n)*
+			 Content-Type: image/<ImageType>\r\n
+			 Content-Length: <ImageSize>\r\n
+			 \r\n
+			 <ImageSize bytes of image data>"
+		Remarks:
+			Often the client will recieve a 404 failed response if
+			a photo wasn't available. In such a case display a placeholder.
+	
 
 	FAILED:
 		Description:
