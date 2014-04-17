@@ -7,6 +7,7 @@
 package beatboxserver;
 
 import beatboxserver.ProtocolMessageHandler;
+import beatboxserver.MessageHandler;
 
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.ChannelInitializer;
@@ -24,7 +25,18 @@ import java.util.logging.Logger;
  */
 public class BeatboxChannelInitializer extends ChannelInitializer<SocketChannel> {
     
+    /**
+     * Construct a new instance of {@link BeatboxChannelInitializer}
+     * @param handler {@link MessageHandler} The message handler that will react to messages
+     */
+    public BeatboxChannelInitializer(MessageHandler handler) {
+        messageHandler = handler;
+    }
     
+    /**
+     * Initialize a newly established channel for further use
+     * @param ch {@link SocketChannel} Newly created channel to be initialized
+     */
     @Override
     protected void initChannel(SocketChannel ch) {
         final ChannelPipeline pipeline = ch.pipeline();
@@ -37,6 +49,8 @@ public class BeatboxChannelInitializer extends ChannelInitializer<SocketChannel>
         pipeline.addLast("decoder", new HttpRequestDecoder());
         pipeline.addLast("encoder", new HttpResponseEncoder());
         pipeline.addLast("aggregator", new HttpObjectAggregator(65536));
-        pipeline.addLast("handler", new ProtocolMessageHandler());
+        pipeline.addLast("handler", new ProtocolMessageHandler(messageHandler));
     }
+    
+    private MessageHandler messageHandler;
 }
