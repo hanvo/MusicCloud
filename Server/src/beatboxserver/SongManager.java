@@ -6,14 +6,20 @@
 
 package beatboxserver;
 
-
-
-
 /**
  *
  * @author rahmanj
  */
-public class BeatBoxServer {
+public class SongManager {
     
     
+    
+    
+    public void vote(Song song, Client client) {
+        
+    }
+    
+    public void like(Song song, Client client) {
+        
+    }
 }
