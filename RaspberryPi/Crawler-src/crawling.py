@@ -22,6 +22,8 @@ def crawl():
     table_name = 'music'
     conn = sqlite3.connect(location)
     c = conn.cursor()
+    conn.text_factory = str
+
 
     #create the tables
     sqlStatement = 'drop table if exists ' + table_name
@@ -50,7 +52,7 @@ def crawl():
             c.execute('insert into music values (?,?)', (songCount,y,))
             songCount = songCount + 1
         
-
+        print "Path: ", os.path.join(root,filenames[0])
         
         #print "File Paths: \n"
         #for filename in filenames:
