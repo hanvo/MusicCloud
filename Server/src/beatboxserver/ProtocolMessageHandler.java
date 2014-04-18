@@ -7,6 +7,7 @@
 package beatboxserver;
 
 import beatboxserver.MessageHandler;
+import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelFutureListener;
 
 import io.netty.channel.ChannelHandlerContext;
@@ -18,19 +19,17 @@ import io.netty.handler.codec.http.FullHttpResponse;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.netty.handler.codec.http.HttpVersion;
 import io.netty.handler.codec.http.HttpHeaders;
+import io.netty.handler.codec.http.HttpHeaders.*;
 import io.netty.handler.codec.http.QueryStringDecoder;
 
-import java.util.LinkedList;
+import io.netty.util.AttributeKey;
+import io.netty.util.Attribute;
+import io.netty.util.CharsetUtil;
+
 import java.util.logging.Logger;
 import java.lang.reflect.Method;
-import java.lang.reflect.Type;
+import java.util.logging.Handler;
 import java.util.logging.Level;
-import java.nio.charset.Charset;
-import java.util.HashMap;
-
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.reflect.TypeToken;
 
 /**
  *
@@ -39,6 +38,10 @@ import com.google.gson.reflect.TypeToken;
 public class ProtocolMessageHandler extends SimpleChannelInboundHandler<FullHttpRequest> {
     
     public ProtocolMessageHandler(MessageHandler handler) {
+        Logger logger = Logger.getLogger(this.getClass().getName());
+        for (Handler h : logger.getHandlers()) {
+            h.setLevel(Level.ALL);
+        }
         messageHandler = handler;
     }
     
@@ -67,58 +70,38 @@ public class ProtocolMessageHandler extends SimpleChannelInboundHandler<FullHttp
         // Get the path
         String path = decoder.path();
         path = path.substring(1); // Remove '/'
+        
         String messageType = messageHandler.normalizeMethod(path);
         Method method;
         
-        HashMap<String,String> map;
-        String[] flattenedQueryString = null;
-        String clientID = null;
+        boolean keepAlive = false;
+        String clientID;
+        
+        // Determine KeepAlive status and set context attribute
+        if (decoder.parameters().containsKey("Connection")) {
+            if (decoder.parameters().get("Connection").get(0).equalsIgnoreCase("Connection")) {
+                keepAlive = true;
+            }
+        }
+        
+        Attribute attr = ctx.attr(AttributeKey.valueOf("KeepAlive"));
+        attr.set(keepAlive);
+        
                 
-        // Signature is
-        // HashMap<String, String> (Request body, null if not present)
+        // Handler method signature is
+        //
+        // ChannelHandlerContext
+        // FullHttpRequest
         // String (Client ID, null if not present)
-        // String[] (Pairs of additional query string keys and values 2i is key 2i+1 is value)
         
         // Try to get method, send 404 if not found
         try {
-            method = messageHandler.getClass().getMethod(messageType, Object.class, String.class, String[].class);
+            method = messageHandler.getClass().getMethod(messageType, ChannelHandlerContext.class, FullHttpRequest.class, String.class);
         } catch (NoSuchMethodException e) {
             Logger.getLogger(this.getClass().getName()).warning("Invalid request for method: \"" + messageType + "\"");
-            FullHttpResponse res = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.NOT_FOUND);
             
-            // Write the response back, respecting any keep alive given
-            HttpHeaders headers = request.headers();
-            if (headers.contains("Connection") && headers.get("Connection").equalsIgnoreCase("Keep-Alive")) {
-                ctx.write(res);
-            } else {
-                ctx.write(res).addListener(ChannelFutureListener.CLOSE);
-            }
+            messageHandler.sendError(ctx, HttpResponseStatus.NOT_FOUND);
             return;
-        }
-        
-        // Process the query string and parse the request body
-        if (decoder.parameters().keySet().size() > 0) {
-            LinkedList<String> l = new LinkedList<>();
-            for (String key : decoder.parameters().keySet()) {
-                for (String value : decoder.parameters().get(key)) {
-                    l.addLast(key);
-                    l.addLast(value);
-                }
-            }
-
-            flattenedQueryString = l.toArray(new String[1]);
-        } else {
-            flattenedQueryString = null;
-        }
-        
-        // Try parsing the request body if JSON
-        try {
-            Gson gson = new Gson();
-            Type type = new TypeToken<HashMap<String,String>>(){}.getClass();
-            map = gson.fromJson(request.content().toString(Charset.forName("US-ASCII")), type);
-        } catch (Exception e) {
-            Logger.getLogger(this.getClass().getName()).log(Level.FINE, "Exception while parsing JSON", e);
-            map = null;
         }
         
         // Parse out client ID if present
@@ -129,7 +112,7 @@ public class ProtocolMessageHandler extends SimpleChannelInboundHandler<FullHttp
         }
         
         try {
-            method.invoke(ctx, map, clientID, flattenedQueryString);
+            method.invoke(messageHandler, ctx, request, clientID);
         } catch (Exception e) {
             Logger.getLogger(this.getClass().getName()).log(Level.SEVERE, "Exception thrown while dispatching", e);
         }

@@ -15,6 +15,7 @@ import io.netty.channel.ChannelPipeline;
 import io.netty.handler.codec.http.HttpRequestDecoder;
 import io.netty.handler.codec.http.HttpResponseEncoder;
 import io.netty.handler.codec.http.HttpObjectAggregator;
+import java.util.logging.Handler;
 import java.util.logging.Level;
 
 import java.util.logging.Logger;
@@ -30,6 +31,10 @@ public class BeatboxChannelInitializer extends ChannelInitializer<SocketChannel>
      * @param handler {@link MessageHandler} The message handler that will react to messages
      */
     public BeatboxChannelInitializer(MessageHandler handler) {
+        Logger logger = Logger.getLogger(this.getClass().getName());
+        for (Handler h : logger.getHandlers()) {
+            h.setLevel(Level.ALL);
+        }
         messageHandler = handler;
     }
     

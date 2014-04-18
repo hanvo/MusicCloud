@@ -6,6 +6,8 @@
 
 package beatboxserver;
 
+import com.google.gson.annotations.Expose;
+
 /**
  *
  * @author rahmanj
@@ -22,10 +24,19 @@ public class Song {
     }
     
     
+    
+    @Expose
     private String name;
+    
+    @Expose
     private String artist;
+    
+    @Expose
     private String album;
+    
     private String path;
     private String coverPath;
+    
+    @Expose
     private int length;
 }

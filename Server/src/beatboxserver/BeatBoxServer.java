@@ -12,6 +12,7 @@ import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
+import java.util.logging.Handler;
 
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -25,6 +26,12 @@ import java.util.logging.Logger;
  */
 public class BeatBoxServer {
     
+    public BeatBoxServer() {
+        Logger logger = Logger.getLogger(this.getClass().getName());
+        for (Handler h : logger.getHandlers()) {
+            h.setLevel(Level.ALL);
+        }
+    }
     
     public void run() throws InterruptedException {
         // Perform application specific initialization here
@@ -39,7 +46,7 @@ public class BeatBoxServer {
         
         // Perform any needed registrations
         
-        MessageHandler handler;
+        MessageHandler handler = new MessageHandler();
         
         // Initialze netty
         EventLoopGroup bossGroup = new NioEventLoopGroup(1);
@@ -47,6 +54,8 @@ public class BeatBoxServer {
         
         // Start the server and register our channel initializer
         try {
+            Logger.getLogger(this.getClass().getName()).info("Starting server");
+            
             ServerBootstrap b = new ServerBootstrap();
             b.group(bossGroup, workerGroup)
                     .channel(NioServerSocketChannel.class)
@@ -54,6 +63,8 @@ public class BeatBoxServer {
             
             b.bind(42422 /* TODO TEMP */).channel().closeFuture().sync();
         } finally {
+            Logger.getLogger(BeatBoxServer.class.getName()).info("Shutting down server...");
+            
             bossGroup.shutdownGracefully();
             workerGroup.shutdownGracefully();
         }
