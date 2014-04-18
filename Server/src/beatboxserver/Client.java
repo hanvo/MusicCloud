@@ -14,17 +14,15 @@ import io.netty.channel.Channel;
  */
 public class Client {
     
-    public Client(Channel ch) {
-        if (ch != null) {
-            chan = ch;
+    public Client(String id) {
+        if (id != null) {
+            this.id = id;
         } else {
             throw new IllegalArgumentException();
         }
     }
     
-    public Channel getContext() {
-        return chan;
-    }
+
     
     private String id;
 }
