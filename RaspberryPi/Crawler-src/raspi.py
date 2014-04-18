@@ -22,8 +22,22 @@ thread will wait on the queue.
 
 #Importing the thread function
 from threading import Thread
+import threading
+import httplib
+
+_Rlock = thread.RLock()
+_playbackstate = 0 # 1 - Play the song , 2 - Pause the song , 3.. other play back options
+
+
+
 
 if __name__ = "__main__":
-	thread1 = Thread(target = play_back_func, args = )
-	thread2 = Thread(target = serv_func, args = )
-	thread3 = Thread(target = communicate_func, args = )
+	thread1 = Thread(target = play_back_func, args =() )
+	thread2 = Thread(target = serv_func, args =() )
+	thread3 = Thread(target = communicate_func, args =() )
+	thread1.start()
+	thread2.start()
+	thread3.start()
+	thread1.join()
+	thread2.join()
+	thread3.join()
