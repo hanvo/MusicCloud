@@ -96,7 +96,7 @@ Requests: (From Client to server)
 			Request any new updates from the server, including playback commands
 			and upcoming song messages
 		Format:
-			"GET /speaker/request_speaker_update?clientID=<ClientID> HTTP/1.1\r\n
+			"GET /speaker/request_update?clientID=<ClientID> HTTP/1.1\r\n
 			(<Key>: <Value>\r\n)*
 			 \r\n"
 		Remarks:

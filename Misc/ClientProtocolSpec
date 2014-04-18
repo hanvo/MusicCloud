@@ -136,7 +136,7 @@ Client to Server messages:
 		Description:
 			Request any new updates from the server.
 		Format:
-			"GET /client/request_client_update?clientID=<ClientID> HTTP/1.1\r\n
+			"GET /client/request_update?clientID=<ClientID> HTTP/1.1\r\n
 			(<Key>: <Value>\r\n)*
 			 \r\n"
 		Remarks:
