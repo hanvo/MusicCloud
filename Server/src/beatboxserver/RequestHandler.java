@@ -10,7 +10,6 @@ package beatboxserver;
 import io.netty.buffer.Unpooled;
 import io.netty.buffer.ByteBuf;
 
-import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelFutureListener;
 
@@ -24,7 +23,6 @@ import io.netty.handler.codec.http.HttpVersion;
 import io.netty.handler.codec.http.HttpResponseStatus;
 
 import io.netty.util.AttributeKey;
-import io.netty.util.Attribute;
 import io.netty.util.CharsetUtil;
 
 import java.util.List;
@@ -34,18 +32,16 @@ import java.util.logging.Logger;
 import java.util.logging.Handler;
 import java.util.logging.Level;
 
-import com.google.gson.JsonObject;
 
 import static io.netty.handler.codec.http.HttpHeaders.Names.*;
-import static io.netty.handler.codec.http.HttpResponseStatus.*;
 
 /**
  * Giant class to hold all our logic to handle messages
  * @author rahmanj
  */
-public class MessageHandler {
+public class RequestHandler {
     
-    public MessageHandler() {
+    public RequestHandler() {
         Logger logger = Logger.getLogger(this.getClass().getName());
         for (Handler h : logger.getHandlers()) {
             h.setLevel(Level.ALL);
@@ -57,7 +53,7 @@ public class MessageHandler {
      * @param path Path from the request with leading '/' removed if present
      * @return Returns the path converted into camel-case appropriate for reflection
      */
-    public String normalizeMethod(String path) {
+    public static String normalizeMethod(String path) {
         StringBuilder sb = new StringBuilder();
         
         // Split on underscores
@@ -88,156 +84,36 @@ public class MessageHandler {
         return sb.toString();
     }
     
-    public void authenticateClient(ChannelHandlerContext ctx, FullHttpRequest req, String clientID) {
-        if (validateMethod(req, HttpMethod.POST)) {
-            // TODO Process
-        } else {
-            sendError(ctx, METHOD_NOT_ALLOWED);
-        }
-    }
-    
-    
-    public void deauthenticateClient(ChannelHandlerContext ctx, FullHttpRequest req, String clientID) {
-        if (validateMethod(req,HttpMethod.POST)) {
-            // TODO Process
-        } else {
-            sendError(ctx, METHOD_NOT_ALLOWED);
-        }
-    }
-    
-    
-    public void requestSongList(ChannelHandlerContext ctx, FullHttpRequest req, String clientID) {
-        if (validateMethod(req, HttpMethod.GET)) {
-            
-        } else {
-            sendError(ctx, METHOD_NOT_ALLOWED);
-        }
-    }
-    
-    
-    public void vote(ChannelHandlerContext ctx, FullHttpRequest req, String clientID) {
-        if (validateMethod(req, HttpMethod.POST)) {
+    /**
+     * 
+     * @param name
+     * @return 
+     */
+    public static String normalizeHandler(String name) {
+        StringBuilder sb = new StringBuilder();
         
-        } else {
-            sendError(ctx, METHOD_NOT_ALLOWED);
+        // Split on underscores
+        String[] components = name.split("_");
+        
+        String original;
+        String modified;
+        
+        // Perform lower_case_underscore to camelCase conversion consistent with method names
+        for (int i = 0; i < components.length; i++) {
+            if (components[i].length() > 0) {
+                original = String.valueOf(components[i].charAt(0));
+                modified = original.toUpperCase();
+                components[i] = components[i].replaceFirst(original, modified);
+            }
         }
-    }
-    
-    
-    public void like(ChannelHandlerContext ctx, FullHttpRequest req, String clientID) {
-        if (validateMethod(req, HttpMethod.POST)) {
-            
-        } else {
-            sendError(ctx, METHOD_NOT_ALLOWED);
+        
+        // Stich these together
+        for (String s : components) {
+            sb.append(s);
         }
-    }
-    
-    
-    public void dislike(ChannelHandlerContext ctx, FullHttpRequest req, String clientID) {
-        if (validateMethod(req, HttpMethod.POST)) {
-            
-        } else {
-            sendError(ctx, METHOD_NOT_ALLOWED);
-        }
-    }
-    
-    
-    public void requestClientUpdate(ChannelHandlerContext ctx, FullHttpRequest req, String clientID) {
-        if (validateMethod(req, HttpMethod.GET)) {
-            
-        } else {
-            sendError(ctx, METHOD_NOT_ALLOWED);
-        }
-    }
-    
-    
-    public void requestLikeUpdate(ChannelHandlerContext ctx, FullHttpRequest req, String clientID) {
-        if (validateMethod(req, HttpMethod.GET)) {
-            
-        } else {
-            sendError(ctx, METHOD_NOT_ALLOWED);
-        }
-    }
-    
-    
-    public void requestVoteUpdate(ChannelHandlerContext ctx, FullHttpRequest req, String clientID) {
-        if (validateMethod(req, HttpMethod.GET)) {
-            
-        } else {
-            sendError(ctx, METHOD_NOT_ALLOWED);
-        }
-    }
-    
-    
-    public void requestSongUpdate(ChannelHandlerContext ctx, FullHttpRequest req, String clientID) {
-        if (validateMethod(req, HttpMethod.GET)) {
-            
-        } else {
-            sendError(ctx, METHOD_NOT_ALLOWED);
-        }
-    }
-    
-    
-    public void requestPhoto(ChannelHandlerContext ctx, FullHttpRequest req, String clientID) {
-        if (validateMethod(req, HttpMethod.GET)) {
-            
-        } else {
-            sendError(ctx, METHOD_NOT_ALLOWED);
-        }
-    }
-    
-    
-    public void authenticateSpeaker(ChannelHandlerContext ctx, FullHttpRequest req, String clientID) {
-        if (validateMethod(req, HttpMethod.POST)) {
-            
-        } else {
-            sendError(ctx, METHOD_NOT_ALLOWED);
-        }
-    }
-    
-    
-    public void deauthenticateSpeaker(ChannelHandlerContext ctx, FullHttpRequest req, String clientID) {
-       if (validateMethod(req, HttpMethod.POST)) {
-           
-       } else {
-           sendError(ctx, METHOD_NOT_ALLOWED);
-       }
-    }
-    
-    
-    public void requestSpeakerUpdate(ChannelHandlerContext ctx, FullHttpRequest req, String clientID) {
-        if (validateMethod(req, HttpMethod.GET)) {
-            
-        } else {
-            sendError(ctx, METHOD_NOT_ALLOWED);
-        }
-    }
-    
-    
-    public void statusUpdate(ChannelHandlerContext ctx, FullHttpRequest req, String clientID) {
-        if (validateMethod(req, HttpMethod.POST)) {
-            
-        } else {
-            sendError(ctx, METHOD_NOT_ALLOWED);
-        }
-    }
-    
-    
-    public void requestSong(ChannelHandlerContext ctx, FullHttpRequest req, String clientID) {
-        if (validateMethod(req, HttpMethod.GET)) {
-            
-        } else {
-            sendError(ctx, METHOD_NOT_ALLOWED);
-        }
-    }
-    
-    
-    public void ready(ChannelHandlerContext ctx, FullHttpRequest req, String clientID) {
-        if (validateMethod(req,HttpMethod.POST)) {
-            
-        } else {
-            sendError(ctx, METHOD_NOT_ALLOWED);
-        }
+        sb.append("Handler");
+        
+        return sb.toString();
     }
     
     
@@ -256,14 +132,14 @@ public class MessageHandler {
         }
     } 
     
+   
     /**
      * Send an error response to the client
      * @param ctx {@link ChannelHandlerContext} to be used to send the error message
      * @param status {@link HttpResponseStatus} indicating the error condition
      */
-    public void sendError(ChannelHandlerContext ctx, HttpResponseStatus status) {
+    public static void sendError(ChannelHandlerContext ctx, HttpResponseStatus status) {
         if (ctx != null && status != null) {
-            FullHttpResponse response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, status);
             ByteBuf message = Unpooled.copiedBuffer("Failure: " + status.toString() + "\r\n", CharsetUtil.US_ASCII);
             
             FullHttpResponse res = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, status, message);
@@ -282,7 +158,7 @@ public class MessageHandler {
      * @param ctx {@link ChannelHandlerContext} to be used to send the response
      * @param response {@link FullHttpResponse} response to be sent to the client
      */
-    public void sendResponse(ChannelHandlerContext ctx, FullHttpResponse response) {
+    public static void sendResponse(ChannelHandlerContext ctx, FullHttpResponse response) {
         if (ctx != null && response != null) {
             if ((Boolean)ctx.attr(AttributeKey.valueOf("KeepAlive")).get()) {
                 // Keep alive in effect
@@ -302,7 +178,7 @@ public class MessageHandler {
      * @param content {@link String} containing JSON for the request
      * @return Returns a {@link FullHttpResponse} that can be sent to the client
      */
-    protected FullHttpResponse createResponse(HttpResponseStatus status, String content) {
+    protected static FullHttpResponse createResponse(HttpResponseStatus status, String content) {
         
         ByteBuf body = Unpooled.copiedBuffer(content, CharsetUtil.US_ASCII);
         
@@ -317,7 +193,7 @@ public class MessageHandler {
      * @param status
      * @return 
      */
-    protected FullHttpResponse createResponse(HttpResponseStatus status) {
+    protected static FullHttpResponse createResponse(HttpResponseStatus status) {
         FullHttpResponse response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, status);
         
         return response;

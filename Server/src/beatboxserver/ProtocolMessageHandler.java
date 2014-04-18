@@ -6,7 +6,7 @@
 
 package beatboxserver;
 
-import beatboxserver.MessageHandler;
+import beatboxserver.RequestHandler;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelFutureListener;
 
@@ -28,8 +28,11 @@ import io.netty.util.CharsetUtil;
 
 import java.util.logging.Logger;
 import java.lang.reflect.Method;
+import java.lang.reflect.Constructor;
 import java.util.logging.Handler;
 import java.util.logging.Level;
+
+import static io.netty.handler.codec.http.HttpResponseStatus.*;
 
 /**
  *
@@ -37,12 +40,11 @@ import java.util.logging.Level;
  */
 public class ProtocolMessageHandler extends SimpleChannelInboundHandler<FullHttpRequest> {
     
-    public ProtocolMessageHandler(MessageHandler handler) {
+    public ProtocolMessageHandler() {
         Logger logger = Logger.getLogger(this.getClass().getName());
         for (Handler h : logger.getHandlers()) {
             h.setLevel(Level.ALL);
         }
-        messageHandler = handler;
     }
     
     /**
@@ -69,10 +71,22 @@ public class ProtocolMessageHandler extends SimpleChannelInboundHandler<FullHttp
         
         // Get the path
         String path = decoder.path();
-        path = path.substring(1); // Remove '/'
+        String handlerName;
+        String methodName;
         
-        String messageType = messageHandler.normalizeMethod(path);
-        Method method;
+        String[] components = path.split("/");
+        if (components.length != 3) {
+            Logger.getLogger(this.getClass().getName()).warning("Invalid request for method: \"" + path + "\"");
+            RequestHandler.sendError(ctx, NOT_FOUND);
+            return;
+        }
+        
+        handlerName = components[1];
+        methodName = components[2];
+        
+        handlerName = RequestHandler.normalizeHandler(handlerName);
+        handlerName = "beatboxserver." + handlerName;
+        methodName = RequestHandler.normalizeMethod(methodName);
         
         boolean keepAlive = false;
         String clientID;
@@ -87,6 +101,30 @@ public class ProtocolMessageHandler extends SimpleChannelInboundHandler<FullHttp
         Attribute attr = ctx.attr(AttributeKey.valueOf("KeepAlive"));
         attr.set(keepAlive);
         
+        // Try to get request handler
+        Class handlerClass;
+        try {
+            handlerClass = Class.forName(handlerName);
+            if (!RequestHandler.class.isAssignableFrom(handlerClass)) {
+                RequestHandler.sendError(ctx, NOT_FOUND);
+                return;
+            }
+        } catch (ClassNotFoundException e) {
+            Logger.getLogger(this.getClass().getName()).warning("Invalid request for handler: \"" + handlerName + "\"");
+            RequestHandler.sendError(ctx, NOT_FOUND);
+            return;
+        }
+        
+        RequestHandler requestHandler; 
+        try {
+            Constructor ctor = handlerClass.getDeclaredConstructor();
+            requestHandler = (RequestHandler)handlerClass.cast(ctor.newInstance());
+        } catch (Exception e) {
+            Logger.getLogger(this.getClass().getName()).warning("Invalid request for method: \"" + handlerName + "\"");
+            RequestHandler.sendError(ctx, NOT_FOUND);
+            return;    
+        }
+       
                 
         // Handler method signature is
         //
@@ -95,12 +133,13 @@ public class ProtocolMessageHandler extends SimpleChannelInboundHandler<FullHttp
         // String (Client ID, null if not present)
         
         // Try to get method, send 404 if not found
+        Method method;
         try {
-            method = messageHandler.getClass().getMethod(messageType, ChannelHandlerContext.class, FullHttpRequest.class, String.class);
+            method = requestHandler.getClass().getMethod(methodName, ChannelHandlerContext.class, FullHttpRequest.class, String.class);
         } catch (NoSuchMethodException e) {
-            Logger.getLogger(this.getClass().getName()).warning("Invalid request for method: \"" + messageType + "\"");
+            Logger.getLogger(this.getClass().getName()).warning("Invalid request for method: \"" + methodName + "\"");
             
-            messageHandler.sendError(ctx, HttpResponseStatus.NOT_FOUND);
+            RequestHandler.sendError(ctx, HttpResponseStatus.NOT_FOUND);
             return;
         }
         
@@ -112,88 +151,9 @@ public class ProtocolMessageHandler extends SimpleChannelInboundHandler<FullHttp
         }
         
         try {
-            method.invoke(messageHandler, ctx, request, clientID);
+            method.invoke(requestHandler, ctx, request, clientID);
         } catch (Exception e) {
             Logger.getLogger(this.getClass().getName()).log(Level.SEVERE, "Exception thrown while dispatching", e);
         }
     }
-        
-        /*switch (type) {
-            // Phone client methods first
-            case "authenticate_client":
-                // Requesting authentication
-                // TODO 
-                break;
-            case "deauthenticate_client":
-                // Deauthenticating
-                // TODO
-                break;
-            case "request_update":
-                // Opening an HTTP Long polling session for updates
-                // TODO
-                break;
-            case "request_song_update":
-                // Requesting an immediate current song update
-                // TODO
-                break;
-            case "request_like_update":
-                // Requesting an immediate like update
-                // TODO 
-                break;
-            case "request_vote_update":
-                // Requesting an immediate vote update
-                // TODO
-                break;
-            case "request_song_list":
-                // Requesting an immediate song list
-                // TODO
-                break;
-            case "like":
-                // Sending a like for a song
-                // TODO
-                break;
-            case "dislike":
-                // Sending a dislike for a song
-                // TODO
-                break;
-            case "vote":
-                // Sending a vote for a song
-                // TODO
-                break;
-                
-            --------> Speaker Request Dispatch <-------------
-                
-                
-            case "authenticate_speaker":
-                // Request from speaker to authenticate
-                // TODO
-                break;
-            case "deauthenticate_speaker":
-                // Server disconnecting and leaving
-                // TODO
-                break;
-            case "status_update":
-                // Speaker sending status update
-                // TODO
-                break;
-            case "request_speaker_update":
-                // Speaker openning an HTTP long polling connection
-                // to recieve speaker commands
-                // TODO
-                break;
-            case "ready":
-                // Speaker indicating a song is ready to play
-                // TODO
-                break;
-            case "request_song":
-                // Ask server for a given song
-                // TODO
-                break;
-            default:
-                l.warning("Unknown request type: \"" + type + "\" received from client: \"" + clientID + "\"" );
-         
-        }*/
-        
-    private MessageHandler messageHandler;
-
 }

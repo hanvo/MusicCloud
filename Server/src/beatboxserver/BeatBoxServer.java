@@ -6,7 +6,7 @@
 
 package beatboxserver;
 
-import beatboxserver.MessageHandler;
+import beatboxserver.RequestHandler;
 
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.EventLoopGroup;
@@ -46,8 +46,6 @@ public class BeatBoxServer {
         
         // Perform any needed registrations
         
-        MessageHandler handler = new MessageHandler();
-        
         // Initialze netty
         EventLoopGroup bossGroup = new NioEventLoopGroup(1);
         EventLoopGroup workerGroup = new NioEventLoopGroup();
@@ -59,7 +57,7 @@ public class BeatBoxServer {
             ServerBootstrap b = new ServerBootstrap();
             b.group(bossGroup, workerGroup)
                     .channel(NioServerSocketChannel.class)
-                    .childHandler(new BeatboxChannelInitializer(handler));
+                    .childHandler(new BeatboxChannelInitializer());
             
             b.bind(42422 /* TODO TEMP */).channel().closeFuture().sync();
         } finally {

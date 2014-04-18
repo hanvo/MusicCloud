@@ -1,0 +1,127 @@
+/*
+ * To change this license header, choose License Headers in Project Properties.
+ * To change this template file, choose Tools | Templates
+ * and open the template in the editor.
+ */
+
+package beatboxserver;
+
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.handler.codec.http.FullHttpRequest;
+import io.netty.handler.codec.http.HttpMethod;
+import static io.netty.handler.codec.http.HttpResponseStatus.METHOD_NOT_ALLOWED;
+import java.util.logging.Handler;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+/**
+ *
+ * @author rahmanj
+ */
+public class ClientHandler extends RequestHandler {
+    
+    public ClientHandler() {
+        Logger logger = Logger.getLogger(this.getClass().getName());
+        for (Handler h : logger.getHandlers()) {
+            h.setLevel(Level.ALL);
+        }
+    }
+    
+    public void authenticate(ChannelHandlerContext ctx, FullHttpRequest req, String clientID) {
+        if (validateMethod(req, HttpMethod.POST)) {
+            // TODO Process
+        } else {
+            sendError(ctx, METHOD_NOT_ALLOWED);
+        }
+    }
+    
+    
+    public void deauthenticate(ChannelHandlerContext ctx, FullHttpRequest req, String clientID) {
+        if (validateMethod(req,HttpMethod.POST)) {
+            // TODO Process
+        } else {
+            sendError(ctx, METHOD_NOT_ALLOWED);
+        }
+    }
+    
+    
+    public void requestSongList(ChannelHandlerContext ctx, FullHttpRequest req, String clientID) {
+        if (validateMethod(req, HttpMethod.GET)) {
+            
+        } else {
+            sendError(ctx, METHOD_NOT_ALLOWED);
+        }
+    }
+    
+    
+    public void vote(ChannelHandlerContext ctx, FullHttpRequest req, String clientID) {
+        if (validateMethod(req, HttpMethod.POST)) {
+        
+        } else {
+            sendError(ctx, METHOD_NOT_ALLOWED);
+        }
+    }
+    
+    
+    public void like(ChannelHandlerContext ctx, FullHttpRequest req, String clientID) {
+        if (validateMethod(req, HttpMethod.POST)) {
+            
+        } else {
+            sendError(ctx, METHOD_NOT_ALLOWED);
+        }
+    }
+    
+    
+    public void dislike(ChannelHandlerContext ctx, FullHttpRequest req, String clientID) {
+        if (validateMethod(req, HttpMethod.POST)) {
+            
+        } else {
+            sendError(ctx, METHOD_NOT_ALLOWED);
+        }
+    }
+    
+    
+    public void requestUpdate(ChannelHandlerContext ctx, FullHttpRequest req, String clientID) {
+        if (validateMethod(req, HttpMethod.GET)) {
+            
+        } else {
+            sendError(ctx, METHOD_NOT_ALLOWED);
+        }
+    }
+    
+    
+    public void requestLikeUpdate(ChannelHandlerContext ctx, FullHttpRequest req, String clientID) {
+        if (validateMethod(req, HttpMethod.GET)) {
+            
+        } else {
+            sendError(ctx, METHOD_NOT_ALLOWED);
+        }
+    }
+    
+    
+    public void requestVoteUpdate(ChannelHandlerContext ctx, FullHttpRequest req, String clientID) {
+        if (validateMethod(req, HttpMethod.GET)) {
+            
+        } else {
+            sendError(ctx, METHOD_NOT_ALLOWED);
+        }
+    }
+    
+    
+    public void requestSongUpdate(ChannelHandlerContext ctx, FullHttpRequest req, String clientID) {
+        if (validateMethod(req, HttpMethod.GET)) {
+            
+        } else {
+            sendError(ctx, METHOD_NOT_ALLOWED);
+        }
+    }
+    
+    
+    public void requestPhoto(ChannelHandlerContext ctx, FullHttpRequest req, String clientID) {
+        if (validateMethod(req, HttpMethod.GET)) {
+            
+        } else {
+            sendError(ctx, METHOD_NOT_ALLOWED);
+        }
+    }
+}
