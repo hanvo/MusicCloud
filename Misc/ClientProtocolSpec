@@ -62,7 +62,7 @@ Client to Server messages:
 		Description:
 			Attempt to log in to the server
 		Format:
-			"POST /authenticate_client HTTP/1.1\r\n
+			"POST /client/authenticate HTTP/1.1\r\n
 			(<Key>: <Value>\r\n)*
 			 Content-Type: application/json\r\n
 			 Content-Length: <JsonLength>\r\n
@@ -75,7 +75,7 @@ Client to Server messages:
 			Deauthenticate when logging out. Recommended so
 			the server can release client related resources.
 		Format:
-			"POST /deauthenticate_client HTTP/1.1\r\n
+			"POST /client/deauthenticate HTTP/1.1\r\n
 			(<Key>: <Value>\r\n)*
 			 Content-Type: application/json\r\n
 			 Content-Length: <JsonLength>\r\n
@@ -89,7 +89,7 @@ Client to Server messages:
 		Description:
 			Sent to the server to request the current song list
 		Format:
-			"GET /request_song_list?clientID=<ClientID> HTTP/1.1\r\n
+			"GET /client/request_song_list?clientID=<ClientID> HTTP/1.1\r\n
 			(<Key>: <Value>\r\n)*
 			 \r\n"
 		Remarks:
@@ -99,7 +99,7 @@ Client to Server messages:
 		Description:
 			Sent to the server to vote on a song
 		Format:
-			"POST /vote?clientID=<ClientID> HTTP/1.1\r\n
+			"POST /client/vote?clientID=<ClientID> HTTP/1.1\r\n
 			(<Key>: <Value>\r\n)*
 			 Content-Type: application/json\r\n
 			 Content-Length: <JsonLength>\r\n
@@ -111,7 +111,7 @@ Client to Server messages:
 		Description:
 			Sent to the server to like the current song
 		Format:
-			"POST /like?clientID=<ClientID> HTTP/1.1\r\n
+			"POST /client/like?clientID=<ClientID> HTTP/1.1\r\n
 			(<Key>: <Value>\r\n)*
 			 Content-Type: application/json\r\n
 			 Content-Length: <JsonLength>\r\n
@@ -124,7 +124,7 @@ Client to Server messages:
 		Description:
 			Sent to the server to dislike the current song
 		Format:
-			"POST /dislike?clientID=<ClientID> HTTP/1.1\r\n
+			"POST /client/dislike?clientID=<ClientID> HTTP/1.1\r\n
 			 Content-Type: application/json\r\n
 			 Content-Length: <JsonLength>\r\n
 			 \r\n
@@ -136,7 +136,7 @@ Client to Server messages:
 		Description:
 			Request any new updates from the server.
 		Format:
-			"GET /request_client_update?clientID=<ClientID> HTTP/1.1\r\n
+			"GET /client/request_client_update?clientID=<ClientID> HTTP/1.1\r\n
 			(<Key>: <Value>\r\n)*
 			 \r\n"
 		Remarks:
@@ -150,7 +150,7 @@ Client to Server messages:
 		Description:
 			Ask the server to send a like update
 		Format:
-			"GET /request_like_update?clientID=<ClientID> HTTP/1.1\r\n
+			"GET /client/request_like_update?clientID=<ClientID> HTTP/1.1\r\n
 			 (<Key>: <Value>\r\n)*
 			 \r\n"
 		Remarks:
@@ -159,7 +159,7 @@ Client to Server messages:
 		Description:
 			Ask the server to send a vote update
 		Format:
-			"GET /request_vote_update?clientID=<ClientID> HTTP/1.1\r\n
+			"GET /client/request_vote_update?clientID=<ClientID> HTTP/1.1\r\n
 			(<Key>: <Value>\r\n)*
 			 \r\n"
 		Remarks:
@@ -170,7 +170,7 @@ Client to Server messages:
 			Ask the server to send a song update about the current song.
 			Response to this request will be the SONG_UPDATE message.
 		Format:
-			"GET /request_song_update?clientID=<ClientID> HTTP/1.1\r\n
+			"GET /client/request_song_update?clientID=<ClientID> HTTP/1.1\r\n
 			(<Key>: <Value>\r\n)*
 			 \r\n"
 		Remarks:
@@ -180,7 +180,7 @@ Client to Server messages:
 		Description:
 			Ask the server to send a photo for the song with the given id
 		Format:
-			"GET /request_photo?clientID=<ClientID>&songID=<SongID> HTTP/1.1\r\n
+			"GET /client/request_photo?clientID=<ClientID>&songID=<SongID> HTTP/1.1\r\n
 			(<Key>: <Value>\r\n)*
 			\r\n"
 		Remarks:

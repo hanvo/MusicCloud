@@ -66,7 +66,7 @@ Requests: (From Client to server)
 		Description:
 			Attempt to log in to the server
 		Format:
-			"POST /authenticate_speaker HTTP/1.1\r\n
+			"POST /speaker/authenticate HTTP/1.1\r\n
 			(<Key>: <Value>\r\n)*
 			 Content-Type: application/json\r\n
 			 Content-Length: <JsonLength>\r\n
@@ -80,7 +80,7 @@ Requests: (From Client to server)
 			Deauthenticate when closing raspberry pi. Recommended so
 			the server can release client related resources.
 		Format:
-			"POST /deauthenticate_speaker HTTP/1.1\r\n
+			"POST /speaker/deauthenticate HTTP/1.1\r\n
 			(<Key>: <Value>\r\n)*
 			 Content-Type: application/json\r\n
 			 Content-Length: <JsonLength>\r\n
@@ -96,7 +96,7 @@ Requests: (From Client to server)
 			Request any new updates from the server, including playback commands
 			and upcoming song messages
 		Format:
-			"GET /request_speaker_update?clientID=<ClientID> HTTP/1.1\r\n
+			"GET /speaker/request_speaker_update?clientID=<ClientID> HTTP/1.1\r\n
 			(<Key>: <Value>\r\n)*
 			 \r\n"
 		Remarks:
@@ -111,7 +111,7 @@ Requests: (From Client to server)
 		Description:
 			Update the server based on the speakers current status
 		Format:
-			"POST /status_update?clientID=<ClientID> HTTP/1.1\r\n
+			"POST /speaker/status_update?clientID=<ClientID> HTTP/1.1\r\n
 			(<Key>: <Value>\r\n)*
 			 Content-Type: application/json\r\n
 			 Content-Length: <JsonLength>\r\n
@@ -129,7 +129,7 @@ Requests: (From Client to server)
 		Description:
 			Request the audio file for a given song.
 		Format:
-			"GET /request_song?clientID=<ClientID>&songID=<SongID> HTTP/1.1\r\n
+			"GET /speaker/request_song?clientID=<ClientID>&songID=<SongID> HTTP/1.1\r\n
 			(<Key>: <Value>\r\n)*
 			 \r\n"
 		Remarks:
@@ -140,7 +140,7 @@ Requests: (From Client to server)
 		Description:
 			Indicate to the server that the given song is ready to play
 		Format:
-			"POST /ready?clientID=<ClientID> HTTP/1.1\r\n
+			"POST /speaker/ready?clientID=<ClientID> HTTP/1.1\r\n
 			(<Key>: <Value\r\n)*
 			 \r\n
 			 {"id": <SongID>}"
@@ -221,7 +221,7 @@ Responses: (From Server to Client)
 			 }"
 		Remarks:
 			The Pi should cache songs in a resonable fashion,
-			potentially intelligently prefetching the most highly voted songs
+			intelligently prefetching the most highly voted songs
 			in anticipation of recieving a command to play that given song next
 
 
