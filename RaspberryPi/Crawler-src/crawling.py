@@ -30,7 +30,7 @@ def crawl():
     c.execute(sqlStatement)
 
     #sqlStatement = 'create table if not exists ' + table_name + '(id real)'
-    c.execute('''CREATE TABLE if not exists music(id real, song text)''')
+    c.execute('''CREATE TABLE if not exists music(id real, song text, path text)''')
     
 
     #for loop that will recursivly go through the file given
@@ -49,11 +49,10 @@ def crawl():
 
         for x in range(len(filenames)):
             y =  filenames[songCount]
-            c.execute('insert into music values (?,?)', (songCount,y,))
+            path = os.path.join(root,filenames[songCount])
+            c.execute('insert into music values (?,?,?)', (songCount,y,path,))
             songCount = songCount + 1
-        
-        print "Path: ", os.path.join(root,filenames[0])
-        
+                
         #print "File Paths: \n"
         #for filename in filenames:
             #print "Path: ", os.path.join(root,filename)
