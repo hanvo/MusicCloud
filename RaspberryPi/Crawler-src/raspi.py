@@ -33,9 +33,10 @@ def play_back_func:
 	pass
 
 def serv_func:
-	_serv_sock = httplib.HTTPConnection('', 42422, timeout = 60)
+	_serv_sock = httplib.HTTPConnection('', 5050, timeout = 60)
 	_serv_sock.connect()
-	params = json.dump()
+	params = json.dump({"pin":12345},encoding = "ASCII")
+	headers = {"Content-Type": "application/json"}
 	_serv_sock.close()
 
 
