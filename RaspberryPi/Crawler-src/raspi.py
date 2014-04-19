@@ -6,8 +6,9 @@ use three threads.
 
 Thread 1 - This thread will be used for playback.
 Thread 2 - This thread will be used to keep the connection with the Server open
-and when it timesout, the connection will be reopened.
-Thread 3 - This thread will send Thread 1 commands for the song to be played/paused etc.
+and when it timesout, the connection will be reopened and communicate with the playback thread.
+Thread 3 - This thread will send Thread 1 commands for the song to be played/paused etc and also
+communicate with the server.
 
 The threads will use a queue which will be a basic FIFO implementation holding object types
 which represent the request for the thread to execute. When the queue dequeues the thread will 
@@ -24,9 +25,18 @@ thread will wait on the queue.
 from threading import Thread
 import threading
 import httplib
+import json
 
 _Rlock = thread.RLock()
-_playbackstate = 0 # 1 - Play the song , 2 - Pause the song , 3.. other play back options
+
+def play_back_func:
+	pass
+
+def serv_func:
+	_serv_sock = httplib.HTTPConnection('', 42422, timeout = 60)
+	_serv_sock.connect()
+	params = json.dump()
+	_serv_sock.close()
 
 
 
