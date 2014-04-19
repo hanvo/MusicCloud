@@ -3,6 +3,7 @@
 import os 
 import sys
 import sqlite3
+from mutagen.mp3 import MP3
 
 def main():
     crawl()
@@ -10,10 +11,11 @@ def main():
 
 #crawl
 #Obtaining a list of songs from a certain folder
+#Place into a database file "song_list.db"
 #Will place into database(ID TITLE ARTIST ALBUM LENGTHOFSONG(SECONDS) SIZE(BYTES) (ABS PATH)
 #To do:
 #Make it read from a property file
-#Place into a database file "song_list.db"
+
     
 def crawl():
 
@@ -29,8 +31,7 @@ def crawl():
     sqlStatement = 'drop table if exists ' + table_name
     c.execute(sqlStatement)
 
-    #sqlStatement = 'create table if not exists ' + table_name + '(id real)'
-    c.execute('''CREATE TABLE if not exists music(id real, song text, path text)''')
+    c.execute('''CREATE TABLE if not exists music(id real, song text, path text,lengthOfSong real)''')
     
 
     #for loop that will recursivly go through the file given
@@ -50,12 +51,11 @@ def crawl():
         for x in range(len(filenames)):
             y =  filenames[songCount]
             path = os.path.join(root,filenames[songCount])
-            c.execute('insert into music values (?,?,?)', (songCount,y,path,))
+            audio = MP3(path)
+            audioLength = audio.info.length
+            c.execute('insert into music values (?,?,?,?)', (songCount,y,path,audioLength,))
             songCount = songCount + 1
                 
-        #print "File Paths: \n"
-        #for filename in filenames:
-            #print "Path: ", os.path.join(root,filename)
 
     for row in c.execute('SELECT * FROM music'):
         print row
