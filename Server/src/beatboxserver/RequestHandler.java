@@ -10,6 +10,7 @@ package beatboxserver;
 import io.netty.buffer.Unpooled;
 import io.netty.buffer.ByteBuf;
 
+import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelFutureListener;
 
@@ -158,14 +159,14 @@ public class RequestHandler {
      * @param ctx {@link ChannelHandlerContext} to be used to send the response
      * @param response {@link FullHttpResponse} response to be sent to the client
      */
-    public static void sendResponse(ChannelHandlerContext ctx, FullHttpResponse response) {
-        if (ctx != null && response != null) {
-            if ((Boolean)ctx.attr(AttributeKey.valueOf("KeepAlive")).get()) {
+    public static void sendResponse(Channel ch, FullHttpResponse response) {
+        if (ch != null && response != null) {
+            if ((Boolean)ch.attr(AttributeKey.valueOf("KeepAlive")).get()) {
                 // Keep alive in effect
-                ctx.writeAndFlush(response).addListener(ChannelFutureListener.CLOSE_ON_FAILURE);
+                ch.writeAndFlush(response).addListener(ChannelFutureListener.CLOSE_ON_FAILURE);
             } else {
                 // No keep alive
-                ctx.writeAndFlush(response).addListener(ChannelFutureListener.CLOSE);
+                ch.writeAndFlush(response).addListener(ChannelFutureListener.CLOSE);
             }
         } else {
             throw new IllegalArgumentException();

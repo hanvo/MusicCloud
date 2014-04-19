@@ -6,25 +6,16 @@
 
 package beatboxserver;
 
+import beatboxserver.ClientUpdate.UpdateType;
+
 import java.util.HashMap;
+import java.util.ArrayDeque;
 import java.util.Queue;
 
-
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.FutureTask;
-import java.util.concurrent.Future;
-import java.util.concurrent.Executor;
-import java.util.concurrent.Executors;
-
 import io.netty.channel.Channel;
-import io.netty.channel.ChannelFutureListener;
 
 import io.netty.handler.codec.http.FullHttpResponse;
-
-import io.netty.util.Attribute;
-import io.netty.util.AttributeKey;
-
+import io.netty.handler.codec.http.HttpResponseStatus;
 
 
 /**
@@ -35,67 +26,71 @@ public class ClientUpdateQueue {
     
     public ClientUpdateQueue() {
         /*executor = Executors.newFixedThreadPool(1);*/
-        messageQueues = new ConcurrentHashMap<>();
-        channelQueues = new ConcurrentHashMap<>();
+        channelQueue = new ArrayDeque<>();
+        updateTypeQueue = new ArrayDeque<>();
+        updates = new HashMap<>();
     }
     
-    public void queueRequest(String clientID, Channel ch) {
+    /**
+     * Queue an incoming update request to be matched with an update for the client
+     * @param ch {@link Channel} representing the channel the update request was received on
+     */
+    public void queueRequest(Channel ch) {
+        ClientUpdate update;
         FullHttpResponse response;
+        String json;
+        UpdateType updateType;
         
-        // Create empty queue if needed
-        channelQueues.putIfAbsent(clientID, new ConcurrentLinkedQueue<Channel>());
+        if (ch == null) {
+            throw new IllegalArgumentException();
+        }
         
-        synchronized (this) {
-            // Check if messages are available
-            if (messageQueues.containsKey(clientID) && messageQueues.get(clientID).size() > 0) {
-                // Send message
-                response = messageQueues.get(clientID).poll();
-                if (response != null) {
-                    
-                    // Check if keep-alive was set, and send the response
-                    Attribute<String> keepAlive = ch.attr(new AttributeKey<String>("Connection"));
-                    if (keepAlive.get().equalsIgnoreCase("Keep-Alive")) {
-                        ch.write(response).addListener(ChannelFutureListener.CLOSE_ON_FAILURE);
-                    } else {
-                        ch.write(response).addListener(ChannelFutureListener.CLOSE);
-                    }
-                } else {
-                    // Queue channel for later
-                    channelQueues.get(clientID).add(ch);
-                }
+        synchronized(this) {
+            
+            // Check if there are updates to send
+            if (updates.size() > 0) {
+                updateType = updateTypeQueue.element();
+                
+                update = updates.get(updateType);
+                updates.remove(updateType);
+                
+                json = update.toJson();
+                response = RequestHandler.createResponse(HttpResponseStatus.OK, json);
+                
+                RequestHandler.sendResponse(ch, response);
             } else {
-                // Queue channel
-                channelQueues.get(clientID).add(ch);
+                // Enqueue the request
+                channelQueue.add(ch);
             }
+            
         }
         
     }
     
-    public void queueMessage(String clientID, FullHttpResponse message) {
+    /**
+     * Queue a {@ClientUpdate} to be matched with an incoming request
+     * @param update 
+     */
+    public void queueUpdate(ClientUpdate update) {
+        FullHttpResponse response;
+        Channel chan;
+        String json;
         
-        // Create empty queue if needed
-        messageQueues.putIfAbsent(clientID, new ConcurrentLinkedQueue<FullHttpResponse>());
-        
-        synchronized (this) {
-             // Check if a channel is available for use
-            if (channelQueues.containsKey(clientID) && channelQueues.get(clientID).size() > 0) {
+        synchronized(this) {
+            if (channelQueue.size() > 0) {
+                chan = channelQueue.element();
                 
-                Channel chan = channelQueues.get(clientID).poll();
+                json = update.toJson();
+                response = RequestHandler.createResponse(HttpResponseStatus.OK, json);
                 
-                // Check that channel seems viable
-                if (chan != null && chan.isActive() && chan.isOpen()) {
-                    
-                } else {
-                    // Queue message
-                    messageQueues.get(clientID).add(message);
-                }
+                RequestHandler.sendResponse(chan, response);
             } else {
-                // Queue message
-                messageQueues.get(clientID).add(message);
+                updates.put(update.getUpdateType(), update);
             }
         }
     }
     
-    private ConcurrentHashMap<String, ConcurrentLinkedQueue<FullHttpResponse>> messageQueues;
-    private ConcurrentHashMap<String, ConcurrentLinkedQueue<Channel>> channelQueues;
+    private final Queue<Channel> channelQueue;
+    private final HashMap<UpdateType, ClientUpdate> updates;
+    private final Queue<UpdateType> updateTypeQueue;
 }

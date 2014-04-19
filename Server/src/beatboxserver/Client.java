@@ -22,7 +22,10 @@ public class Client {
         }
     }
     
-
+    public String getID() {
+        return id;
+    }
+    
     
     private String id;
 }
