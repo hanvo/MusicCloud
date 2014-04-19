@@ -1,11 +1,9 @@
 #Basic Crawling of a folder of files
-#Need Socket Programming done
 
 import os 
 import sys
 import sqlite3
-
-from mutagen.mp3 import mp3
+from mutagen.mp3 import MP3
 
 def main():
     crawl()
@@ -13,18 +11,34 @@ def main():
 
 #crawl
 #Obtaining a list of songs from a certain folder
+#Place into a database file "song_list.db"
 #Will place into database(ID TITLE ARTIST ALBUM LENGTHOFSONG(SECONDS) SIZE(BYTES) (ABS PATH)
 #To do:
 #Make it read from a property file
-#Place into a database file called 'song.list'
+
     
 def crawl():
+
+    #Pre-Crawl prep for database init
+    location = 'song_list.db'
+    table_name = 'music'
+    conn = sqlite3.connect(location)
+    c = conn.cursor()
+    conn.text_factory = str
+
+
+    #create the tables
+    sqlStatement = 'drop table if exists ' + table_name
+    c.execute(sqlStatement)
+
+    c.execute('''CREATE TABLE if not exists music(id real, song text, path text,lengthOfSong real)''')
+    
 
     #for loop that will recursivly go through the file given
     #Currently just outputs a list of songs within a folder
     x = "root"
     y = "song name"
-    count = 0
+    songCount = 0
     for root, dirnames, filenames in os.walk(r'C:\Users\QuakeZ\Desktop\Music Folder'):
         x = root
         print "Root: ", root
@@ -32,22 +46,22 @@ def crawl():
         print "Song List: \n"
         print '\n'.join(filenames)
         print '\n'       
-        y = filenames[count]
-        count = count + 1
+
+
+        for x in range(len(filenames)):
+            y =  filenames[songCount]
+            path = os.path.join(root,filenames[songCount])
+            audio = MP3(path)
+            audioLength = audio.info.length
+            c.execute('insert into music values (?,?,?,?)', (songCount,y,path,audioLength,))
+            songCount = songCount + 1
+                
+
+    for row in c.execute('SELECT * FROM music'):
+        print row
 
         
-        print "File Paths: \n"
-        for filename in filenames:
-            print "Path: ", os.path.join(root,filename)
-
-    temp = "%s\%s" %(x,y)
-    print "\n"
-    print temp
-        
-    metadata = mp3.Open(temp)    
-        
-
-
+    
 
 if __name__ == "__main__":
         main()
