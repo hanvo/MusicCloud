@@ -10,6 +10,7 @@ import io.netty.handler.codec.http.HttpResponse;
 import io.netty.handler.codec.http.FullHttpResponse;
 import io.netty.channel.group.ChannelGroup;
 
+import java.util.Map;
 import java.util.HashMap;
 
 /**
@@ -18,24 +19,59 @@ import java.util.HashMap;
  */
 public class ClientManager {
     
-    
-    public void createClient() {
-        
+    public void ClientManager(AuthenticationManager authManager) {
+        nextClientID = 0;
+        clientMap = new HashMap<>();
+        authenticationManager = authManager;
     }
     
-    public void broadcastMessage(FullHttpResponse message, Class type) {
-        ChannelGroup grp;
-        if (message != null && type != null) {
-            synchronized (this) {
-                grp = groups.get(type);
-            }
-            
-            
-        } else {
+    
+    public void createClient(String pin) {
+        synchronized(this) {
             
         }
     }
     
+    /**
+     * 
+     * @param c 
+     */
+    public void destroyClient(Client c) {
+        synchronized(this) {
+            clientMap.remove(c.getID());
+        }
+        c.destroyClient();
+    }
     
-    private HashMap<Class, ChannelGroup> groups;
+    /**
+     * 
+     * @param update
+     * @param type 
+     */
+    public void broadcastUpdate(ClientUpdate update, Class type) {
+        synchronized(this) {
+            
+        }
+    }
+    
+    /**
+     * 
+     * @param id
+     * @return 
+     */
+    public boolean validClient(String id) {
+        if (id == null) {
+            throw new IllegalArgumentException();
+        }
+        
+        boolean valid;
+        synchronized (this) {
+            valid = clientMap.containsKey(id);
+        }
+        return valid;
+    }
+    
+    private int nextClientID;
+    private Map<String, Client> clientMap;
+    private AuthenticationManager authenticationManager;
 }

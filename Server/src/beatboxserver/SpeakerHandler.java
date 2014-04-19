@@ -9,10 +9,11 @@ package beatboxserver;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.FullHttpRequest;
 import io.netty.handler.codec.http.HttpMethod;
-import static io.netty.handler.codec.http.HttpResponseStatus.METHOD_NOT_ALLOWED;
 import java.util.logging.Handler;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
+import static io.netty.handler.codec.http.HttpResponseStatus.*;
 
 /**
  *
@@ -29,7 +30,7 @@ public class SpeakerHandler extends RequestHandler {
     
     public void authenticate(ChannelHandlerContext ctx, FullHttpRequest req, String clientID) {
         if (validateMethod(req, HttpMethod.POST)) {
-            
+            sendError(ctx, NOT_IMPLEMENTED);
         } else {
             sendError(ctx, METHOD_NOT_ALLOWED);
         }
@@ -38,7 +39,7 @@ public class SpeakerHandler extends RequestHandler {
     
     public void deauthenticate(ChannelHandlerContext ctx, FullHttpRequest req, String clientID) {
        if (validateMethod(req, HttpMethod.POST)) {
-           
+           sendError(ctx, NOT_IMPLEMENTED);
        } else {
            sendError(ctx, METHOD_NOT_ALLOWED);
        }
@@ -47,7 +48,7 @@ public class SpeakerHandler extends RequestHandler {
     
     public void requestSpeakerUpdate(ChannelHandlerContext ctx, FullHttpRequest req, String clientID) {
         if (validateMethod(req, HttpMethod.GET)) {
-            
+            sendError(ctx, NOT_IMPLEMENTED);
         } else {
             sendError(ctx, METHOD_NOT_ALLOWED);
         }
@@ -56,7 +57,7 @@ public class SpeakerHandler extends RequestHandler {
     
     public void statusUpdate(ChannelHandlerContext ctx, FullHttpRequest req, String clientID) {
         if (validateMethod(req, HttpMethod.POST)) {
-            
+            sendError(ctx, NOT_IMPLEMENTED);
         } else {
             sendError(ctx, METHOD_NOT_ALLOWED);
         }
@@ -65,7 +66,7 @@ public class SpeakerHandler extends RequestHandler {
     
     public void requestSong(ChannelHandlerContext ctx, FullHttpRequest req, String clientID) {
         if (validateMethod(req, HttpMethod.GET)) {
-            
+            sendError(ctx, NOT_IMPLEMENTED);
         } else {
             sendError(ctx, METHOD_NOT_ALLOWED);
         }
@@ -74,7 +75,7 @@ public class SpeakerHandler extends RequestHandler {
     
     public void ready(ChannelHandlerContext ctx, FullHttpRequest req, String clientID) {
         if (validateMethod(req,HttpMethod.POST)) {
-            
+            sendError(ctx, NOT_IMPLEMENTED);
         } else {
             sendError(ctx, METHOD_NOT_ALLOWED);
         }

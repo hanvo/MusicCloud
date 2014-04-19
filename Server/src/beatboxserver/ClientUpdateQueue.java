@@ -49,7 +49,7 @@ public class ClientUpdateQueue {
             
             // Check if there are updates to send
             if (updates.size() > 0) {
-                updateType = updateTypeQueue.element();
+                updateType = updateTypeQueue.poll();
                 
                 update = updates.get(updateType);
                 updates.remove(updateType);
@@ -78,7 +78,7 @@ public class ClientUpdateQueue {
         
         synchronized(this) {
             if (channelQueue.size() > 0) {
-                chan = channelQueue.element();
+                chan = channelQueue.poll();
                 
                 json = update.toJson();
                 response = RequestHandler.createResponse(HttpResponseStatus.OK, json);
@@ -86,6 +86,20 @@ public class ClientUpdateQueue {
                 RequestHandler.sendResponse(chan, response);
             } else {
                 updates.put(update.getUpdateType(), update);
+            }
+        }
+    }
+    
+    /**
+     * Close any pending channel requests waiting
+     */
+    public void closePendingRequests() {
+        synchronized(this) {
+            Channel chan;
+            while (channelQueue.size() > 0) {
+                chan = channelQueue.element();
+                channelQueue.poll();
+                chan.close();
             }
         }
     }

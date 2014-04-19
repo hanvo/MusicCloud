@@ -14,12 +14,47 @@ import io.netty.channel.Channel;
  */
 public class Client {
     
-    public Client(String id) {
+    public enum ClientType {User, Speaker};
+    
+    /**
+     * 
+     * @param id
+     * @param type 
+     */
+    public Client(String id, ClientType type) {
         if (id != null) {
             this.id = id;
+            this.clientType = type;
         } else {
             throw new IllegalArgumentException();
         }
+    }
+    
+    /**
+     * Destroy the client and close pending requests
+     */
+    public void destroyClient() {
+        updateQueue.closePendingRequests();
+    }
+    
+    /**
+     * 
+     * @param update 
+     */
+    public void sendUpdate(ClientUpdate update) {
+        if (update == null) {
+            throw new IllegalArgumentException();
+        }
+        updateQueue.queueUpdate(update);
+    }
+    
+    
+    /**
+     * 
+     * @param ch 
+     */
+    public void assignRequest(Channel ch) {
+        updateQueue.queueRequest(ch);
     }
     
     public String getID() {
@@ -27,5 +62,8 @@ public class Client {
     }
     
     
+    
+    private ClientUpdateQueue updateQueue;
+    private ClientType clientType;
     private String id;
 }
