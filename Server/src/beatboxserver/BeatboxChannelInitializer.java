@@ -28,9 +28,10 @@ public class BeatboxChannelInitializer extends ChannelInitializer<SocketChannel>
     
     /**
      * Construct a new instance of {@link BeatboxChannelInitializer}
-     * @param handler {@link RequestHandler} The message handler that will react to messages
+     * @param clientManager {@link ClientManager} for the server's clients
+     * @param songManager {@link SongManager} for the song selection
      */
-    public BeatboxChannelInitializer() {
+    public BeatboxChannelInitializer(ClientManager clientManager, SongManager songManager) {
         Logger logger = Logger.getLogger(this.getClass().getName());
         for (Handler h : logger.getHandlers()) {
             h.setLevel(Level.ALL);
@@ -53,6 +54,9 @@ public class BeatboxChannelInitializer extends ChannelInitializer<SocketChannel>
         pipeline.addLast("decoder", new HttpRequestDecoder());
         pipeline.addLast("encoder", new HttpResponseEncoder());
         pipeline.addLast("aggregator", new HttpObjectAggregator(65536));
-        pipeline.addLast("handler", new ProtocolMessageHandler());
+        pipeline.addLast("handler", new ProtocolMessageHandler(clientMgr, songMgr));
     }
+    
+    private ClientManager clientMgr;
+    private SongManager songMgr;
 }

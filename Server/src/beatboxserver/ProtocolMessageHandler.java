@@ -35,12 +35,17 @@ import java.util.logging.Level;
 import static io.netty.handler.codec.http.HttpResponseStatus.*;
 
 /**
- *
+ * 
  * @author rahmanj
  */
 public class ProtocolMessageHandler extends SimpleChannelInboundHandler<FullHttpRequest> {
     
-    public ProtocolMessageHandler() {
+    /**
+     * Construct new instance of the {@link ProtocolMessageHandler}
+     * @param clientManager {@link ClientManager} to use when handling messages
+     * @param songManager {@link SongManager} to use when handling messages
+     */
+    public ProtocolMessageHandler(ClientManager clientManager, SongManager songManager) {
         Logger logger = Logger.getLogger(this.getClass().getName());
         for (Handler h : logger.getHandlers()) {
             h.setLevel(Level.ALL);
@@ -61,8 +66,8 @@ public class ProtocolMessageHandler extends SimpleChannelInboundHandler<FullHttp
     
     /**
      * Dispatch a request based on given information
-     * @param request
-     * @param ctx 
+     * @param request {@link FullHttpRequest} to be dispatched to the appropriate handler class and method
+     * @param ctx {@link ChannelHandlerContext} for this request
      */
     protected void dispatchRequest(FullHttpRequest request, ChannelHandlerContext ctx) {
         
@@ -77,7 +82,7 @@ public class ProtocolMessageHandler extends SimpleChannelInboundHandler<FullHttp
         String[] components = path.split("/");
         if (components.length != 3) {
             Logger.getLogger(this.getClass().getName()).warning("Invalid request for method: \"" + path + "\"");
-            RequestHandler.sendError(ctx, NOT_FOUND);
+            RequestHandler.sendError(ctx.channel(), NOT_FOUND);
             return;
         }
         
@@ -106,22 +111,22 @@ public class ProtocolMessageHandler extends SimpleChannelInboundHandler<FullHttp
         try {
             handlerClass = Class.forName(handlerName);
             if (!RequestHandler.class.isAssignableFrom(handlerClass)) {
-                RequestHandler.sendError(ctx, NOT_FOUND);
+                RequestHandler.sendError(ctx.channel(), NOT_FOUND);
                 return;
             }
         } catch (ClassNotFoundException e) {
             Logger.getLogger(this.getClass().getName()).warning("Invalid request for handler: \"" + handlerName + "\"");
-            RequestHandler.sendError(ctx, NOT_FOUND);
+            RequestHandler.sendError(ctx.channel(), NOT_FOUND);
             return;
         }
         
         RequestHandler requestHandler; 
         try {
-            Constructor ctor = handlerClass.getDeclaredConstructor();
+            Constructor ctor = handlerClass.getDeclaredConstructor(ClientManager.class, SongManager.class);
             requestHandler = (RequestHandler)handlerClass.cast(ctor.newInstance());
         } catch (Exception e) {
             Logger.getLogger(this.getClass().getName()).warning("Invalid request for method: \"" + handlerName + "\"");
-            RequestHandler.sendError(ctx, NOT_FOUND);
+            RequestHandler.sendError(ctx.channel(), NOT_FOUND);
             return;    
         }
        
@@ -139,7 +144,7 @@ public class ProtocolMessageHandler extends SimpleChannelInboundHandler<FullHttp
         } catch (NoSuchMethodException e) {
             Logger.getLogger(this.getClass().getName()).warning("Invalid request for method: \"" + methodName + "\"");
             
-            RequestHandler.sendError(ctx, HttpResponseStatus.NOT_FOUND);
+            RequestHandler.sendError(ctx.channel(), HttpResponseStatus.NOT_FOUND);
             return;
         }
         
@@ -156,4 +161,7 @@ public class ProtocolMessageHandler extends SimpleChannelInboundHandler<FullHttp
             Logger.getLogger(this.getClass().getName()).log(Level.SEVERE, "Exception thrown while dispatching", e);
         }
     }
+    
+    private ClientManager clientMgr;
+    private SongManager songMgr;
 }

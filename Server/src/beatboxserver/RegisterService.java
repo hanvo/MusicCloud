@@ -34,10 +34,13 @@ public class RegisterService {
      * @param serverName {@link String} Human readable server name
      * @param serverPort Port over which the server is operating
      */
-    public static void registerService(String serverName, int serverPort) throws IOException {
+    public static void registerService(String serverName, int serverPort) throws IOException {  
         JmDNS dns = JmDNS.create();
         
         String instanceName = RegisterService.normalizeServerName(serverName);
+        
+        String logMessage = "Registering mDNS name \"" + instanceName + "." + serviceName + ":" + serverPort+ "\"";
+        Logger.getLogger(RegisterService.class.getName()).info(logMessage);
         
         ServiceInfo info = ServiceInfo.create(serviceName, instanceName, serverPort, serverName);
         

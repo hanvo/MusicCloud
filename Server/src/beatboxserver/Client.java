@@ -8,6 +8,9 @@ package beatboxserver;
 
 import io.netty.channel.Channel;
 
+import java.util.Map;
+import java.util.HashMap;
+
 /**
  *
  * @author rahmanj
@@ -28,6 +31,15 @@ public class Client {
         } else {
             throw new IllegalArgumentException();
         }
+    }
+    
+    
+    /**
+     * 
+     * @return 
+     */
+    public String getID() {
+        return id;
     }
     
     /**
@@ -57,13 +69,7 @@ public class Client {
         updateQueue.queueRequest(ch);
     }
     
-    public String getID() {
-        return id;
-    }
-    
-    
-    
-    private ClientUpdateQueue updateQueue;
     private ClientType clientType;
     private String id;
+    private ClientUpdateQueue updateQueue;
 }

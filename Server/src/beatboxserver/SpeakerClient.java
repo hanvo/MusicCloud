@@ -13,6 +13,6 @@ package beatboxserver;
 public class SpeakerClient extends Client {
     
     public SpeakerClient(String id) {
-        super(id);
+        super(id, ClientType.Speaker);
     }
 }

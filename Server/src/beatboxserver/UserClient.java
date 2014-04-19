@@ -6,12 +6,30 @@
 
 package beatboxserver;
 
+import io.netty.channel.Channel;
+import java.util.HashMap;
+import java.util.Map;
+
 /**
  *
  * @author rahmanj
  */
 public class UserClient extends Client {
     public UserClient(String id) {
-        super(id);
+        super(id, ClientType.User);
+        
+        likedSongs = new HashMap<>();
+        dislikedSongs = new HashMap<>();
+        votedSong = null;
     }
+    
+    
+    public boolean likesSong(Song song) {
+        return likedSongs.containsKey(song.getID());
+    }
+    
+    
+    private Map<String, Boolean> likedSongs;
+    private Map<String, Boolean> dislikedSongs;
+    private String votedSong;
 }

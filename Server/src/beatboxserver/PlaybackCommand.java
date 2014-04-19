@@ -6,10 +6,34 @@
 
 package beatboxserver;
 
+
+import com.google.gson.annotations.Expose;
+
 /**
  *
  * @author rahmanj
  */
 public class PlaybackCommand {
     
+    /**
+     * 
+     */
+    public enum Command {Play, Pause, Stop};
+    
+    /**
+     * 
+     * @param command
+     * @param songID 
+     */
+    public PlaybackCommand(Command command, String songID) {
+        this.command = command;
+        id = songID;
+    }
+    
+    
+    @Expose
+    private Command command;
+    
+    @Expose
+    private String id;
 }

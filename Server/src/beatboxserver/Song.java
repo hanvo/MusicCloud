@@ -14,16 +14,66 @@ import com.google.gson.annotations.Expose;
  */
 public class Song {
     
+    /**
+     * 
+     * @param songName
+     * @param songArtist
+     * @param songAlbum
+     * @param songPath
+     * @param songCoverPath
+     * @param songLength 
+     */
     public Song(String songName, String songArtist, String songAlbum, String songPath, String songCoverPath, int songLength) {
-        name = new String(songName);
-        artist = new String(songArtist);
-        album = new String(songAlbum);
-        path = new String(songPath);
-        coverPath = new String(songCoverPath);
+        name = songName;
+        artist = songArtist;
+        album = songAlbum;
+        path = songPath;
+        coverPath = songCoverPath;
         length = songLength;
     }
     
+    /**
+     * 
+     * @return 
+     */
+    public String getID() {
+        return id;
+    }
     
+    /**
+     * 
+     * @return 
+     */
+    public String getName() {
+        return name;
+    }
+    
+    /**
+     * 
+     * @return 
+     */
+    public String getArtist() {
+        return artist;
+    }
+    
+    /**
+     * 
+     * @return 
+     */
+    public String getAlbum() {
+        return album;
+    }
+    
+    /**
+     * 
+     * @return 
+     */
+    public int getLenth() {
+        return length;
+    }
+    
+    @Expose
+    private String id;
     
     @Expose
     private String name;

@@ -6,8 +6,6 @@
 
 package beatboxserver;
 
-import beatboxserver.RequestHandler;
-
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
@@ -17,6 +15,7 @@ import java.util.logging.Handler;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import java.io.IOException;
 
 
 
@@ -24,13 +23,16 @@ import java.util.logging.Logger;
  *
  * @author rahmanj
  */
-public class BeatBoxServer {
+public class BeatboxServer {
     
-    public BeatBoxServer() {
+    public BeatboxServer(ClientManager clientManager, SongManager songManager) {
         Logger logger = Logger.getLogger(this.getClass().getName());
         for (Handler h : logger.getHandlers()) {
             h.setLevel(Level.ALL);
         }
+        
+        this.clientManager = clientManager;
+        this.songManager = songManager;
     }
     
     public void run() throws InterruptedException {
@@ -50,6 +52,13 @@ public class BeatBoxServer {
         EventLoopGroup bossGroup = new NioEventLoopGroup(1);
         EventLoopGroup workerGroup = new NioEventLoopGroup();
         
+        // Register service
+        try {
+            RegisterService.registerService("Beatbox Central Server", RegisterService.servicePort);
+        } catch (IOException e) {
+            Logger.getLogger(this.getClass().getName()).log(Level.SEVERE, "Failed to register service", e);
+        }
+        
         // Start the server and register our channel initializer
         try {
             Logger.getLogger(this.getClass().getName()).info("Starting server");
@@ -57,11 +66,11 @@ public class BeatBoxServer {
             ServerBootstrap b = new ServerBootstrap();
             b.group(bossGroup, workerGroup)
                     .channel(NioServerSocketChannel.class)
-                    .childHandler(new BeatboxChannelInitializer());
+                    .childHandler(new BeatboxChannelInitializer(clientManager, songManager));
             
-            b.bind(42422 /* TODO TEMP */).channel().closeFuture().sync();
+            b.bind(RegisterService.servicePort /* TODO TEMP */).channel().closeFuture().sync();
         } finally {
-            Logger.getLogger(BeatBoxServer.class.getName()).info("Shutting down server...");
+            Logger.getLogger(BeatboxServer.class.getName()).info("Shutting down server...");
             
             bossGroup.shutdownGracefully();
             workerGroup.shutdownGracefully();
@@ -70,7 +79,11 @@ public class BeatBoxServer {
     
     public static void main(String[] args) {
          
-        BeatBoxServer server = new BeatBoxServer();
+        AuthenticationManager authManager = new AuthenticationManager();
+        ClientManager clientManager = new ClientManager(authManager);
+        SongManager songManager = new SongManager();
+        
+        BeatboxServer server = new BeatboxServer(clientManager, songManager);
         
         try {
             server.run();
@@ -78,4 +91,7 @@ public class BeatBoxServer {
             Logger.getLogger(server.getClass().getName()).log(Level.SEVERE, "Exception thrown in run()", e);
         }
     }
+    
+    private ClientManager clientManager;
+    private SongManager songManager;
 }
