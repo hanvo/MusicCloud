@@ -4,15 +4,16 @@
  * and open the template in the editor.
  */
 
-package beatboxserver;
+package beatboxserver.updates;
+
+import beatboxserver.ActiveSong;
 
 /**
  *
  * @author rahmanj
  */
-public class SpeakerClient extends Client {
-    
-    public SpeakerClient(String id) {
-        super(id, ClientType.Speaker);
+public class SongUpdate extends ClientUpdate<ActiveSong> {
+    public SongUpdate(ActiveSong song) {
+        super(UpdateType.current_song, song);
     }
 }

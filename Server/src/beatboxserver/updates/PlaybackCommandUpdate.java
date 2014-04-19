@@ -4,16 +4,14 @@
  * and open the template in the editor.
  */
 
-package beatboxserver;
-
-import java.util.Map;
+package beatboxserver.updates;
 
 /**
  *
  * @author rahmanj
  */
-public class LikeUpdate extends ClientUpdate<Map<String, LikeData>> {
-    public LikeUpdate(Map<String, LikeData> likes) {
-        super(UpdateType.likes, likes);
+public class PlaybackCommandUpdate extends ClientUpdate<PlaybackCommand> {
+    public PlaybackCommandUpdate(PlaybackCommand command) {
+        super(UpdateType.playback_command, command);
     }
 }

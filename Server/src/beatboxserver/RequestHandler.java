@@ -40,13 +40,25 @@ import static io.netty.handler.codec.http.HttpHeaders.Names.*;
  * Giant class to hold all our logic to handle messages
  * @author rahmanj
  */
-public class RequestHandler {
+public abstract class RequestHandler {
     
-    public RequestHandler() {
+    /**
+     * Constructor for {@link RequestHandler}
+     * @param clientManager {@link ClientManager} for the server
+     * @param songManager {@link SongManager} for the server
+     */
+    public RequestHandler(ClientManager clientManager, SongManager songManager) {
         Logger logger = Logger.getLogger(this.getClass().getName());
         for (Handler h : logger.getHandlers()) {
             h.setLevel(Level.ALL);
         }
+        
+        if (clientManager == null || songManager == null) {
+            throw new IllegalArgumentException();
+        }
+        
+        clientMgr = clientManager;
+        songMgr = songManager;
     }
     
     /**
@@ -109,6 +121,7 @@ public class RequestHandler {
         }
         
         // Stich these together
+        sb.append(RequestHandler.class.getPackage().getName());
         for (String s : components) {
             sb.append(s);
         }
@@ -136,18 +149,18 @@ public class RequestHandler {
    
     /**
      * Send an error response to the client
-     * @param ctx {@link ChannelHandlerContext} to be used to send the error message
+     * @param ch {@link Channel} to be used to send the error message
      * @param status {@link HttpResponseStatus} indicating the error condition
      */
-    public static void sendError(ChannelHandlerContext ctx, HttpResponseStatus status) {
-        if (ctx != null && status != null) {
+    public static void sendError(Channel ch, HttpResponseStatus status) {
+        if (ch != null && status != null) {
             ByteBuf message = Unpooled.copiedBuffer("Failure: " + status.toString() + "\r\n", CharsetUtil.US_ASCII);
             
             FullHttpResponse res = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, status, message);
             res.headers().set(HttpHeaders.Names.CONTENT_TYPE, "text/plain; charset=ASCII");
             
             // Write the response back
-            ctx.writeAndFlush(res).addListener(ChannelFutureListener.CLOSE);
+            ch.writeAndFlush(res).addListener(ChannelFutureListener.CLOSE);
             
         } else {
             throw new IllegalArgumentException();
@@ -156,7 +169,7 @@ public class RequestHandler {
     
     /**
      * Send a given response object to the client
-     * @param ctx {@link ChannelHandlerContext} to be used to send the response
+     * @param ch {@link Channel} to be used to send the response
      * @param response {@link FullHttpResponse} response to be sent to the client
      */
     public static void sendResponse(Channel ch, FullHttpResponse response) {
@@ -218,4 +231,7 @@ public class RequestHandler {
             throw new IllegalArgumentException();
         }
     }
+    
+    protected ClientManager clientMgr;
+    protected SongManager songMgr;
 }

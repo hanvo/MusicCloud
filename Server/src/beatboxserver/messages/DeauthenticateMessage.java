@@ -4,15 +4,15 @@
  * and open the template in the editor.
  */
 
-package beatboxserver;
+package beatboxserver.messages;
 
 /**
  *
  * @author rahmanj
  */
-public class SpeakerClient extends Client {
+public class DeauthenticateMessage extends Message {
     
-    public SpeakerClient(String id) {
-        super(id, ClientType.Speaker);
+    public DeauthenticateMessage() {
+        super(MessageType.DeauthenticateMessage);
     }
 }

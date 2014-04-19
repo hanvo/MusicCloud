@@ -4,15 +4,16 @@
  * and open the template in the editor.
  */
 
-package beatboxserver;
+package beatboxserver.messages;
 
 /**
  *
  * @author rahmanj
  */
-public class SpeakerClient extends Client {
+public class LikeMessage extends Message {
     
-    public SpeakerClient(String id) {
-        super(id, ClientType.Speaker);
+    public LikeMessage() {
+        super(MessageType.LikeMessage);
     }
+    
 }

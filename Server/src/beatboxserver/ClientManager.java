@@ -6,6 +6,7 @@
 
 package beatboxserver;
 
+import beatboxserver.updates.ClientUpdate;
 import io.netty.handler.codec.http.HttpResponse;
 import io.netty.handler.codec.http.FullHttpResponse;
 import io.netty.channel.group.ChannelGroup;
@@ -19,7 +20,7 @@ import java.util.HashMap;
  */
 public class ClientManager {
     
-    public void ClientManager(AuthenticationManager authManager) {
+    public ClientManager(AuthenticationManager authManager) {
         nextClientID = 0;
         clientMap = new HashMap<>();
         authenticationManager = authManager;

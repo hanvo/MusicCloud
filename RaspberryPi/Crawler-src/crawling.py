@@ -1,4 +1,17 @@
-#Basic Crawling of a folder of files
+#File Crawling
+#Things that are done:
+# -Crawling of music files
+# -Inserting and storing in a local Database (Song_list.db)
+# -Database: ID, Title, Absolute file path(Storing is wrong. Double Slash), LengthofSong(Seconds)
+#
+#Still Need:
+# -Database: Artist, Album, Size of File, 
+# -Have a properties file 
+#   -Folder Location
+#   
+
+#Don Phan
+#CS 252 - Lab6
 
 import os 
 import sys
@@ -7,14 +20,6 @@ from mutagen.mp3 import MP3
 
 def main():
     crawl()
-    
-
-#crawl
-#Obtaining a list of songs from a certain folder
-#Place into a database file "song_list.db"
-#Will place into database(ID TITLE ARTIST ALBUM LENGTHOFSONG(SECONDS) SIZE(BYTES) (ABS PATH)
-#To do:
-#Make it read from a property file
 
     
 def crawl():
@@ -60,8 +65,6 @@ def crawl():
     for row in c.execute('SELECT * FROM music'):
         print row
 
-        
-    
 
 if __name__ == "__main__":
         main()
