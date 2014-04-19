@@ -20,7 +20,13 @@ public class Message {
         messageType = type;
     }
     
-    
+    /**
+     * 
+     * @param name
+     * @param json
+     * @return
+     * @throws ClassNotFoundException 
+     */
     public static final Message constructMessage(String name, String json) throws ClassNotFoundException {
         if (name == null || json == null) {
             throw new IllegalArgumentException();
@@ -30,7 +36,7 @@ public class Message {
         Class messageClass = Class.forName(name);
         Gson gson = (new GsonBuilder()).create();
         
-        // Check if messageClass is a subclass as required
+        // Check if messageClass is a subclass of Message as required
         if (!Message.class.isAssignableFrom(messageClass)) {
             throw new ClassNotFoundException();
         }
@@ -66,7 +72,7 @@ public class Message {
         for (String s : components) {
             sb.append(s);
         }
-        sb.append("Handler");
+        sb.append("Message");
         
         return sb.toString();
     }
