@@ -6,6 +6,7 @@
 
 package beatboxserver;
 
+import beatboxserver.updates.ClientUpdate;
 import io.netty.channel.Channel;
 
 import java.util.Map;

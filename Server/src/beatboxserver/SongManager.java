@@ -6,18 +6,22 @@
 
 package beatboxserver;
 
+import java.util.Map;
+import java.util.HashMap;
+
 /**
  *
  * @author rahmanj
  */
 public class SongManager {
     
-    
+    public SongManager() {
+        songMap = new HashMap<>();
+    }
     
     
     public void vote(Song song, UserClient client) {
         synchronized(this) {
-            
         }
     }
     
@@ -32,4 +36,7 @@ public class SongManager {
             
         }
     }
+    
+    
+    private Map<String, Song> songMap;
 }

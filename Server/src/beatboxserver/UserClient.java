@@ -28,6 +28,14 @@ public class UserClient extends Client {
         return likedSongs.containsKey(song.getID());
     }
     
+    public boolean dislikesSong(Song song) {
+        return dislikedSongs.containsKey(song.getID());
+    }
+    
+    public boolean votedOn(Song song) {
+        return song.getID().equals(votedSong);
+    }
+    
     
     private Map<String, Boolean> likedSongs;
     private Map<String, Boolean> dislikedSongs;

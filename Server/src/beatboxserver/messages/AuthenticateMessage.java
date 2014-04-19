@@ -4,12 +4,17 @@
  * and open the template in the editor.
  */
 
-package beatboxserver;
+package beatboxserver.messages;
+
+import com.google.gson.annotations.Expose;
 
 /**
  *
  * @author rahmanj
  */
-public class LikeData {
+public class AuthenticateMessage extends Message {
     
+    public AuthenticateMessage() {
+        super(MessageType.AuthenticateMessage);
+    }
 }

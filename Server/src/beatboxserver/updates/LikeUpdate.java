@@ -4,7 +4,7 @@
  * and open the template in the editor.
  */
 
-package beatboxserver;
+package beatboxserver.updates;
 
 import java.util.Map;
 
@@ -12,8 +12,8 @@ import java.util.Map;
  *
  * @author rahmanj
  */
-public class VoteUpdate extends ClientUpdate<Map<String, Integer>>{
-    public VoteUpdate(Map<String, Integer> votes) {
-        super(UpdateType.votes, votes);
+public class LikeUpdate extends ClientUpdate<Map<String, LikeData>> {
+    public LikeUpdate(Map<String, LikeData> likes) {
+        super(UpdateType.likes, likes);
     }
 }

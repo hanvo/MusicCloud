@@ -6,7 +6,8 @@
 
 package beatboxserver;
 
-import beatboxserver.ClientUpdate.UpdateType;
+import beatboxserver.updates.ClientUpdate;
+import beatboxserver.updates.ClientUpdate.UpdateType;
 
 import java.util.HashMap;
 import java.util.ArrayDeque;

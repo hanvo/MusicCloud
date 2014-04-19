@@ -4,14 +4,16 @@
  * and open the template in the editor.
  */
 
-package beatboxserver;
+package beatboxserver.updates;
+
+import beatboxserver.Song;
 
 /**
  *
  * @author rahmanj
  */
-public class PlaybackCommandUpdate extends ClientUpdate<PlaybackCommand> {
-    public PlaybackCommandUpdate(PlaybackCommand command) {
-        super(UpdateType.playback_command, command);
+public class UpcomingSongUpdate extends ClientUpdate<Song> {
+    public UpcomingSongUpdate(Song s) {
+        super(UpdateType.upcoming_song, s);
     }
 }

@@ -6,6 +6,7 @@
 
 package beatboxserver;
 
+import beatboxserver.updates.ClientUpdate;
 import io.netty.handler.codec.http.HttpResponse;
 import io.netty.handler.codec.http.FullHttpResponse;
 import io.netty.channel.group.ChannelGroup;

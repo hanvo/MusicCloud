@@ -4,14 +4,15 @@
  * and open the template in the editor.
  */
 
-package beatboxserver;
+package beatboxserver.messages;
 
 /**
  *
  * @author rahmanj
  */
-public class UpcomingSongUpdate extends ClientUpdate<Song> {
-    public UpcomingSongUpdate(Song s) {
-        super(UpdateType.upcoming_song, s);
+public class StatusUpdateMessage extends Message {
+    
+    public StatusUpdateMessage() {
+        super(MessageType.StatusUpdateMessage);
     }
 }

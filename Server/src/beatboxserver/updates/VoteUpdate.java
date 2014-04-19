@@ -4,14 +4,16 @@
  * and open the template in the editor.
  */
 
-package beatboxserver;
+package beatboxserver.updates;
+
+import java.util.Map;
 
 /**
  *
  * @author rahmanj
  */
-public class SongUpdate extends ClientUpdate<ActiveSong> {
-    public SongUpdate(ActiveSong song) {
-        super(UpdateType.current_song, song);
+public class VoteUpdate extends ClientUpdate<Map<String, Integer>>{
+    public VoteUpdate(Map<String, Integer> votes) {
+        super(UpdateType.votes, votes);
     }
 }
