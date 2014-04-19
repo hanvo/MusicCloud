@@ -69,6 +69,7 @@ public class Message {
         
         // Stich these together
         sb.append(Message.class.getPackage().getName());
+        sb.append(".");
         for (String s : components) {
             sb.append(s);
         }

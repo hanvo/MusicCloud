@@ -69,6 +69,8 @@ public class BeatboxServer {
                     .childHandler(new BeatboxChannelInitializer(clientManager, songManager));
             
             b.bind(RegisterService.servicePort /* TODO TEMP */).channel().closeFuture().sync();
+        } catch (Exception e) {
+            Logger.getLogger(BeatboxServer.class.getName()).log(Level.SEVERE, "Exception while starting server", e);
         } finally {
             Logger.getLogger(BeatboxServer.class.getName()).info("Shutting down server...");
             
