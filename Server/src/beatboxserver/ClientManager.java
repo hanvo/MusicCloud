@@ -14,6 +14,9 @@ import io.netty.channel.group.ChannelGroup;
 import java.util.Map;
 import java.util.HashMap;
 
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
+
 /**
  *
  * @author rahmanj
@@ -26,11 +29,37 @@ public class ClientManager {
         authenticationManager = authManager;
     }
     
-    
-    public void createClient(String pin) {
-        synchronized(this) {
-            
+    /**
+     * 
+     * @param pin
+     * @param clientType
+     * @return
+     * @throws InvocationTargetException
+     */
+    public Client createClient(String pin, Class clientType) throws InvocationTargetException {
+        if (pin == null || clientType == null) {
+            throw new IllegalArgumentException();
         }
+        
+        Client client;
+        String newID;
+        // TODO, Use auth manager to login via pin
+        
+        synchronized(this) {
+            if (!Client.class.isAssignableFrom(clientType)) {
+                throw new IllegalArgumentException("Invalid class type, must be subclass of Client");
+            } 
+            
+            newID = String.valueOf(nextClientID++);
+            
+            try {
+                Constructor ctor = clientType.getDeclaredConstructor(String.class);
+                client = (Client)ctor.newInstance(newID);
+            } catch (Exception e) {
+                throw new InvocationTargetException(e);
+            }
+        }
+        return client;
     }
     
     /**
@@ -40,8 +69,8 @@ public class ClientManager {
     public void destroyClient(Client c) {
         synchronized(this) {
             clientMap.remove(c.getID());
+            c.destroyClient();
         }
-        c.destroyClient();
     }
     
     /**
@@ -53,6 +82,28 @@ public class ClientManager {
         synchronized(this) {
             
         }
+    }
+    
+    /**
+     * 
+     * @param id
+     * @return 
+     */
+    public Client getClient(String id) {
+        Client c;
+        
+        if (id == null) {
+            throw new IllegalArgumentException();
+        }
+        
+        synchronized(this) {
+            if (clientMap.containsKey(id)) {
+                c = clientMap.get(id);
+            } else {
+                c = null;
+            }
+        }
+        return c;
     }
     
     /**

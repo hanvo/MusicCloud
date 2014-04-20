@@ -6,12 +6,10 @@
 
 package beatboxserver;
 
-
 import io.netty.buffer.Unpooled;
 import io.netty.buffer.ByteBuf;
 
 import io.netty.channel.Channel;
-import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelFutureListener;
 
 import io.netty.handler.codec.http.QueryStringDecoder;
@@ -33,7 +31,6 @@ import java.util.logging.Logger;
 import java.util.logging.Handler;
 import java.util.logging.Level;
 
-
 import static io.netty.handler.codec.http.HttpHeaders.Names.*;
 
 /**
@@ -41,6 +38,7 @@ import static io.netty.handler.codec.http.HttpHeaders.Names.*;
  * @author rahmanj
  */
 public abstract class RequestHandler {
+    
     
     /**
      * Constructor for {@link RequestHandler}
@@ -60,6 +58,7 @@ public abstract class RequestHandler {
         clientMgr = clientManager;
         songMgr = songManager;
     }
+    
     
     /**
      * Converts a URI path into a usable method name for reflection
@@ -97,6 +96,7 @@ public abstract class RequestHandler {
         return sb.toString();
     }
     
+    
     /**
      * 
      * @param name
@@ -130,7 +130,6 @@ public abstract class RequestHandler {
         
         return sb.toString();
     }
-    
     
     
     /**
@@ -168,6 +167,7 @@ public abstract class RequestHandler {
         }
     }
     
+    
     /**
      * Send a given response object to the client
      * @param ch {@link Channel} to be used to send the response
@@ -187,6 +187,7 @@ public abstract class RequestHandler {
         }
     }
     
+    
     /**
      * Creates an {@link FullHttpResponse} object containing the given JSON encoded string
      * @param status {@link HttpResponseStatus} for the response
@@ -203,14 +204,14 @@ public abstract class RequestHandler {
         return response;
     }
     
+    
     /**
-     * 
-     * @param status
-     * @return 
+     * Create a basic {@link FullHttpResponse} instance for later use
+     * @param status {@link HttpResponseStatus} for the {@link FullHttpResponse}
+     * @return Returns a {@link FullHttpResponse} instance for use
      */
     protected static FullHttpResponse createResponse(HttpResponseStatus status) {
         FullHttpResponse response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, status);
-        
         return response;
     }
     

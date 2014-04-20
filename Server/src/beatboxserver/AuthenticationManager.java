@@ -12,6 +12,9 @@ package beatboxserver;
  */
 public class AuthenticationManager {
     
+    public AuthenticationManager() {
+        
+    }
     
     // TODO 
 }

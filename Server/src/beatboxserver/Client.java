@@ -9,14 +9,11 @@ package beatboxserver;
 import beatboxserver.updates.ClientUpdate;
 import io.netty.channel.Channel;
 
-import java.util.Map;
-import java.util.HashMap;
-
 /**
- *
+ * 
  * @author rahmanj
  */
-public class Client {
+public abstract class Client {
     
     public enum ClientType {User, Speaker};
     

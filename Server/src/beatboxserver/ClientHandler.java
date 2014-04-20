@@ -64,6 +64,9 @@ public class ClientHandler extends RequestHandler {
     public void vote(ChannelHandlerContext ctx, FullHttpRequest req, String clientID, Message body) {
         if (validateMethod(req, HttpMethod.POST)) {
            
+            UserClient client = (UserClient)clientMgr.getClient(clientID);
+  
+            // TODO, your patriotic duty, and vote
             
             sendError(ctx.channel(), NOT_IMPLEMENTED);
         } else {
@@ -74,6 +77,9 @@ public class ClientHandler extends RequestHandler {
     
     public void like(ChannelHandlerContext ctx, FullHttpRequest req, String clientID, Message body) {
         if (validateMethod(req, HttpMethod.POST)) {
+            
+            UserClient client = (UserClient)clientMgr.getClient(clientID);
+            
             sendError(ctx.channel(), NOT_IMPLEMENTED);
         } else {
             sendError(ctx.channel(), METHOD_NOT_ALLOWED);

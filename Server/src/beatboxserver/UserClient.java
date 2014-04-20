@@ -15,6 +15,11 @@ import java.util.Map;
  * @author rahmanj
  */
 public class UserClient extends Client {
+    
+    /**
+     * 
+     * @param id 
+     */
     public UserClient(String id) {
         super(id, ClientType.User);
         
@@ -23,15 +28,51 @@ public class UserClient extends Client {
         votedSong = null;
     }
     
-    
-    public boolean likesSong(Song song) {
-        return likedSongs.containsKey(song.getID());
+    /**
+     * 
+     * @param songID 
+     */
+    public void likeSong(String songID, SongManager songManager) {
+        if (doesDislikeSong(songID)) {
+            dislikedSongs.remove(songID);
+        }
+        likedSongs.put(songID, Boolean.TRUE);
     }
     
-    public boolean dislikesSong(Song song) {
-        return dislikedSongs.containsKey(song.getID());
+    /**
+     * 
+     * @param songID 
+     */
+    public void dislikeSong(String songID, SongManager songManager) {
+        if (doesLikeSong(songID)) {
+            likedSongs.remove(songID);
+        }
+        dislikedSongs.put(songID, Boolean.TRUE);
     }
     
+    /**
+     * 
+     * @param songID
+     * @return 
+     */
+    public boolean doesLikeSong(String songID) {
+        return likedSongs.containsKey(songID);
+    }
+    
+    /**
+     * 
+     * @param songID
+     * @return 
+     */
+    public boolean doesDislikeSong(String songID) {
+        return dislikedSongs.containsKey(songID);
+    }
+    
+    /**
+     * 
+     * @param song
+     * @return 
+     */
     public boolean votedOn(Song song) {
         return song.getID().equals(votedSong);
     }

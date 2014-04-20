@@ -188,20 +188,17 @@ Responses: (From Server to Client)
 			 { "update_type": "playback_command",
 			   "values": {
 					"id": <SongID>,
-					"command": "<Play|Pause|Stop|Seek>",
-					"param": "<Param>"
+					"command": "<Play|Pause|Stop>"
 				} 
 			}"
 		Remarks:
 			Stop command forces playback to stop and go to beginning position
 			Play command resumes playback from initial position
 			Pause command stops playback at current position
-			Seek moves playback to <Param> position,
-				not changing the playback status <Playing|Not Playing>
 
 	UPCOMING_SONG:
 		Description:
-			Indicates to the Pi that a song change will likely be played soon.
+			Indicates to the Pi that a song that will likely be played soon.
 			If the player doesn't have the file to play the song, it should
 			send a REQUEST_SONG message to the server to get the song.
 		Format:

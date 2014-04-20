@@ -45,10 +45,8 @@ public class BeatboxChannelInitializer extends ChannelInitializer<SocketChannel>
     @Override
     protected void initChannel(SocketChannel ch) {
         final ChannelPipeline pipeline = ch.pipeline();
-        
 
-        Logger l = Logger.getLogger(this.getClass().getName());
-        l.log(Level.INFO, "Recieved connection from " + ch.remoteAddress().getHostString());
+        Logger.getLogger(this.getClass().getName()).info("Recieved connection from " + ch.remoteAddress().getHostString());
         
         // Create pipeline for handling HTTP requests to this channel
         pipeline.addLast("decoder", new HttpRequestDecoder());

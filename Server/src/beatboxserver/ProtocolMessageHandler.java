@@ -124,7 +124,7 @@ public class ProtocolMessageHandler extends SimpleChannelInboundHandler<FullHttp
                 return;
             }
         } catch (ClassNotFoundException e) {
-            Logger.getLogger(this.getClass().getName()).warning("Invalid request for handler: \"" + handlerName + "\"");
+            Logger.getLogger(this.getClass().getName()).log(Level.SEVERE, "Invalid request for handler: \"" + handlerName + "\"", e);
             RequestHandler.sendError(ctx.channel(), NOT_FOUND);
             return;
         }
@@ -153,8 +153,10 @@ public class ProtocolMessageHandler extends SimpleChannelInboundHandler<FullHttp
             
             // Get the appropriate method based on request type
             if (request.getMethod().equals(HttpMethod.GET)) {
+                
                 method = handlerClass.getMethod(methodName, ChannelHandlerContext.class, FullHttpRequest.class, String.class);
             } else if (request.getMethod().equals(HttpMethod.POST)) {
+                
                 method = handlerClass.getMethod(methodName, ChannelHandlerContext.class, FullHttpRequest.class, String.class, Message.class);
             } else {
                 
@@ -165,7 +167,7 @@ public class ProtocolMessageHandler extends SimpleChannelInboundHandler<FullHttp
             
         } catch (NoSuchMethodException e) {
             
-            Logger.getLogger(this.getClass().getName()).warning("Invalid request for method: \"" + methodName + "\"");
+            Logger.getLogger(ProtocolMessageHandler.class.getName()).log(Level.SEVERE, "Invalid request for method: \"" + methodName + "\"", e);
             RequestHandler.sendError(ctx.channel(), HttpResponseStatus.NOT_FOUND);
             return;
         }
@@ -182,6 +184,7 @@ public class ProtocolMessageHandler extends SimpleChannelInboundHandler<FullHttp
             try {
                 message = Message.constructMessage(messageName, request.content().toString(CharsetUtil.US_ASCII));
             } catch (Exception e) {
+                Logger.getLogger(ProtocolMessageHandler.class.getName()).log(Level.SEVERE, "Exeption occured while creating message", e);
                 RequestHandler.sendError(ctx.channel(), BAD_REQUEST);
                 return;
             }
