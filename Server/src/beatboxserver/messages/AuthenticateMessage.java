@@ -17,4 +17,7 @@ public class AuthenticateMessage extends Message {
     public AuthenticateMessage() {
         super(MessageType.AuthenticateMessage);
     }
+    
+    @Expose
+    public String pin;
 }

@@ -22,7 +22,7 @@ public class RegisterService {
     /**
      * Fully qualified service name
      */
-    public final static String serviceName = "_beatbox._tcp.local";
+    public final static String serviceName = "_beatbox._tcp.local.";
     
     /**
      * Service port

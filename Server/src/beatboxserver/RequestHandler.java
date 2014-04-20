@@ -122,6 +122,7 @@ public abstract class RequestHandler {
         
         // Stich these together
         sb.append(RequestHandler.class.getPackage().getName());
+        sb.append(".");
         for (String s : components) {
             sb.append(s);
         }

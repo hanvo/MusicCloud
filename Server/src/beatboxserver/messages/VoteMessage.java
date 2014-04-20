@@ -6,6 +6,8 @@
 
 package beatboxserver.messages;
 
+import com.google.gson.annotations.Expose;
+
 /**
  *
  * @author rahmanj
@@ -15,4 +17,7 @@ public class VoteMessage extends Message {
     public VoteMessage() {
         super(MessageType.VoteMessage);
     }
+    
+    @Expose
+    public String id;
 }

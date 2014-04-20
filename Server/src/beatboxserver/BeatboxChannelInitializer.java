@@ -6,18 +6,15 @@
 
 package beatboxserver;
 
-import beatboxserver.ProtocolMessageHandler;
-import beatboxserver.RequestHandler;
-
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
 import io.netty.handler.codec.http.HttpRequestDecoder;
 import io.netty.handler.codec.http.HttpResponseEncoder;
 import io.netty.handler.codec.http.HttpObjectAggregator;
+
 import java.util.logging.Handler;
 import java.util.logging.Level;
-
 import java.util.logging.Logger;
 
 /**
@@ -36,11 +33,14 @@ public class BeatboxChannelInitializer extends ChannelInitializer<SocketChannel>
         for (Handler h : logger.getHandlers()) {
             h.setLevel(Level.ALL);
         }
+        
+        clientMgr = clientManager;
+        songMgr = songManager;
     }
     
     /**
      * Initialize a newly established channel for further use
-     * @param ch {@link SocketChannel} Newly created channel to be initialized
+     * @param ch {@link SocketChannel}  to be initialized
      */
     @Override
     protected void initChannel(SocketChannel ch) {

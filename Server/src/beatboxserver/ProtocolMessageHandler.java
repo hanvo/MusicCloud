@@ -49,6 +49,9 @@ public class ProtocolMessageHandler extends SimpleChannelInboundHandler<FullHttp
         for (Handler h : logger.getHandlers()) {
             h.setLevel(Level.ALL);
         }
+        
+        clientMgr = clientManager;
+        songMgr = songManager;
     }
     
     /**
@@ -129,9 +132,9 @@ public class ProtocolMessageHandler extends SimpleChannelInboundHandler<FullHttp
         RequestHandler requestHandler; 
         try {
             Constructor ctor = handlerClass.getDeclaredConstructor(ClientManager.class, SongManager.class);
-            requestHandler = (RequestHandler)handlerClass.cast(ctor.newInstance());
+            requestHandler = (RequestHandler)handlerClass.cast(ctor.newInstance(clientMgr, songMgr));
         } catch (Exception e) {
-            Logger.getLogger(this.getClass().getName()).warning("Invalid request for method: \"" + handlerName + "\"");
+            Logger.getLogger(this.getClass().getName()).log(Level.SEVERE, "Invalid request for constructor: \"" + handlerName + "\"", e);
             RequestHandler.sendError(ctx.channel(), NOT_FOUND);
             return;    
         }

@@ -6,6 +6,8 @@
 
 package beatboxserver.messages;
 
+import com.google.gson.annotations.Expose;
+
 /**
  *
  * @author rahmanj
@@ -15,5 +17,8 @@ public class DislikeMessage extends Message {
     public DislikeMessage() {
         super(MessageType.DislikeMessage);
     }
+    
+    @Expose
+    public String id;
     
 }

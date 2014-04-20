@@ -33,9 +33,20 @@ def play_back_func:
 	pass
 
 def serv_func:
-	_serv_sock = httplib.HTTPConnection('', 42422, timeout = 60)
+	_serv_sock = httplib.HTTPConnection('klamath.dnsdynamic.com', 5050, timeout = 60)
 	_serv_sock.connect()
-	params = json.dump()
+	params = json.dumps({"pin":12345},encoding = "ASCII")
+	headers = {"Content-Type": "application/json"}
+	_serv_sock.request("POST","klamath.dnsdynamic.com:5050/speaker/authenticate",params,headers)
+	_serv_resp_json = _serv_sock.getresponse()
+	_serv_response = json.load(_serv_resp_json)
+	_clientID = _serv_response['id']
+	while true:
+		_serv_sock.request("GET","klamath.dnsdynamic.com:5050/speaker/request_update?clientID="+_clientID)
+		#Format:
+		#	"GET /speaker/request_update?clientID=<ClientID> HTTP/1.1\r\n
+		#	(<Key>: <Value>\r\n)*
+		#	 \r\n"
 	_serv_sock.close()
 
 
