@@ -13,13 +13,14 @@
 @class VoteButton;
 @class VoteMeterView;
 @class SongProgressView;
+@class SongScrollView;
 
 @interface PartyViewController : UIViewController <UITableViewDelegate, UITableViewDataSource, ClientSessionDelegate>
 
 @property (weak, nonatomic) IBOutlet VoteButton *downVoteButton;
 @property (weak, nonatomic) IBOutlet VoteButton *upVoteButton;
 @property (weak, nonatomic) IBOutlet UITableView *tableView;
-@property (weak, nonatomic) IBOutlet UIScrollView *songScrollView;
+@property (weak, nonatomic) IBOutlet SongScrollView *songScrollView;
 @property (weak, nonatomic) IBOutlet PassthroughView *passthroughView;
 @property (weak, nonatomic) IBOutlet VoteMeterView *voteMeterView;
 @property (weak, nonatomic) IBOutlet UILabel *progressLabel;

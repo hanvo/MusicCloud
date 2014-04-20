@@ -8,6 +8,9 @@
 
 /* Begin PBXBuildFile section */
 		030C29A718FF1C4400AFB2B1 /* SongTableViewCell.m in Sources */ = {isa = PBXBuildFile; fileRef = 030C29A618FF1C4400AFB2B1 /* SongTableViewCell.m */; };
+		03A29C4E19039408003210D9 /* SongScrollView.m in Sources */ = {isa = PBXBuildFile; fileRef = 03A29C4D19039408003210D9 /* SongScrollView.m */; };
+		03A29C5519039904003210D9 /* SongTileView.xib in Resources */ = {isa = PBXBuildFile; fileRef = 03A29C5419039904003210D9 /* SongTileView.xib */; };
+		03A29C58190399DD003210D9 /* SongTileView.m in Sources */ = {isa = PBXBuildFile; fileRef = 03A29C57190399DD003210D9 /* SongTileView.m */; };
 		03B5D8A218FCE86C006ACB60 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 03B5D8A118FCE86C006ACB60 /* Foundation.framework */; };
 		03B5D8A418FCE86C006ACB60 /* CoreGraphics.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 03B5D8A318FCE86C006ACB60 /* CoreGraphics.framework */; };
 		03B5D8A618FCE86C006ACB60 /* UIKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 03B5D8A518FCE86C006ACB60 /* UIKit.framework */; };
@@ -59,6 +62,11 @@
 /* Begin PBXFileReference section */
 		030C29A518FF1C4400AFB2B1 /* SongTableViewCell.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SongTableViewCell.h; sourceTree = "<group>"; };
 		030C29A618FF1C4400AFB2B1 /* SongTableViewCell.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SongTableViewCell.m; sourceTree = "<group>"; };
+		03A29C4C19039408003210D9 /* SongScrollView.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SongScrollView.h; sourceTree = "<group>"; };
+		03A29C4D19039408003210D9 /* SongScrollView.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SongScrollView.m; sourceTree = "<group>"; };
+		03A29C5419039904003210D9 /* SongTileView.xib */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.xib; path = SongTileView.xib; sourceTree = "<group>"; };
+		03A29C56190399DD003210D9 /* SongTileView.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SongTileView.h; sourceTree = "<group>"; };
+		03A29C57190399DD003210D9 /* SongTileView.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SongTileView.m; sourceTree = "<group>"; };
 		03B5D89E18FCE86C006ACB60 /* MusicCloud.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MusicCloud.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		03B5D8A118FCE86C006ACB60 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
 		03B5D8A318FCE86C006ACB60 /* CoreGraphics.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreGraphics.framework; path = System/Library/Frameworks/CoreGraphics.framework; sourceTree = SDKROOT; };
@@ -259,6 +267,11 @@
 				03FCE9BF18FEDC8900D363E2 /* SongProgressView.m */,
 				030C29A518FF1C4400AFB2B1 /* SongTableViewCell.h */,
 				030C29A618FF1C4400AFB2B1 /* SongTableViewCell.m */,
+				03A29C4C19039408003210D9 /* SongScrollView.h */,
+				03A29C4D19039408003210D9 /* SongScrollView.m */,
+				03A29C56190399DD003210D9 /* SongTileView.h */,
+				03A29C57190399DD003210D9 /* SongTileView.m */,
+				03A29C5419039904003210D9 /* SongTileView.xib */,
 			);
 			name = Views;
 			sourceTree = "<group>";
@@ -386,6 +399,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				03FCE9BD18FEDBFE00D363E2 /* up.png in Resources */,
+				03A29C5519039904003210D9 /* SongTileView.xib in Resources */,
 				03B5D8BA18FCE86C006ACB60 /* Images.xcassets in Resources */,
 				03B5D8EB18FCF719006ACB60 /* menu@2x.png in Resources */,
 				03B5D8DC18FCE960006ACB60 /* placeholder.png in Resources */,
@@ -411,6 +425,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				03FCE9AF18FEC49F00D363E2 /* AFSecurityPolicy.m in Sources */,
+				03A29C58190399DD003210D9 /* SongTileView.m in Sources */,
 				03FCE9C018FEDC8900D363E2 /* SongProgressView.m in Sources */,
 				03B5D8B218FCE86C006ACB60 /* AppDelegate.m in Sources */,
 				03FCE9AE18FEC49F00D363E2 /* AFNetworkReachabilityManager.m in Sources */,
@@ -427,6 +442,7 @@
 				03B5D8EF18FCF819006ACB60 /* SWRevealViewController.m in Sources */,
 				03FCE9B618FEC51500D363E2 /* ClientSession.m in Sources */,
 				03FCE9B218FEC49F00D363E2 /* AFURLResponseSerialization.m in Sources */,
+				03A29C4E19039408003210D9 /* SongScrollView.m in Sources */,
 				03B5D8E018FCEB36006ACB60 /* BorderButton.m in Sources */,
 				030C29A718FF1C4400AFB2B1 /* SongTableViewCell.m in Sources */,
 				03B5D8E318FCF280006ACB60 /* PartyViewController.m in Sources */,

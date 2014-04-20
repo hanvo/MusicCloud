@@ -25,8 +25,6 @@
 {
     [super viewDidLoad];
     
-    [[ClientSession sharedSession] setDelegate:self];
-    
     UITapGestureRecognizer *tap = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(viewTapped:)];
     [self.view addGestureRecognizer:tap];
     
@@ -40,12 +38,16 @@
     [_overlay addSubview:spinner];
     
     [self.view addSubview:_overlay];
+    
+    self.navigationController.interactivePopGestureRecognizer.enabled = NO;
 }
 
 - (void)viewWillAppear:(BOOL)animated {
     [super viewWillAppear:animated];
     
     [_overlay setAlpha:0.0];
+    
+    [[ClientSession sharedSession] setDelegate:self];
 }
 
 - (void)didReceiveMemoryWarning
@@ -101,6 +103,16 @@
             [alert show];
         }];
     }
+}
+
+// could not connect
+- (void)clientDidFailTask:(NSURLSessionDataTask *)task error:(NSError *)err {
+    [UIView animateWithDuration:0.3 animations:^{
+        [_overlay setAlpha:0.0];
+    } completion:^(BOOL finished) {
+        UIAlertView *alert = [[UIAlertView alloc] initWithTitle:@"MusicCloud Error" message:@"Could not connect to DJ" delegate:nil cancelButtonTitle:nil otherButtonTitles:@"OK", nil];
+        [alert show];
+    }];
 }
 
 #pragma mark - IBAction

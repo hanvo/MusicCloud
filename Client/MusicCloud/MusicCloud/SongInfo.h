@@ -8,12 +8,20 @@
 
 #import <Foundation/Foundation.h>
 
+enum {
+    SS_PLAYING,
+    SS_PAUSED
+} typedef SongStatus;
+
 @interface SongInfo : NSObject
 
 @property (nonatomic) NSInteger songID;
 @property (strong, nonatomic) NSString *songName;
 @property (strong, nonatomic) NSString *songArtist;
 @property (strong, nonatomic) NSString *songAlbum;
+@property (nonatomic) NSInteger songLength; // in seconds
+@property (nonatomic) NSInteger position;
+@property (nonatomic) SongStatus status;
 
 @property (nonatomic) NSInteger votes;
 

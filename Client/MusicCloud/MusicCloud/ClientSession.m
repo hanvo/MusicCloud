@@ -23,7 +23,8 @@
 
 - (id)initWithBaseURL:(NSURL *)url {
     if (self = [super initWithBaseURL:url]) {
-        
+        self.requestSerializer = [AFJSONRequestSerializer serializer];
+        self.responseSerializer = [AFJSONResponseSerializer serializer];
     }
     return self;
 }
@@ -47,13 +48,17 @@
     
     NSDictionary *params = @{@"Pin": pin};
     
-    [self POST:@"authenticate_client" parameters:params success:^(NSURLSessionDataTask *task, id responseObject) {
+    
+    
+    [self POST:@"client/authenticate" parameters:params success:^(NSURLSessionDataTask *task, id responseObject) {
         NSInteger clientID = [[responseObject objectForKey:@"ClientID"] integerValue];
         _clientID = clientID;
         
         [_delegate clientDidAuthenticate:YES];
     } failure:^(NSURLSessionDataTask *task, NSError *error) {
-        [_delegate clientDidAuthenticate:NO];
+        NSLog(@"task: %@", task);
+        NSLog(@"err %@", error);
+        [_delegate clientDidFailTask:task error:error];
     }];
 }
 
@@ -64,10 +69,10 @@
     }
     
     NSDictionary *params = @{ @"ClientID": [NSString stringWithFormat:@"%d", _clientID]};
-    [self POST:@"deauthenticate_client" parameters:params success:^(NSURLSessionDataTask *task, id responseObject) {
+    [self POST:@"client/deauthenticate" parameters:params success:^(NSURLSessionDataTask *task, id responseObject) {
         _clientID = -1;
     } failure:^(NSURLSessionDataTask *task, NSError *error) {
-        [_delegate clientDidReceiveFailure:@"Deauthenticate failed"];
+        [_delegate clientDidFailTask:task error:error];
     }];
 }
 
@@ -96,7 +101,8 @@
         return;
     }
     
-    [self GET:@"request_song_list" parameters:nil success:^(NSURLSessionDataTask *task, id responseObject) {
+    NSDictionary *params = @{ @"clientID": [NSString stringWithFormat:@"%d", _clientID] };
+    [self GET:@"client/request_song_list" parameters:params success:^(NSURLSessionDataTask *task, id responseObject) {
         NSArray *infoDicts = [responseObject objectForKey:@"songs"];
         
         NSMutableArray *songs = [NSMutableArray arrayWithCapacity:infoDicts.count];
@@ -112,38 +118,134 @@
         
         [_delegate clientDidReceiveSongList:songs];
     } failure:^(NSURLSessionDataTask *task, NSError *error) {
-        [_delegate clientDidReceiveFailure:@"Request song list failed"];
+        [_delegate clientDidFailTask:task error:error];
     }];
 }
 
 - (void)sendVote:(NSInteger)songID {
+    if (OFFLINE) {
+        return;
+    }
     
+    NSDictionary *params = @{ @"clientID": [NSString stringWithFormat:@"%d", _clientID] };
+    [self POST:@"client/vote" parameters:params success:^(NSURLSessionDataTask *task, id responseObject) {
+        
+    } failure:^(NSURLSessionDataTask *task, NSError *error) {
+        [_delegate clientDidFailTask:task error:error];
+    }];
 }
 
 - (void)sendLike:(NSInteger)songID {
+    if (OFFLINE) {
+        return;
+    }
+    
     
 }
 
 - (void)sendDislike:(NSInteger)songID {
+    if (OFFLINE) {
+        return;
+    }
+    
     
 }
 
 - (void)requestUpdate {
-    [self requestLikeUpdate];
-    [self requestVoteUpdate];
-    [self requestSongUpdate];
+    if (OFFLINE) {
+        
+        return;
+    }
+    
+    NSDictionary *params = @{ @"ClientID": [NSString stringWithFormat:@"%d", _clientID] };
+    [self GET:@"request_update" parameters:params success:^(NSURLSessionDataTask *task, id responseObject) {
+        NSLog(@"response obj %@", responseObject);
+    } failure:^(NSURLSessionDataTask *task, NSError *error) {
+        [_delegate clientDidFailTask:task error:error];
+    }];
 }
 
 - (void)requestLikeUpdate {
+    if (OFFLINE) {
+        
+        return;
+    }
     
+    NSDictionary *params = @{ @"ClientID": [NSString stringWithFormat:@"%d", _clientID] };
+    [self GET:@"request_like_update" parameters:params success:^(NSURLSessionDataTask *task, id responseObject) {
+        
+    } failure:^(NSURLSessionDataTask *task, NSError *error) {
+        [_delegate clientDidFailTask:task error:error];
+    }];
 }
 
 - (void)requestVoteUpdate {
+    if (OFFLINE) {
+        
+        return;
+    }
     
+    NSDictionary *params = @{ @"ClientID": [NSString stringWithFormat:@"%d", _clientID] };
+    [self GET:@"request_vote_update" parameters:params success:^(NSURLSessionDataTask *task, id responseObject) {
+        
+    } failure:^(NSURLSessionDataTask *task, NSError *error) {
+        [_delegate clientDidFailTask:task error:error];
+    }];
 }
 
 - (void)requestSongUpdate {
+    if (OFFLINE) {
+        static int count = 0;
+        SongInfo *song = [[SongInfo alloc] init];
+
+        if (count == 0) {
+            song.songID = 2;
+            song.songName = @"Dark Horse";
+            song.songArtist = @"Katy Perry";
+            song.songAlbum = @"Prism";
+            song.songLength = 160;
+            song.status = SS_PLAYING;
+            song.position = 12;
+            count++;
+        } else if (count == 1) {
+            song.songID = 1;
+            song.songName = @"Your Guardian Angel";
+            song.songArtist = @"Red Jumpsuit Apparatus";
+            song.songAlbum = @"Don't You Fake It";
+            song.songLength = 180;
+            song.status = SS_PLAYING;
+            song.position = 0;
+            count = 0;
+        }
+        
+        [_delegate clientDidReceiveSongUpdate:song];
+        return;
+    }
     
+    NSDictionary *params = @{ @"ClientID": [NSString stringWithFormat:@"%d", _clientID] };
+    [self GET:@"request_song_update" parameters:params success:^(NSURLSessionDataTask *task, id responseObject) {
+        //NSString *updateType = [responseObject objectForKey:@"update_type"];
+        NSDictionary *values = [responseObject objectForKey:@"values"];
+        
+        SongInfo *song = [[SongInfo alloc] init];
+        song.songID = [[values objectForKey:@"id"] integerValue];
+        song.songName = [values objectForKey:@"name"];
+        song.songArtist = [values objectForKey:@"artist"];
+        song.songAlbum = [values objectForKey:@"album"];
+        song.songLength = [[values objectForKey:@"length"] integerValue];
+        NSString *status = [values objectForKey:@"status"];
+        if ([status isEqualToString:@"Playing"])
+            song.status = SS_PLAYING;
+        else if ([status isEqualToString:@"Paused"])
+            song.status = SS_PAUSED;
+        else
+            NSLog(@"Unknown song status: %@", status);
+        song.position = [[values objectForKey:@"position"] integerValue];
+        
+        [_delegate clientDidReceiveSongUpdate:song];
+    } failure:^(NSURLSessionDataTask *task, NSError *error) {
+        [_delegate clientDidFailTask:task error:error];
+    }];
 }
 
 @end

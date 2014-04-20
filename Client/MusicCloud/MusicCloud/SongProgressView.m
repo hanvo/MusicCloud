@@ -49,15 +49,33 @@
     [self addSubview:_indicatorView];
 }
 
+- (void)layoutSubviews {
+    [super layoutSubviews];
+    
+    [self layoutBar];
+}
+
 - (void)layoutBar {
     CGRect frame = _indicatorView.frame;
     CGFloat x;
     if (_totalTime == 0)
         x = 0;
     else
-        x = ((double)_currentTime/(double)_totalTime) * frame.size.width;
+        x = ((double)_currentTime/(double)_totalTime) * _barView.frame.size.width;
     frame.origin.x = x;
     _indicatorView.frame = frame;
+}
+
+- (void)setCurrentTime:(NSInteger)currentTime {
+    _currentTime = currentTime;
+    
+    [self setNeedsLayout];
+}
+
+- (void)setTotalTime:(NSInteger)totalTime {
+    _totalTime = totalTime;
+    
+    [self setNeedsLayout];
 }
 
 @end

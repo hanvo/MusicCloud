@@ -9,20 +9,26 @@
 #import <Foundation/Foundation.h>
 #import "AFNetworking.h"
 
+@class SongInfo;
+
 @protocol ClientSessionDelegate <NSObject>
 // server to client messages
 
 @optional;
 - (void)clientDidAuthenticate:(BOOL)auth;
 
-- (void)clientDidReceiveSongUpdate:(NSDictionary *)songInfo;
-- (void)clientDidReceiveVoteUpdate:(NSDictionary *)voteInfo;
-- (void)clientDidReceiveLikeUpdate:(NSDictionary *)likeInfo;
+- (void)clientDidReceiveSongUpdate:(SongInfo *)song;
+- (void)clientDidReceiveVoteUpdate:(SongInfo *)song;
+- (void)clientDidReceiveLikeUpdate:(SongInfo *)song;
 
-// array of NSDictionary objects
+// array of SongInfo objects
 - (void)clientDidReceiveSongList:(NSArray *)list;
 
+// received failure response from server
 - (void)clientDidReceiveFailure:(NSString *)message;
+
+// failed making HTTP request
+- (void)clientDidFailTask:(NSURLSessionDataTask *)task error:(NSError *)err;
 @end
 
 @interface ClientSession : AFHTTPSessionManager

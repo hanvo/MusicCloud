@@ -27,12 +27,11 @@
 }
 
 - (void)_PassthroughViewInit {
-    self.backgroundColor = [UIColor clearColor];
 }
 
 - (UIView *)hitTest:(CGPoint)point withEvent:(UIEvent *)event {
     if ([self pointInside:point withEvent:event])
-        return [_scrollView hitTest:point withEvent:event];
+        return _scrollView;
     return nil;
 }
 

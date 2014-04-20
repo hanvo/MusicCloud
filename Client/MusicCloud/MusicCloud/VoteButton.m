@@ -55,8 +55,10 @@
     
     if (highlighted)
         [self.circleLayer setFillColor:[[UIColor whiteColor] CGColor]];
-    else
-        [self.circleLayer setFillColor:[[UIColor clearColor] CGColor]];
+}
+
+- (void)setBackgroundColor:(UIColor *)backgroundColor {
+    [_circleLayer setFillColor:[backgroundColor CGColor]];
 }
 
 @end

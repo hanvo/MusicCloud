@@ -15,12 +15,17 @@
 #import "SongProgressView.h"
 #import "SongTableViewCell.h"
 #import "SongInfo.h"
+#import "SongScrollView.h"
 
 @interface PartyViewController ()
 
 @property (strong, nonatomic) ClientSession *session;
 
+// array of SongInfo objects
 @property (strong, nonatomic) NSMutableArray *songList;
+@property (strong, nonatomic) SongInfo *currentSong;
+
+@property (strong, nonatomic) NSTimer *timer;
 
 @end
 
@@ -43,7 +48,10 @@
     [_progressView setTotalTime:0];
     
     [_session requestSongList];
-    [_session requestUpdate];
+    [_session requestSongUpdate];
+    [_session requestLikeUpdate];
+    
+    [self performSelector:@selector(test) withObject:nil afterDelay:3];
 }
 
 - (void)didReceiveMemoryWarning
@@ -52,7 +60,37 @@
     // Dispose of any resources that can be recreated.
 }
 
+- (void)test {
+    [_session requestSongUpdate];
+}
+
+- (void)updateLabels:(SongInfo *)song {
+    NSInteger secs = song.position;
+    int mins = (int)((double)secs/60.0);
+    secs -= mins*60.0;
+    
+    _progressLabel.text = [NSString stringWithFormat:@"%d:%02d", mins, secs];
+    
+    secs = song.songLength;
+    mins = (int)((double)secs/60.0);
+    secs -= mins*60.0;
+    
+    _totalLabel.text = [NSString stringWithFormat:@"%d:%02d", mins, secs];
+}
+
+- (void)tick {
+    if (_currentSong.position < _currentSong.songLength)
+        _currentSong.position += 1;
+    
+    [self updateLabels:_currentSong];
+    [_progressView setCurrentTime:_currentSong.position];
+}
+
 #pragma mark - UITableViewDelegate
+
+- (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath {
+    
+}
 
 #pragma mark - UITableViewDataSource
 
@@ -89,20 +127,47 @@
     [self.tableView reloadData];
 }
 
-- (void)clientDidReceiveLikeUpdate:(NSDictionary *)likeInfo {
+- (void)clientDidReceiveLikeUpdate:(SongInfo *)song {
     
 }
 
-- (void)clientDidReceiveSongUpdate:(NSDictionary *)songInfo {
+- (void)clientDidReceiveSongUpdate:(SongInfo *)song {
+    BOOL newSong = YES;
+    if (_songList.count > 0) {
+        SongInfo *current = [_songList lastObject];
+        newSong = (current.songID != song.songID);
+    }
     
+    if (newSong) {
+        [_songList addObject:song];
+        _currentSong = song;
+        
+        [_songScrollView addSong:song animated:YES];
+        
+        [self updateLabels:song];
+        [_downVoteButton setBackgroundColor:[UIColor blackColor]];
+        [_upVoteButton setBackgroundColor:[UIColor blackColor]];
+        [_downVoteButton setEnabled:YES];
+        [_upVoteButton setEnabled:YES];
+        
+        [_progressView setTotalTime:song.songLength];
+        [_progressView setCurrentTime:song.position];
+        
+        if (_timer) {
+            [_timer invalidate];
+        }
+        _timer = [NSTimer scheduledTimerWithTimeInterval:1.0 target:self selector:@selector(tick) userInfo:nil repeats:YES];
+    }
 }
 
-- (void)clientDidReceiveVoteUpdate:(NSDictionary *)voteInfo {
+- (void)clientDidReceiveVoteUpdate:(SongInfo *)song {
     
 }
 
 - (void)clientDidReceiveFailure:(NSString *)message {
-    
+    NSString *msg = [NSString stringWithFormat:@"Error communicating with DJ: %@", message];
+    UIAlertView *alert = [[UIAlertView alloc] initWithTitle:@"MusicCloud" message:msg delegate:nil cancelButtonTitle:nil otherButtonTitles:@"OK", nil];
+    [alert show];
 }
 
 #pragma mark - IBAction
@@ -112,11 +177,19 @@
 }
 
 - (IBAction)downVotePressed:(id)sender {
+    [_session sendDislike:_currentSong.songID];
     
+    [_downVoteButton setBackgroundColor:[UIColor redColor]];
+    [_downVoteButton setEnabled:NO];
+    [_upVoteButton setEnabled:NO];
 }
 
 - (IBAction)upVotePressed:(id)sender {
+    [_session sendLike:_currentSong.songID];
     
+    [_upVoteButton setBackgroundColor:[UIColor greenColor]];
+    [_downVoteButton setEnabled:NO];
+    [_upVoteButton setEnabled:NO];
 }
 
 @end
