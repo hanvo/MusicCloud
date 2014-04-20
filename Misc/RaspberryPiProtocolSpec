@@ -1,3 +1,224 @@
 
+The following is the draft specification for the Server-Speaker communication protocol
 
-TODO Very Soon
+Definitions:
+	Client: The RaspberryPi/Speaker communicating with the server
+	ClientID: A unique per device identifier sent to the client from the server
+	Server: Our crazy server doing *stuff*
+
+Format:
+	The formats use psuedo regular expression syntax to describe a format.
+	Note that {n} indicates repetition and ()? indicates zero or one occurences of ()
+	<Value> refers to a placeholder that should be replaced with an actual value,
+	not a literal <Value>
+
+	"(<Key>: <Value>\r\n)*" Refers to optional HTTP headers that are not needed for the protocol
+
+Encoding:
+	The protocol is a text based protocol, we will use ASCII encoding for simplicity.
+
+	
+HTTP Requests:
+	Our format is basically HTTP with a custom JSON request/response body to convey protocol information.
+	Use standard HTTP libraries to make requests, using <ServerName>/<MessageName> as the URL to request
+		a message with a given name.
+
+Song ID:
+	Song IDs will never change.
+
+Connection Behavior:
+	Unless otherwise noted, the connection between the client and the server should
+	be persistent and held open. Use the HTTP "Connection: keep-alive" header when making requests.
+	In the event of an unexpected disconnection between the client
+	and the server, the connection should be reopened and the previous client ID
+	should be reused for continued communication.
+
+Connection Protocol:
+	We will use TCP/HTTP over port 42422
+	Port is temporary, likely to switch to Bonjour for auto-discover of port and IP.
+
+General Protocol:
+	The system is based on the server sending songs to the RaspberryPi to play
+	The raspberry pi will store songs and associate the songs recieved with the id
+
+	Flow of control is as follows:
+		1. Client sends REQUEST_SPEAKER_UPDATE request using HTTP long polling
+			1.A Client holds connection open
+			1.B If connection times out, resend request
+		2. Server sends UPCOMING_SONG command
+		3. Client responds by sending REQUEST_SONG to get file
+			3.A Client saves response body into file, whose name is associated with the SongID
+		4. Client send READY message with ID of song ready to play
+		5. Client sends REQUEST_SPEAKER_UPDATE again and waits for command from server
+		6. Server sends PLAYBACK_COMMAND response and client begins playback on playback thread
+		7. (goto step 1)
+
+	Additionally, other while playback occurs, the speaker should send STATUS_UPDATE for:
+		1. Once playback successfully starts
+		2. Once playback reached the end of the song
+		3. Once a major change in playback position occurs (Optional)
+		4. When playback status (Playing|Paused) changes
+	
+
+Requests: (From Client to server)
+
+	AUTHENTICATE_SPEAKER:
+		Description:
+			Attempt to log in to the server
+		Format:
+			"POST /speaker/authenticate HTTP/1.1\r\n
+			(<Key>: <Value>\r\n)*
+			 Content-Type: application/json\r\n
+			 Content-Length: <JsonLength>\r\n
+			 \r\n
+			 { "pin": "<Pin>" }
+		Remarks:
+
+
+	DEAUTHENTICATE_SPEAKER:
+		Description:
+			Deauthenticate when closing raspberry pi. Recommended so
+			the server can release client related resources.
+		Format:
+			"POST /speaker/deauthenticate HTTP/1.1\r\n
+			(<Key>: <Value>\r\n)*
+			 Content-Type: application/json\r\n
+			 Content-Length: <JsonLength>\r\n
+			 \r\n
+			 {"id": "<ClientID>"}"
+		Remarks:
+			After succesfully making this request, <ClientID>
+			should no longer be used
+
+
+	REQUEST_SPEAKER_UPDATE:
+		Description:
+			Request any new updates from the server, including playback commands
+			and upcoming song messages
+		Format:
+			"GET /speaker/request_update?clientID=<ClientID> HTTP/1.1\r\n
+			(<Key>: <Value>\r\n)*
+			 \r\n"
+		Remarks:
+			This request should be made using "long-polling"
+			i.e. Start HTTP connection with large timeout value, and the server
+				will hold the connection open and won't send a response until
+				an update becomes available to send to the client.
+				Best to use asynchronous HTTP libraries for this purpose, and set high timeout.
+
+
+	STATUS_UPDATE:
+		Description:
+			Update the server based on the speakers current status
+		Format:
+			"POST /speaker/status_update?clientID=<ClientID> HTTP/1.1\r\n
+			(<Key>: <Value>\r\n)*
+			 Content-Type: application/json\r\n
+			 Content-Length: <JsonLength>\r\n
+			 \r\n
+			 {"id": "<SongID>",
+			  "status": "Playing|Paused",
+			  "position": "<PlaybackPosition(MS)>"}"
+		Remarks:
+			Sent to the server periodically and whenever a status change occurs.
+				Status changes include changes to playback position,
+				Playing->Paused, Paused->Playing transitions,
+				Changing the currently played song
+
+	REQUEST_SONG:
+		Description:
+			Request the audio file for a given song.
+		Format:
+			"GET /speaker/request_song?clientID=<ClientID>&songID=<SongID> HTTP/1.1\r\n
+			(<Key>: <Value>\r\n)*
+			 \r\n"
+		Remarks:
+			The client is repsonsible for determing when to get the song from the server
+			It can use a variety of methods to identify when and which song to fetch
+
+	READY:
+		Description:
+			Indicate to the server that the given song is ready to play
+		Format:
+			"POST /speaker/ready?clientID=<ClientID> HTTP/1.1\r\n
+			(<Key>: <Value\r\n)*
+			 \r\n
+			 {"id": <SongID>}"
+		Remarks:
+
+
+Responses: (From Server to Client)
+
+	AUTHENTICATED:
+		Description:
+			Response to a successful authenicate message from the client
+		Format:
+			"HTTP/1.1 200 Authenticated\r\n
+			 (<Key>: <Value>\r\n)*
+			 Content-Type: application/json\r\n
+			 Content-Length: <JsonLength>\r\n
+			 \r\n
+			 { "id": "<ClientID>"}"
+		Remarks:
+			Use the given client ID with all further requests
+
+	SONG_DATA:
+		Description:
+			Response to REQUEST_SONG message, contains the song data
+		Format:
+			"HTTP/1.1 200 Update Available\r\n
+			(<Key>: <Value>\r\n)*
+			 Content-Type: audio/<AudioType>\r\n
+			 Content-Length: <AudioBytes>\r\n
+			 \r\n
+			<AudioBytes> of audio data for the song"
+		Remarks:
+
+
+	PLAYBACK_COMMAND:
+		Description:
+			Possible response sent after REQUEST_SPEAKER_UPDATE request.
+			Indicates new playback command to the client
+		Format:
+			"HTTP/1.1 200 Playback Command\r\n
+			(<Key>: <Value>\r\n)*
+			 Content-Type: application/json\r\n
+			 Content-Length: <JsonLength>\r\n
+			 \r\n
+			 { "update_type": "playback_command",
+			   "values": {
+					"id": <SongID>,
+					"command": "<Play|Pause|Stop>"
+				} 
+			}"
+		Remarks:
+			Stop command forces playback to stop and go to beginning position
+			Play command resumes playback from initial position
+			Pause command stops playback at current position
+
+	UPCOMING_SONG:
+		Description:
+			Indicates to the Pi that a song that will likely be played soon.
+			If the player doesn't have the file to play the song, it should
+			send a REQUEST_SONG message to the server to get the song.
+		Format:
+			"HTTP/1.1 200 Update Available\r\n
+			(<Key>: <Value>\r\n)*
+			 Content-Type: application/json\r\n
+			 Content-Length: <JsonLength>\r\n
+			 \r\n
+			 {"update_type": "upcoming_song":
+			  "values": {
+					"id": <SongID>,
+					"name": "<SongName>",
+					"artist": "<SongArtist>",
+					"album": "<SongAlbum>",
+					"votes": <Votes>
+				}
+			 }"
+		Remarks:
+			The Pi should cache songs in a resonable fashion,
+			intelligently prefetching the most highly voted songs
+			in anticipation of recieving a command to play that given song next
+
+
