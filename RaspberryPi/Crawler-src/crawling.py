@@ -2,8 +2,8 @@
 #Things that are done:
 # -Crawling of music files
 # -Inserting and storing in a local Database (Song_list.db)
-# -Database: ID, Title, Absolute file path(Storing is wrong. Double Slash),
-#                   LengthofSong(Seconds),Artist, album, album Art, album art Type
+# -Database: ID, Title, Absolute file path(Storing is maybe wrong. Double Slash),
+#                   LengthofSong(Seconds),Artist, album, albumArt, albumArtType(3 - album cover)
 #
 #Still Need:
 # -Have a properties file storing:
@@ -47,7 +47,7 @@ def crawl():
     sqlStatement = 'drop table if exists ' + table_name
     c.execute(sqlStatement)
 
-    c.execute('''CREATE TABLE if not exists music(id real, song text, path text,lengthOfSong real,artist text, album text,art blob,artType text)''')
+    c.execute('''CREATE TABLE if not exists music(id real, song text, path text,lengthOfSong real,artist text, album text,art blob,artType text,artCoverID real)''')
     
 
     #for loop that will recursivly go through the file given
@@ -71,6 +71,7 @@ def crawl():
             if 'APIC:' in data.tags:
                 artwork = data.tags['APIC:'].data
                 artType = data.tags['APIC:'].mime
+                artCoverID = data.tags['APIC:'].type
             else:
                 print "No Album Art work - ", y
                 artwork = 'null'
@@ -80,11 +81,11 @@ def crawl():
             album = audioFile.tag.album
             audio = MP3(path) #for audio lenth
             audioLength = audio.info.length   
-            c.execute('insert into music values (?,?,?,?,?,?,?,?)', (songCount,y,path,audioLength,artist,album,artwork,artType))
+            c.execute('insert into music values (?,?,?,?,?,?,?,?,?)', (songCount,y,path,audioLength,artist,album,artwork,artType,artCoverID,))
             songCount = songCount + 1
                 
     print "\n"
-    for row in c.execute('SELECT id,song,path,lengthOfSong,artist,album,artType FROM music '):
+    for row in c.execute('SELECT id,song,path,lengthOfSong,artist,album,artType,artCoverID FROM music '):
         print row
 
 
