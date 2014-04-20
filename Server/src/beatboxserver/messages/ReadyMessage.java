@@ -20,5 +20,5 @@ public class ReadyMessage extends Message {
     
     
     @Expose
-    public String songID;
+    public String id;
 }
