@@ -5,7 +5,6 @@
 # -Database: ID, Title, Absolute file path(Storing is wrong. Double Slash), LengthofSong(Seconds)
 #
 #Still Need:
-# -Database: Artist, Album, Size of File, 
 # -Have a properties file 
 #   -Folder Location
 #   
@@ -17,6 +16,9 @@ import os
 import sys
 import sqlite3
 from mutagen.mp3 import MP3
+from mutagen import File
+import eyed3
+
 
 def main():
     crawl()
@@ -36,7 +38,7 @@ def crawl():
     sqlStatement = 'drop table if exists ' + table_name
     c.execute(sqlStatement)
 
-    c.execute('''CREATE TABLE if not exists music(id real, song text, path text,lengthOfSong real)''')
+    c.execute('''CREATE TABLE if not exists music(id real, song text, path text,lengthOfSong real,artist text, album text,art blob)''')
     
 
     #for loop that will recursivly go through the file given
@@ -54,17 +56,32 @@ def crawl():
 
 
         for x in range(len(filenames)):
-            y =  filenames[songCount]
-            path = os.path.join(root,filenames[songCount])
-            audio = MP3(path)
-            audioLength = audio.info.length
-            c.execute('insert into music values (?,?,?,?)', (songCount,y,path,audioLength,))
+            y =  filenames[songCount] #getting the indivdual file
+            path = os.path.join(root,filenames[songCount]) #path to file
+            data = File(path)
+
+            if 'APIC:' in data.tags:
+                artwork = data.tags['APIC:'].data
+            else:
+                artwork = 'null'
+            audioFile = eyed3.load(path) #loading for artist/Album
+            artist = audioFile.tag.artist
+            album = audioFile.tag.album
+            audio = MP3(path) #for audio lenth
+            audioLength = audio.info.length   
+            c.execute('insert into music values (?,?,?,?,?,?,?)', (songCount,y,path,audioLength,artist,album,artwork))
             songCount = songCount + 1
                 
 
-    for row in c.execute('SELECT * FROM music'):
+    for row in c.execute('SELECT id,song,path,lengthOfSong,artist,album FROM music '):
         print row
 
+
+    #c.execute('SELECT art FROM music')
+    #picture=c.fetchone()[0]
+    #with open('test122.jpg','wb') as img:
+    #    img.write(picture)
+        
 
 if __name__ == "__main__":
         main()
