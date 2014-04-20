@@ -59,10 +59,10 @@ def crawl():
             y =  filenames[songCount] #getting the indivdual file
             path = os.path.join(root,filenames[songCount]) #path to file
             data = File(path)
-
             if 'APIC:' in data.tags:
                 artwork = data.tags['APIC:'].data
             else:
+                print "No Album Art work - ", y
                 artwork = 'null'
             audioFile = eyed3.load(path) #loading for artist/Album
             artist = audioFile.tag.artist
@@ -72,7 +72,7 @@ def crawl():
             c.execute('insert into music values (?,?,?,?,?,?,?)', (songCount,y,path,audioLength,artist,album,artwork))
             songCount = songCount + 1
                 
-
+    print "\n"
     for row in c.execute('SELECT id,song,path,lengthOfSong,artist,album FROM music '):
         print row
 
