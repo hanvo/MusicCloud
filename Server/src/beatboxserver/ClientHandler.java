@@ -57,12 +57,13 @@ public class ClientHandler extends RequestHandler {
                 sendError(ctx.channel(), FORBIDDEN);
                 return;
             } catch (Exception e) {
+                
+                Logger.getLogger(SpeakerHandler.class.getName()).log(Level.WARNING, "Failure occured", e);
                 sendError(ctx.channel(), INTERNAL_SERVER_ERROR);
                 return;
             }
             
-            
-            sendError(ctx.channel(), NOT_IMPLEMENTED);
+            sendResponse(ctx.channel(), client, false);
         } else {
             sendError(ctx.channel(), METHOD_NOT_ALLOWED);
         }

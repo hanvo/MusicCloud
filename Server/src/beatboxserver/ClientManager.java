@@ -61,7 +61,7 @@ public class ClientManager {
         }
         
         try {
-            Constructor ctor = clientType.getDeclaredConstructor(String.class);
+            Constructor ctor = clientType.getDeclaredConstructor(int.class);
             client = (Client)ctor.newInstance(newID);
         } catch (Exception e) {
             throw new InvocationTargetException(e);
