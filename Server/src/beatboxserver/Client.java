@@ -9,6 +9,8 @@ package beatboxserver;
 import beatboxserver.updates.ClientUpdate;
 import io.netty.channel.Channel;
 
+import com.google.gson.annotations.Expose;
+
 /**
  * 
  * @author rahmanj
@@ -22,13 +24,9 @@ public abstract class Client {
      * @param id
      * @param type 
      */
-    public Client(String id, ClientType type) {
-        if (id != null) {
-            this.id = id;
-            this.clientType = type;
-        } else {
-            throw new IllegalArgumentException();
-        }
+    public Client(int id, ClientType type) {
+        this.id = id;
+        this.clientType = type;
     }
     
     
@@ -36,7 +34,7 @@ public abstract class Client {
      * 
      * @return 
      */
-    public String getID() {
+    public int getID() {
         return id;
     }
     
@@ -67,7 +65,9 @@ public abstract class Client {
         updateQueue.queueRequest(ch);
     }
     
+    @Expose
+    private int id;
+    
     private ClientType clientType;
-    private String id;
     private ClientUpdateQueue updateQueue;
 }

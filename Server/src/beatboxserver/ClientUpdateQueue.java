@@ -58,7 +58,7 @@ public class ClientUpdateQueue {
                 json = update.toJson();
                 response = RequestHandler.createResponse(HttpResponseStatus.OK, json);
                 
-                RequestHandler.sendResponse(ch, response);
+                RequestHandler.sendResponse(ch, response, false);
             } else {
                 // Enqueue the request
                 channelQueue.add(ch);
@@ -84,7 +84,7 @@ public class ClientUpdateQueue {
                 json = update.toJson();
                 response = RequestHandler.createResponse(HttpResponseStatus.OK, json);
                 
-                RequestHandler.sendResponse(chan, response);
+                RequestHandler.sendResponse(chan, response, false);
             } else {
                 updates.put(update.getUpdateType(), update);
             }

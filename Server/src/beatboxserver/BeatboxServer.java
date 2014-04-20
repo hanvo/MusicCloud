@@ -35,7 +35,20 @@ public class BeatboxServer {
         this.songManager = songManager;
     }
     
-    public void run() throws InterruptedException {
+    /**
+     * 
+     * @throws InterruptedException
+     * @throws IOException 
+     */
+    public void run() throws InterruptedException, IOException {
+        
+        RegisterService registrar = null;
+        try {
+            registrar = new RegisterService();
+        } catch (IOException e) {
+            Logger.getLogger(this.getClass().getName()).log(Level.WARNING, "Failed to register service", e);
+        }
+        
         // Perform application specific initialization here
         
         // TODO Application specific initialization
@@ -54,9 +67,13 @@ public class BeatboxServer {
         
         // Register service
         try {
-            RegisterService.registerService("Beatbox Central Server", RegisterService.servicePort);
+            if (registrar != null) {
+                registrar.registerService("Beatbox Central Server", RegisterService.servicePort);
+            } else {
+                Logger.getLogger(BeatboxServer.class.getName()).log(Level.WARNING, "Failed to register service");
+            }
         } catch (IOException e) {
-            Logger.getLogger(this.getClass().getName()).log(Level.SEVERE, "Failed to register service", e);
+            Logger.getLogger(BeatboxServer.class.getName()).log(Level.WARNING, "Failed to register service", e);
         }
         
         // Start the server and register our channel initializer
@@ -77,6 +94,10 @@ public class BeatboxServer {
             bossGroup.shutdownGracefully();
             workerGroup.shutdownGracefully();
         }
+        
+        if (registrar != null) {
+            registrar.DeregisterService();
+        }
     }
     
     public static void main(String[] args) {
@@ -90,7 +111,7 @@ public class BeatboxServer {
         try {
             server.run();
         } catch (Exception e) {
-            Logger.getLogger(server.getClass().getName()).log(Level.SEVERE, "Exception thrown in run()", e);
+            Logger.getLogger(BeatboxServer.class.getName()).log(Level.SEVERE, "Exception thrown in run()", e);
         }
     }
     

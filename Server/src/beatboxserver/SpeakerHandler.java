@@ -6,6 +6,8 @@
 
 package beatboxserver;
 
+import static beatboxserver.RequestHandler.sendError;
+import beatboxserver.messages.AuthenticateMessage;
 import beatboxserver.messages.Message;
 
 import io.netty.channel.ChannelHandlerContext;
@@ -40,6 +42,28 @@ public class SpeakerHandler extends RequestHandler {
     
     public void authenticate(ChannelHandlerContext ctx, FullHttpRequest req, String clientID, Message body) {
         if (validateMethod(req, HttpMethod.POST)) {
+            
+            AuthenticateMessage message;
+            SpeakerClient client;
+            
+            try {
+                message = (AuthenticateMessage)body;
+            } catch (ClassCastException e) {
+                sendError(ctx.channel(), BAD_REQUEST);
+                return;
+            }
+            
+            try {
+                client = (SpeakerClient)clientMgr.createClient(message.pin, SpeakerClient.class);
+            } catch (SecurityException e) {
+                sendError(ctx.channel(), FORBIDDEN);
+                return;
+            } catch (Exception e) {
+                sendError(ctx.channel(), INTERNAL_SERVER_ERROR);
+                return;
+            }
+            
+            
             sendError(ctx.channel(), NOT_IMPLEMENTED);
         } else {
             sendError(ctx.channel(), METHOD_NOT_ALLOWED);

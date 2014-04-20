@@ -20,7 +20,7 @@ public class UserClient extends Client {
      * 
      * @param id 
      */
-    public UserClient(String id) {
+    public UserClient(int id) {
         super(id, ClientType.User);
         
         likedSongs = new HashMap<>();

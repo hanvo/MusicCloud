@@ -112,8 +112,7 @@ public class ProtocolMessageHandler extends SimpleChannelInboundHandler<FullHttp
             }
         }
         
-        Attribute attr = ctx.attr(AttributeKey.valueOf("KeepAlive"));
-        attr.set(keepAlive);
+        // TODO Deal with attr key issues
         
         // Try to get request handler
         Class handlerClass;
@@ -191,6 +190,8 @@ public class ProtocolMessageHandler extends SimpleChannelInboundHandler<FullHttp
         }
         
         try {
+            
+            Logger.getLogger(ProtocolMessageHandler.class.getName()).info("Dispatching request to " + handlerName + "." + methodName);
             
             // Dispatch based on the request type
             if (request.getMethod().equals(HttpMethod.GET)) {   

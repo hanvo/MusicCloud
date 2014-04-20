@@ -6,8 +6,10 @@
 
 package beatboxserver;
 
-/**
- *
+import beatboxserver.Client.ClientType;
+
+ /**
+  *
  * @author rahmanj
  */
 public class AuthenticationManager {
@@ -16,5 +18,9 @@ public class AuthenticationManager {
         
     }
     
-    // TODO 
+    
+    public boolean authenticate(String pin) {
+        // TODO
+        return pin.equals("1234");
+    }
 }

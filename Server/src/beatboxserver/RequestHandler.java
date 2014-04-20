@@ -6,6 +6,7 @@
 
 package beatboxserver;
 
+import com.google.gson.FieldNamingPolicy;
 import io.netty.buffer.Unpooled;
 import io.netty.buffer.ByteBuf;
 
@@ -24,12 +25,17 @@ import io.netty.handler.codec.http.HttpResponseStatus;
 import io.netty.util.AttributeKey;
 import io.netty.util.CharsetUtil;
 
+import java.net.InetSocketAddress;
+
 import java.util.List;
 import java.util.Map;
 
 import java.util.logging.Logger;
 import java.util.logging.Handler;
 import java.util.logging.Level;
+
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 
 import static io.netty.handler.codec.http.HttpHeaders.Names.*;
 
@@ -154,6 +160,9 @@ public abstract class RequestHandler {
      */
     public static void sendError(Channel ch, HttpResponseStatus status) {
         if (ch != null && status != null) {
+            
+            Logger.getLogger(RequestHandler.class.getName()).warning("Sending " + status.toString() + " error");
+            
             ByteBuf message = Unpooled.copiedBuffer("Failure: " + status.toString() + "\r\n", CharsetUtil.US_ASCII);
             
             FullHttpResponse res = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, status, message);
@@ -172,13 +181,27 @@ public abstract class RequestHandler {
      * Send a given response object to the client
      * @param ch {@link Channel} to be used to send the response
      * @param response {@link FullHttpResponse} response to be sent to the client
+     * @param keepAlive 
      */
-    public static void sendResponse(Channel ch, FullHttpResponse response) {
-        if (ch != null && response != null) {
-            if ((Boolean)ch.attr(AttributeKey.valueOf("KeepAlive")).get()) {
+    public static void sendResponse(Channel ch, Object data, boolean keepAlive) {
+        if (ch != null && data != null) {
+            
+            InetSocketAddress addr = (InetSocketAddress)ch.remoteAddress();
+            Logger.getLogger(RequestHandler.class.getName()).info("Sending response to " + addr.getHostString());
+            
+            Gson gson = (new GsonBuilder())
+                    .excludeFieldsWithoutExposeAnnotation()
+                    .setFieldNamingPolicy(FieldNamingPolicy.LOWER_CASE_WITH_UNDERSCORES).create();
+            
+            String body = gson.toJson(data);
+            FullHttpResponse response = createResponse(HttpResponseStatus.OK, body);
+            
+            if (keepAlive) {
+                
                 // Keep alive in effect
                 ch.writeAndFlush(response).addListener(ChannelFutureListener.CLOSE_ON_FAILURE);
             } else {
+                
                 // No keep alive
                 ch.writeAndFlush(response).addListener(ChannelFutureListener.CLOSE);
             }

@@ -12,7 +12,15 @@ package beatboxserver;
  */
 public class SpeakerClient extends Client {
     
-    public SpeakerClient(String id) {
+    public SpeakerClient(int id) {
         super(id, ClientType.Speaker);
     }
+    
+    
+    ActiveSong.StatusType status;
+    
+    /**
+     * ID for the song the speaker is currently playing
+     */
+    private int activeSongID;
 }

@@ -20,10 +20,9 @@ public class ActiveSong extends Song {
                       String songArtist,
                       String songAlbum,
                       String songPath,
-                      String songCoverPath,
                       int songLength,
                       int playbackPosition) {
-        super(songName, songArtist, songAlbum, songPath, songCoverPath, songLength);
+        super(songName, songArtist, songAlbum, songPath, songLength);
         playbackPosition = 0; // Start at playback position 0
         status = StatusType.Paused;
     }

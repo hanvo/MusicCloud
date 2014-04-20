@@ -6,6 +6,8 @@
 
 package beatboxserver;
 
+import io.netty.buffer.ByteBuf;
+
 import com.google.gson.annotations.Expose;
 
 /**
@@ -20,17 +22,37 @@ public class Song {
      * @param songArtist
      * @param songAlbum
      * @param songPath
-     * @param songCoverPath
      * @param songLength 
      */
-    public Song(String songName, String songArtist, String songAlbum, String songPath, String songCoverPath, int songLength) {
+    public Song(String songName, String songArtist, String songAlbum, String songPath, int songLength) {
+        this(songName, songArtist, songAlbum, songPath, songLength, null, null);
+    }
+    
+    /**
+     * 
+     * @param songName
+     * @param songArtist
+     * @param songAlbum
+     * @param songPath
+     * @param songLength
+     * @param image
+     * @param imageType 
+     */
+    public Song(String songName, String songArtist, String songAlbum, String songPath, int songLength, ByteBuf image, String imageType) {
         name = songName;
         artist = songArtist;
         album = songAlbum;
         path = songPath;
-        coverPath = songCoverPath;
         length = songLength;
+        if (image != null) {
+            imageData = image.duplicate();
+        } else {
+            imageData = null;
+        }
+        imageMimeType = imageType;
     }
+    
+    
     
     /**
      * 
@@ -72,6 +94,18 @@ public class Song {
         return length;
     }
     
+    public ByteBuf getImageBuffer() {
+        return imageData;
+    }
+    
+    /**
+     * 
+     * @return a string containing the mime type for the image, or null if no image was included
+     */
+    public String getImageMimeType() {
+        return imageMimeType;
+    }
+    
     @Expose
     private String id;
     
@@ -84,8 +118,11 @@ public class Song {
     @Expose
     private String album;
     
+    
     private String path;
-    private String coverPath;
+    
+    private String imageMimeType;
+    private ByteBuf imageData;
     
     @Expose
     private int length;

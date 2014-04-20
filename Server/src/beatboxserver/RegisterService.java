@@ -29,22 +29,44 @@ public class RegisterService {
      */
     public final static int servicePort = 5050;
     
+    public RegisterService() throws IOException {
+        dns = JmDNS.create();
+        serviceInfo = null;
+    }
+    
     /**
      * Register this instance
      * @param serverName {@link String} Human readable server name
      * @param serverPort Port over which the server is operating
+     * @throws IOException
      */
-    public static void registerService(String serverName, int serverPort) throws IOException {  
-        JmDNS dns = JmDNS.create();
+    public void registerService(String serverName, int serverPort) throws IOException {  
+        
+        if (serviceInfo != null) {
+            throw new IllegalStateException();
+        }
         
         String instanceName = RegisterService.normalizeServerName(serverName);
         
         String logMessage = "Registering mDNS name \"" + instanceName + "." + serviceName + ":" + serverPort+ "\"";
         Logger.getLogger(RegisterService.class.getName()).info(logMessage);
         
-        ServiceInfo info = ServiceInfo.create(serviceName, instanceName, serverPort, serverName);
+        serviceInfo = ServiceInfo.create(serviceName, instanceName, serverPort, serverName);
         
-        dns.registerService(info);
+        dns.registerService(serviceInfo);
+    }
+    
+    /**
+     * 
+     */
+    public void DeregisterService() {
+        if (serviceInfo != null) {
+            dns.unregisterService(serviceInfo);
+            dns.unregisterAllServices();
+            serviceInfo = null;
+        } else {
+            throw new IllegalStateException();
+        }
     }
     
     /**
@@ -62,7 +84,6 @@ public class RegisterService {
         return serverName;
     }
     
-    private RegisterService() {
-        // NO-OP, prevent instantiation
-    }
+    private ServiceInfo serviceInfo;
+    private JmDNS dns;
 }

@@ -42,23 +42,33 @@ public class ClientManager {
         }
         
         Client client;
-        String newID;
+        int newID;
+        boolean authenticated;
         // TODO, Use auth manager to login via pin
         
-        synchronized(this) {
-            if (!Client.class.isAssignableFrom(clientType)) {
-                throw new IllegalArgumentException("Invalid class type, must be subclass of Client");
-            } 
-            
-            newID = String.valueOf(nextClientID++);
-            
-            try {
-                Constructor ctor = clientType.getDeclaredConstructor(String.class);
-                client = (Client)ctor.newInstance(newID);
-            } catch (Exception e) {
-                throw new InvocationTargetException(e);
-            }
+        authenticated = this.authenticationManager.authenticate(pin);
+        
+        if (!authenticated) {
+            throw new SecurityException();
         }
+        
+        if (!Client.class.isAssignableFrom(clientType)) {
+            throw new IllegalArgumentException("Invalid class type, must be subclass of Client");
+        } 
+        
+        synchronized(this) {
+            newID = nextClientID++;   
+        }
+        
+        try {
+            Constructor ctor = clientType.getDeclaredConstructor(String.class);
+            client = (Client)ctor.newInstance(newID);
+        } catch (Exception e) {
+            throw new InvocationTargetException(e);
+        }
+        
+        clientMap.put(String.valueOf(newID), client);
+        
         return client;
     }
     
