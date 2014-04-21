@@ -29,7 +29,6 @@ from mutagen import File
 import eyed3
 
 
-
 def main():
     crawl()
 
@@ -55,32 +54,53 @@ def crawl():
     x = "root"
     y = "song name"
     songCount = 0
-    for root, dirnames, filenames in os.walk(r'C:\Users\QuakeZ\Desktop\Music Folder'):
+    for root, dirnames, filenames in os.walk(r'.'):
         x = root
         print "Root: ", root
-        print "\n"
-        print "Song List: \n"
+        print "Song List:"
         print '\n'.join(filenames)
         print '\n'       
 
 
         for x in range(len(filenames)):
-            y =  filenames[songCount] #getting the indivdual file
-            path = os.path.join(root,filenames[songCount]) #path to file
+            y =  filenames[x] #getting the indivdual file
+            path = os.path.join(root,filenames[x]) #path to file
+            
+            if not path.endswith(".mp3"): # Skip non-mp3 files
+                continue
+
+            print "Checking file: ", path            
+
             data = File(path)
-            if 'APIC:' in data.tags:
-                artwork = data.tags['APIC:'].data
-                artType = data.tags['APIC:'].mime
-                artCoverID = data.tags['APIC:'].type
+            if 'APIC:' in data.tags: # Check if we even have an APIC frame available
+                if isinstance(data.tags['APIC:'], list): # Check if we have a list of photos
+
+                    print "Found ", length(data.tags['APIC:']), " APIC images" # Debug statement
+
+                    for apic in data.tags['APIC:']:
+                        artwork = apic.data
+                        artType = apic.mime
+                        artCoverID = apic.type
+                        if apic.type == 3: # Stop looping if we found media type 3 (Front cover
+                            break
+                else: # We don't have a list, just access the fields directly
+                    artwork = data.tags['APIC:'].data
+                    artType = data.tags['APIC:'].mime
+                    artCoverID = data.tags['APIC:'].type
             else:
                 print "No Album Art work - ", y
                 artwork = 'null'
                 artType = 'null'
+                artCoverID = 'null'
+
             audioFile = eyed3.load(path) #loading for artist/Album
             artist = audioFile.tag.artist
             album = audioFile.tag.album
             audio = MP3(path) #for audio lenth
-            audioLength = audio.info.length   
+            audioLength = audio.info.length
+
+            print "Inserting values: \"" + str(songCount) + "\" \"" + str(y) + "\" \"" + str(path) + "\" \"" + str(audioLength) + "\" \"" + str(artist) + "\" \"" + str(album) + "\" \"" + str(artType) + "\""# Debug statement
+
             c.execute('insert into music values (?,?,?,?,?,?,?,?,?)', (songCount,y,path,audioLength,artist,album,artwork,artType,artCoverID,))
             songCount = songCount + 1
                 
