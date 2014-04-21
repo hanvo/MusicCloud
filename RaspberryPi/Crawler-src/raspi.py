@@ -57,29 +57,44 @@ def serv_func():
 		pass
 	
 	try:
-		
+		while True:
+		_serv_sock.request("GET","klamath.dnsdynamic.com:5050/speaker/request_update?clientID="+str(_clientID))
+		_upcoming_song_resp = _serv_sock.getresponse()
+		#Push _upcoming_song_resp.read() the Queue
 	except socket.timeout:
 		serv_func()
-	_serv_sock.
+	_serv_sock.close()
 
 
 def communicate_func():
-	pass
+	# Pop the specific request from the Queue, depending on that do the following
+	_comm_sock = httplib.HTTPConnection('klamath.dnsdynamic.com', 5050, timeout = timeout)
+	# REQUEST_SONG
+	# the value of song ID is in the queue
+	_upcoming_resp = json.load("<the value in the queue>")
+	_values = _upcoming_resp['values']
+	_songID = _values['id']
+	_comm_sock.request("GET","klamath.dnsdynamic.com:5050/request_song?clientID="+str(_clientID)+"&songID"+str(_songID))
+	_song_data_json = _comm_sock.getresponse().read()
+	_song_data = json.load(_song_data_json)
+	# Ready
+	# get the song ID that is ready to play from the queue, it will have to be located and then decoded and encoded
+	_params_ready = json.dumps({"id":_songID},encoding = "ASCII") #songID might be different
+	_comm_sock.request("POST","klamath.dnsdynamic.com:5050/speaker/ready?clientID="+str(_clientID),_params_ready)
+	# playback command, possibly from REQUEST_SPEAKER_UPDATE, implemented in play back thread
 
-def _get_song_request(_serv_sock,_clientID):
-	while True:
-		_serv_sock.request("GET","klamath.dnsdynamic.com:5050/speaker/request_update?clientID="+str(_clientID))
-		_upcoming_song_resp = _serv_sock.getresponse()
-		#Push _upcoming_song_resp the Queue
-
-
+	# Status update depeding on the playback thread
+	_params_update = json.dumps({"id":_songID,"status":"playing/pause","position":position(?)},encoding = "ASCII")
+	_headers_update = {"Content-Type":"application/json"}
+	_comm_sock.request("POST","klamath.dnsdynamic.com:5050/speaker/status_update?clientID="+str(_clientID),_params_update,_headers_update)
+	
 if __name__ == "__main__":
 	#thread1 = Thread(target = play_back_func, args =() )
 	thread2 = Thread(target = serv_func, args=() )
-	#thread3 = Thread(target = communicate_func, args =() )
+	thread3 = Thread(target = communicate_func, args =() )
 	#thread1.start()
 	thread2.start()
-	#thread3.start()
+	thread3.start()
 	#thread1.join()
 	thread2.join()
-	#thread3.join()
+	thread3.join()
