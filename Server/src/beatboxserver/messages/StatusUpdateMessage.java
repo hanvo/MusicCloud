@@ -20,13 +20,19 @@ public class StatusUpdateMessage extends Message {
         super(MessageType.StatusUpdateMessage);
     }
     
+    /**
+     * Song ID of currently playing song
+     */
     @Expose
-    public String id;
+    public long id;
     
     @Expose
     public Status status;
     
+    /**
+     * Playback position in milliseconds
+     */
     @Expose
-    public int position;
+    public long position;
     
 }

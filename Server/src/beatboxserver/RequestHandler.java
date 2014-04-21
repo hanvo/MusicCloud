@@ -48,20 +48,20 @@ public abstract class RequestHandler {
     
     /**
      * Constructor for {@link RequestHandler}
-     * @param clientManager {@link ClientManager} for the server
+     * @param sessionManager {@link SessionManager} for the server
      * @param songManager {@link SongManager} for the server
      */
-    public RequestHandler(ClientManager clientManager, SongManager songManager) {
+    public RequestHandler(SessionManager sessionManager, SongManager songManager) {
         Logger logger = Logger.getLogger(this.getClass().getName());
         for (Handler h : logger.getHandlers()) {
             h.setLevel(Level.ALL);
         }
         
-        if (clientManager == null || songManager == null) {
+        if (sessionManager == null || songManager == null) {
             throw new IllegalArgumentException();
         }
         
-        clientMgr = clientManager;
+        sessionMgr = sessionManager;
         songMgr = songManager;
     }
     
@@ -178,6 +178,34 @@ public abstract class RequestHandler {
     
     
     /**
+     * 
+     * @param ch
+     * @param status
+     * @param keepAlive 
+     */
+    public static void sendResponse(Channel ch, HttpResponseStatus status, boolean keepAlive) {
+        if (ch != null) {
+            
+            InetSocketAddress addr = (InetSocketAddress)ch.remoteAddress();
+            Logger.getLogger(RequestHandler.class.getName()).info("Sending response to " + addr.getHostString());
+
+            FullHttpResponse response = createResponse(status);
+            
+            if (keepAlive) {
+                
+                // Keep alive in effect
+                ch.writeAndFlush(response).addListener(ChannelFutureListener.CLOSE_ON_FAILURE);
+            } else {
+                
+                // No keep alive
+                ch.writeAndFlush(response).addListener(ChannelFutureListener.CLOSE);
+            }
+        } else {
+            throw new IllegalArgumentException();
+        }
+    }
+    
+    /**
      * Send a given response object to the client
      * @param ch {@link Channel} to be used to send the response
      * @param response {@link FullHttpResponse} response to be sent to the client
@@ -257,6 +285,6 @@ public abstract class RequestHandler {
         }
     }
     
-    protected ClientManager clientMgr;
+    protected SessionManager sessionMgr;
     protected SongManager songMgr;
 }

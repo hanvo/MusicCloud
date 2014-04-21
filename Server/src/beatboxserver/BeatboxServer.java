@@ -25,7 +25,7 @@ import java.io.IOException;
  */
 public class BeatboxServer {
     
-    public BeatboxServer(ClientManager clientManager, SongManager songManager) {
+    public BeatboxServer(SessionManager clientManager, SongManager songManager) {
         Logger logger = Logger.getLogger(this.getClass().getName());
         for (Handler h : logger.getHandlers()) {
             h.setLevel(Level.ALL);
@@ -101,10 +101,11 @@ public class BeatboxServer {
     }
     
     public static void main(String[] args) {
-         
+        
+        DatabaseManager databaseManager = new DatabaseManager("song_list.db");
         AuthenticationManager authManager = new AuthenticationManager();
-        ClientManager clientManager = new ClientManager(authManager);
-        SongManager songManager = new SongManager();
+        SessionManager clientManager = new SessionManager(databaseManager, authManager);
+        SongManager songManager = new SongManager(databaseManager);
         
         BeatboxServer server = new BeatboxServer(clientManager, songManager);
         
@@ -115,6 +116,6 @@ public class BeatboxServer {
         }
     }
     
-    private ClientManager clientManager;
+    private SessionManager clientManager;
     private SongManager songManager;
 }

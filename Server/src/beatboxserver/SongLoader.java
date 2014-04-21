@@ -4,20 +4,21 @@
  * and open the template in the editor.
  */
 
-package beatboxserver.messages;
-
-import com.google.gson.annotations.Expose;
+package beatboxserver;
 
 /**
  *
  * @author rahmanj
  */
-public class VoteMessage extends Message {
+public class SongLoader {
     
-    public VoteMessage() {
-        super(MessageType.VoteMessage);
+    
+    public SongLoader() {
+        
     }
     
-    @Expose
-    public long id;
+    
+    public void loadSongs(String pathToDB, SongManager manager) {
+        
+    }
 }

@@ -15,18 +15,23 @@ import com.google.gson.annotations.Expose;
  * 
  * @author rahmanj
  */
-public abstract class Client {
+public abstract class Session {
     
-    public enum ClientType {User, Speaker};
+    /**
+     * Enumeration used to track different session types
+     * Associated classes are named EnumValueSession
+     */
+    public enum SessionType {User, Speaker};
     
     /**
      * 
      * @param id
      * @param type 
      */
-    public Client(int id, ClientType type) {
+    public Session(long id, String ipAddress, SessionType type) {
         this.id = id;
         this.clientType = type;
+        this.ipAddresss = ipAddress;
     }
     
     
@@ -34,7 +39,7 @@ public abstract class Client {
      * 
      * @return 
      */
-    public int getID() {
+    public long getID() {
         return id;
     }
     
@@ -66,8 +71,10 @@ public abstract class Client {
     }
     
     @Expose
-    private int id;
+    private long id;
     
-    private ClientType clientType;
+    private String ipAddresss;
+    
+    private SessionType clientType;
     private ClientUpdateQueue updateQueue;
 }

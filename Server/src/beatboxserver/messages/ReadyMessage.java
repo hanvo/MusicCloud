@@ -19,6 +19,9 @@ public class ReadyMessage extends Message {
     }
     
     
+    /**
+     * Song ID that is ready to play
+     */
     @Expose
-    public String id;
+    public long id;
 }

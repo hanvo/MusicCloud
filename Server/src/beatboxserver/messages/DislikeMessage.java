@@ -19,6 +19,6 @@ public class DislikeMessage extends Message {
     }
     
     @Expose
-    public String id;
+    public long id;
     
 }

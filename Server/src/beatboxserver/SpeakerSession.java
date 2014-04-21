@@ -10,10 +10,10 @@ package beatboxserver;
  *
  * @author rahmanj
  */
-public class SpeakerClient extends Client {
+public class SpeakerSession extends Session {
     
-    public SpeakerClient(int id) {
-        super(id, ClientType.Speaker);
+    public SpeakerSession(long id, String ipAddress) {
+        super(id, ipAddress, SessionType.Speaker);
     }
     
     

@@ -17,18 +17,34 @@ import java.util.HashMap;
  */
 public class SongManager {
     
-    public SongManager() {
+    public SongManager(DatabaseManager databaseManager) {
         songMap = new HashMap<>();
         statsMap = new HashMap<>();
+        dbManager = databaseManager;
     }
     
     
-    public void vote(String songID, UserClient client) {
+    /**
+     * 
+     * @param song 
+     */
+    public void addSong(Song song) {
+        synchronized(this) {
+            if (songMap.containsKey(song.getID())) {
+                throw new IllegalArgumentException("Duplicate song IDs");
+            } else {
+                songMap.put(song.getID(), song);
+                statsMap.put(song.getID(), new SongStats(song.getID()));
+            }
+        }
+    }
+    
+    public void vote(String songID, UserSession client) {
         synchronized(this) {
         }
     }
     
-    public void like(String songID, UserClient client) {
+    public void like(String songID, UserSession client) {
         synchronized(this) {
             synchronized(client) {
                 if (client.doesDislikeSong(songID)) {
@@ -39,7 +55,7 @@ public class SongManager {
         }
     }
     
-    public void dislike(String songID, UserClient client) {
+    public void dislike(String songID, UserSession client) {
         synchronized(this) {
             synchronized(client) {
                 if (client.doesLikeSong(songID)) {
@@ -54,4 +70,6 @@ public class SongManager {
     private Map<String, Song> songMap;
     private Map<String, SongStats> statsMap;
     private Map<String, ByteBuf> photoMap;
+    
+    private DatabaseManager dbManager;
 }

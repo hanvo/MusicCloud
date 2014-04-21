@@ -6,18 +6,22 @@
 
 package beatboxserver;
 
-import static beatboxserver.RequestHandler.sendError;
 import beatboxserver.messages.AuthenticateMessage;
+import beatboxserver.messages.DeauthenticateMessage;
 import beatboxserver.messages.Message;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.FullHttpRequest;
 import io.netty.handler.codec.http.HttpMethod;
+import io.netty.handler.codec.http.HttpResponseStatus;
 
 import java.util.logging.Handler;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import static beatboxserver.Session.SessionType;
+import static beatboxserver.RequestHandler.sendError;
+import static beatboxserver.RequestHandler.sendResponse;
 import static io.netty.handler.codec.http.HttpResponseStatus.*;
 
 /**
@@ -31,7 +35,7 @@ public class SpeakerHandler extends RequestHandler {
      * @param clientManager
      * @param songManager 
      */
-    public SpeakerHandler(ClientManager clientManager, SongManager songManager) {
+    public SpeakerHandler(SessionManager clientManager, SongManager songManager) {
         super(clientManager, songManager);
         
         Logger logger = Logger.getLogger(this.getClass().getName());
@@ -40,11 +44,12 @@ public class SpeakerHandler extends RequestHandler {
         }
     }
     
-    public void authenticate(ChannelHandlerContext ctx, FullHttpRequest req, String clientID, Message body) {
+    public void authenticate(ChannelHandlerContext ctx, FullHttpRequest req, long clientID, String ipAddress, Message body) {
         if (validateMethod(req, HttpMethod.POST)) {
             
+            
             AuthenticateMessage message;
-            SpeakerClient client;
+            SpeakerSession session;
             
             try {
                 message = (AuthenticateMessage)body;
@@ -54,7 +59,7 @@ public class SpeakerHandler extends RequestHandler {
             }
             
             try {
-                client = (SpeakerClient)clientMgr.createClient(message.pin, SpeakerClient.class);
+                session = (SpeakerSession)sessionMgr.createSession(message.pin, ipAddress, SessionType.Speaker);
             } catch (SecurityException e) {
                 sendError(ctx.channel(), FORBIDDEN);
                 return;
@@ -65,24 +70,53 @@ public class SpeakerHandler extends RequestHandler {
                 return;
             }
             
+            sendResponse(ctx.channel(), session, false);
             
-            sendResponse(ctx.channel(), client, false);
+            
+            sendResponse(ctx.channel(), session, false);
         } else {
             sendError(ctx.channel(), METHOD_NOT_ALLOWED);
         }
     }
     
     
-    public void deauthenticate(ChannelHandlerContext ctx, FullHttpRequest req, String clientID, Message body) {
+    public void deauthenticate(ChannelHandlerContext ctx, FullHttpRequest req, long clientID, String ipAddress, Message body) {
        if (validateMethod(req, HttpMethod.POST)) {
-           sendError(ctx.channel(), NOT_IMPLEMENTED);
+           DeauthenticateMessage message;
+           SpeakerSession session;
+            
+           try {
+               message = (DeauthenticateMessage)body;
+           } catch (ClassCastException e) {
+               sendError(ctx.channel(), BAD_REQUEST);
+               return;
+           }
+           
+           try {
+               session = (SpeakerSession)sessionMgr.getSession(message.id);
+               sessionMgr.destroySession(session);
+           } catch (SecurityException e) {
+               sendError(ctx.channel(), FORBIDDEN);
+               return;
+           } catch (ClassCastException e) {
+               
+               sendError(ctx.channel(), BAD_REQUEST);
+               return;
+           } catch (Exception e) {
+                
+               Logger.getLogger(SpeakerHandler.class.getName()).log(Level.WARNING, "Failure occured", e);
+               sendError(ctx.channel(), INTERNAL_SERVER_ERROR);
+               return;
+           }
+           
+           sendResponse(ctx.channel(), HttpResponseStatus.OK, false);
        } else {
            sendError(ctx.channel(), METHOD_NOT_ALLOWED);
        }
     }
     
     
-    public void requestSpeakerUpdate(ChannelHandlerContext ctx, FullHttpRequest req, String clientID) {
+    public void requestSpeakerUpdate(ChannelHandlerContext ctx, FullHttpRequest req, long clientID, String ipAddress) {
         if (validateMethod(req, HttpMethod.GET)) {
             sendError(ctx.channel(), NOT_IMPLEMENTED);
         } else {
@@ -91,8 +125,20 @@ public class SpeakerHandler extends RequestHandler {
     }
     
     
-    public void statusUpdate(ChannelHandlerContext ctx, FullHttpRequest req, String clientID, Message body) {
+    public void statusUpdate(ChannelHandlerContext ctx, FullHttpRequest req, long clientID, String ipAddress, Message body) {
         if (validateMethod(req, HttpMethod.POST)) {
+            
+            // Validate the session
+            try {
+                if (!sessionMgr.validSession(clientID, ipAddress)) {
+                    sendError(ctx.channel(), FORBIDDEN);
+                    return;
+                }
+            } catch (Exception e) {
+                sendError(ctx.channel(), FORBIDDEN);
+                return;
+            }
+            
             sendError(ctx.channel(), NOT_IMPLEMENTED);
         } else {
             sendError(ctx.channel(), METHOD_NOT_ALLOWED);
@@ -100,8 +146,20 @@ public class SpeakerHandler extends RequestHandler {
     }
     
     
-    public void requestSong(ChannelHandlerContext ctx, FullHttpRequest req, String clientID) {
+    public void requestSong(ChannelHandlerContext ctx, FullHttpRequest req, long clientID, String ipAddress) {
         if (validateMethod(req, HttpMethod.GET)) {
+            
+            // Validate the session
+            try {
+                if (!sessionMgr.validSession(clientID, ipAddress)) {
+                    sendError(ctx.channel(), FORBIDDEN);
+                    return;
+                }
+            } catch (Exception e) {
+                sendError(ctx.channel(), FORBIDDEN);
+                return;
+            }
+            
             sendError(ctx.channel(), NOT_IMPLEMENTED);
         } else {
             sendError(ctx.channel(), METHOD_NOT_ALLOWED);
@@ -109,8 +167,20 @@ public class SpeakerHandler extends RequestHandler {
     }
     
     
-    public void ready(ChannelHandlerContext ctx, FullHttpRequest req, String clientID, Message body) {
+    public void ready(ChannelHandlerContext ctx, FullHttpRequest req, long clientID, String ipAddress, Message body) {
         if (validateMethod(req,HttpMethod.POST)) {
+            
+            // Validate the session
+            try {
+                if (!sessionMgr.validSession(clientID, ipAddress)) {
+                    sendError(ctx.channel(), FORBIDDEN);
+                    return;
+                }
+            } catch (Exception e) {
+                sendError(ctx.channel(), FORBIDDEN);
+                return;
+            }
+            
             sendError(ctx.channel(), NOT_IMPLEMENTED);
         } else {
             sendError(ctx.channel(), METHOD_NOT_ALLOWED);

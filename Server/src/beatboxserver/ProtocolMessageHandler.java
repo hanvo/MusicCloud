@@ -18,9 +18,12 @@ import io.netty.handler.codec.http.QueryStringDecoder;
 
 import io.netty.util.CharsetUtil;
 
-import java.util.logging.Logger;
+import java.net.InetSocketAddress;
+
 import java.lang.reflect.Method;
 import java.lang.reflect.Constructor;
+
+import java.util.logging.Logger;
 import java.util.logging.Handler;
 import java.util.logging.Level;
 
@@ -34,16 +37,16 @@ public class ProtocolMessageHandler extends SimpleChannelInboundHandler<FullHttp
     
     /**
      * Construct new instance of the {@link ProtocolMessageHandler}
-     * @param clientManager {@link ClientManager} to use when handling messages
+     * @param clientManager {@link SessionManager} to use when handling messages
      * @param songManager {@link SongManager} to use when handling messages
      */
-    public ProtocolMessageHandler(ClientManager clientManager, SongManager songManager) {
+    public ProtocolMessageHandler(SessionManager clientManager, SongManager songManager) {
         Logger logger = Logger.getLogger(this.getClass().getName());
         for (Handler h : logger.getHandlers()) {
             h.setLevel(Level.ALL);
         }
         
-        clientMgr = clientManager;
+        sessionMgr = clientManager;
         songMgr = songManager;
     }
     
@@ -76,6 +79,7 @@ public class ProtocolMessageHandler extends SimpleChannelInboundHandler<FullHttp
         String messageName;
         Message message = null;
         
+        String ipAddress;
         
         
         String[] components = path.split("/");
@@ -96,7 +100,7 @@ public class ProtocolMessageHandler extends SimpleChannelInboundHandler<FullHttp
         
  
         boolean keepAlive = false;
-        String clientID;
+        long sessionID;
         
         // Determine KeepAlive status and set context attribute
         if (decoder.parameters().containsKey("Connection")) {
@@ -121,10 +125,11 @@ public class ProtocolMessageHandler extends SimpleChannelInboundHandler<FullHttp
             return;
         }
         
+        // Create the request handler class
         RequestHandler requestHandler; 
         try {
-            Constructor ctor = handlerClass.getDeclaredConstructor(ClientManager.class, SongManager.class);
-            requestHandler = (RequestHandler)handlerClass.cast(ctor.newInstance(clientMgr, songMgr));
+            Constructor ctor = handlerClass.getDeclaredConstructor(SessionManager.class, SongManager.class);
+            requestHandler = (RequestHandler)handlerClass.cast(ctor.newInstance(sessionMgr, songMgr));
         } catch (Exception e) {
             Logger.getLogger(this.getClass().getName()).log(Level.SEVERE, "Invalid request for constructor: \"" + handlerName + "\"", e);
             RequestHandler.sendError(ctx.channel(), NOT_FOUND);
@@ -136,7 +141,8 @@ public class ProtocolMessageHandler extends SimpleChannelInboundHandler<FullHttp
         //
         // ChannelHandlerContext
         // FullHttpRequest
-        // String (Client ID, null if not present)
+        // long (Client ID, -1 if not present)
+        // String IP Address
         // Object (Json Decoded request body, if POST
         
         // Try to get method, send 404 if not found
@@ -146,10 +152,10 @@ public class ProtocolMessageHandler extends SimpleChannelInboundHandler<FullHttp
             // Get the appropriate method based on request type
             if (request.getMethod().equals(HttpMethod.GET)) {
                 
-                method = handlerClass.getMethod(methodName, ChannelHandlerContext.class, FullHttpRequest.class, String.class);
+                method = handlerClass.getMethod(methodName, ChannelHandlerContext.class, FullHttpRequest.class, long.class, String.class);
             } else if (request.getMethod().equals(HttpMethod.POST)) {
                 
-                method = handlerClass.getMethod(methodName, ChannelHandlerContext.class, FullHttpRequest.class, String.class, Message.class);
+                method = handlerClass.getMethod(methodName, ChannelHandlerContext.class, FullHttpRequest.class, long.class, String.class, Message.class);
             } else {
                 
                 Logger.getLogger(this.getClass().getName()).warning("Invalid request method");
@@ -164,11 +170,25 @@ public class ProtocolMessageHandler extends SimpleChannelInboundHandler<FullHttp
             return;
         }
         
-        // Parse out client ID if present
+        // Parse out session ID if present
         if (decoder.parameters().containsKey("clientID")) {
-            clientID = decoder.parameters().get("clientID").get(0);
+            try {
+                sessionID = Long.parseLong(decoder.parameters().get("clientID").get(0));
+            } catch (NumberFormatException e) {
+                
+                RequestHandler.sendError(ctx.channel(), BAD_REQUEST);
+                return;
+            }
         } else {
-            clientID = null;
+            sessionID = -1;
+        }
+        
+        // Extract the IP address
+        try {
+            ipAddress = ((InetSocketAddress)ctx.channel().remoteAddress()).getAddress().getHostAddress();
+        } catch (Exception e) {
+            RequestHandler.sendError(ctx.channel(), INTERNAL_SERVER_ERROR);
+            return;
         }
         
         // Parse out JSON encoded contents if needed
@@ -188,9 +208,9 @@ public class ProtocolMessageHandler extends SimpleChannelInboundHandler<FullHttp
             
             // Dispatch based on the request type
             if (request.getMethod().equals(HttpMethod.GET)) {   
-                method.invoke(requestHandler, ctx, request, clientID);
+                method.invoke(requestHandler, ctx, request, sessionID, ipAddress);
             } else {
-                method.invoke(requestHandler, ctx, request, clientID, message);
+                method.invoke(requestHandler, ctx, request, sessionID, ipAddress, message);
             }
             
         } catch (Exception e) {
@@ -198,6 +218,6 @@ public class ProtocolMessageHandler extends SimpleChannelInboundHandler<FullHttp
         }
     }
     
-    private ClientManager clientMgr;
-    private SongManager songMgr;
+    private final SessionManager sessionMgr;
+    private final SongManager songMgr;
 }

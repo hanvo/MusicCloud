@@ -14,14 +14,14 @@ import java.util.Map;
  *
  * @author rahmanj
  */
-public class UserClient extends Client {
+public class UserSession extends Session {
     
     /**
      * 
      * @param id 
      */
-    public UserClient(int id) {
-        super(id, ClientType.User);
+    public UserSession(long id, String ipAddress) {
+        super(id, ipAddress, SessionType.User);
         
         likedSongs = new HashMap<>();
         dislikedSongs = new HashMap<>();
