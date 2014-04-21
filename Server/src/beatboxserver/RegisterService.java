@@ -11,7 +11,8 @@ import java.io.IOException;
 import javax.jmdns.JmDNS;
 import javax.jmdns.ServiceInfo;
 
-import java.util.logging.Logger;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 
 /**
  *
@@ -47,9 +48,8 @@ public class RegisterService {
         }
         
         String instanceName = RegisterService.normalizeServerName(serverName);
-        
-        String logMessage = "Registering mDNS name \"" + instanceName + "." + serviceName + ":" + serverPort+ "\"";
-        Logger.getLogger(RegisterService.class.getName()).info(logMessage);
+
+        logger.info("Registering mDNS name \"%s.%s:%d\"", instanceName, serviceName, serverPort);
         
         serviceInfo = ServiceInfo.create(serviceName, instanceName, serverPort, serverName);
         
@@ -86,4 +86,6 @@ public class RegisterService {
     
     private ServiceInfo serviceInfo;
     private JmDNS dns;
+    
+    private final static Logger logger = LogManager.getFormatterLogger(RegisterService.class.getName());
 }

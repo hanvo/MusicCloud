@@ -30,9 +30,8 @@ import java.net.InetSocketAddress;
 import java.util.List;
 import java.util.Map;
 
-import java.util.logging.Logger;
-import java.util.logging.Handler;
-import java.util.logging.Level;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -52,11 +51,6 @@ public abstract class RequestHandler {
      * @param songManager {@link SongManager} for the server
      */
     public RequestHandler(SessionManager sessionManager, SongManager songManager) {
-        Logger logger = Logger.getLogger(this.getClass().getName());
-        for (Handler h : logger.getHandlers()) {
-            h.setLevel(Level.ALL);
-        }
-        
         if (sessionManager == null || songManager == null) {
             throw new IllegalArgumentException();
         }
@@ -161,7 +155,7 @@ public abstract class RequestHandler {
     public static void sendError(Channel ch, HttpResponseStatus status) {
         if (ch != null && status != null) {
             
-            Logger.getLogger(RequestHandler.class.getName()).warning("Sending " + status.toString() + " error");
+            logger.warn("Sending %s error", status.toString());
             
             ByteBuf message = Unpooled.copiedBuffer("Failure: " + status.toString() + "\r\n", CharsetUtil.US_ASCII);
             
@@ -187,7 +181,7 @@ public abstract class RequestHandler {
         if (ch != null) {
             
             InetSocketAddress addr = (InetSocketAddress)ch.remoteAddress();
-            Logger.getLogger(RequestHandler.class.getName()).info("Sending response to " + addr.getHostString());
+            logger.info("Sending response to %s", addr.getHostString());
 
             FullHttpResponse response = createResponse(status);
             
@@ -215,7 +209,7 @@ public abstract class RequestHandler {
         if (ch != null && data != null) {
             
             InetSocketAddress addr = (InetSocketAddress)ch.remoteAddress();
-            Logger.getLogger(RequestHandler.class.getName()).info("Sending response to " + addr.getHostString());
+            logger.info("Sending response to %s", addr.getHostString());
             
             Gson gson = (new GsonBuilder())
                     .excludeFieldsWithoutExposeAnnotation()
@@ -285,6 +279,8 @@ public abstract class RequestHandler {
         }
     }
     
-    protected SessionManager sessionMgr;
-    protected SongManager songMgr;
+    protected final SessionManager sessionMgr;
+    protected final SongManager songMgr;
+    
+    private final static Logger logger = LogManager.getFormatterLogger(RequestHandler.class.getName());
 }

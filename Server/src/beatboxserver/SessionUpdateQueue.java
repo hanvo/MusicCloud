@@ -9,6 +9,7 @@ package beatboxserver;
 import beatboxserver.updates.ClientUpdate;
 import beatboxserver.updates.ClientUpdate.UpdateType;
 
+import java.util.Map;
 import java.util.HashMap;
 import java.util.ArrayDeque;
 import java.util.Queue;
@@ -23,9 +24,9 @@ import io.netty.handler.codec.http.HttpResponseStatus;
  *
  * @author rahmanj
  */
-public class ClientUpdateQueue {
+public class SessionUpdateQueue {
     
-    public ClientUpdateQueue() {
+    public SessionUpdateQueue() {
         /*executor = Executors.newFixedThreadPool(1);*/
         channelQueue = new ArrayDeque<>();
         updateTypeQueue = new ArrayDeque<>();
@@ -106,6 +107,6 @@ public class ClientUpdateQueue {
     }
     
     private final Queue<Channel> channelQueue;
-    private final HashMap<UpdateType, ClientUpdate> updates;
+    private final Map<UpdateType, ClientUpdate> updates;
     private final Queue<UpdateType> updateTypeQueue;
 }

@@ -10,13 +10,11 @@ import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
-import java.util.logging.Handler;
-
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 import java.io.IOException;
 
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 
 
 /**
@@ -26,11 +24,6 @@ import java.io.IOException;
 public class BeatboxServer {
     
     public BeatboxServer(SessionManager clientManager, SongManager songManager) {
-        Logger logger = Logger.getLogger(this.getClass().getName());
-        for (Handler h : logger.getHandlers()) {
-            h.setLevel(Level.ALL);
-        }
-        
         this.clientManager = clientManager;
         this.songManager = songManager;
     }
@@ -46,7 +39,7 @@ public class BeatboxServer {
         try {
             registrar = new RegisterService();
         } catch (IOException e) {
-            Logger.getLogger(this.getClass().getName()).log(Level.WARNING, "Failed to register service", e);
+            logger.warn("Failed to register service", e);
         }
         
         // Perform application specific initialization here
@@ -70,15 +63,15 @@ public class BeatboxServer {
             if (registrar != null) {
                 registrar.registerService("Beatbox Central Server", RegisterService.servicePort);
             } else {
-                Logger.getLogger(BeatboxServer.class.getName()).log(Level.WARNING, "Failed to register service");
+                logger.warn("Failed to register service");
             }
         } catch (IOException e) {
-            Logger.getLogger(BeatboxServer.class.getName()).log(Level.WARNING, "Failed to register service", e);
+            logger.warn("Failed to register service", e);
         }
         
         // Start the server and register our channel initializer
         try {
-            Logger.getLogger(this.getClass().getName()).info("Starting server");
+            logger.info("Starting server");
             
             ServerBootstrap b = new ServerBootstrap();
             b.group(bossGroup, workerGroup)
@@ -112,10 +105,12 @@ public class BeatboxServer {
         try {
             server.run();
         } catch (Exception e) {
-            Logger.getLogger(BeatboxServer.class.getName()).log(Level.SEVERE, "Exception thrown in run()", e);
+            logger.error("Exception thrown in run()", e);
         }
     }
     
     private SessionManager clientManager;
     private SongManager songManager;
+    
+    private static final Logger logger = LogManager.getFormatterLogger(BeatboxServer.class.getName());
 }

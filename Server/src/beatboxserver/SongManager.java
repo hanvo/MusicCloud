@@ -11,6 +11,9 @@ import io.netty.buffer.ByteBuf;
 import java.util.Map;
 import java.util.HashMap;
 
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+
 /**
  *
  * @author rahmanj
@@ -71,5 +74,7 @@ public class SongManager {
     private Map<String, SongStats> statsMap;
     private Map<String, ByteBuf> photoMap;
     
-    private DatabaseManager dbManager;
+    private final DatabaseManager dbManager;
+    
+    private final static Logger logger = LogManager.getFormatterLogger(SongManager.class.getName());
 }

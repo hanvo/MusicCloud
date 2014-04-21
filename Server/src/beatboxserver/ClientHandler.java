@@ -14,11 +14,9 @@ import io.netty.channel.ChannelHandlerContext;
 
 import io.netty.handler.codec.http.FullHttpRequest;
 import io.netty.handler.codec.http.HttpMethod;
-import io.netty.handler.codec.http.HttpResponseStatus;
 
-import java.util.logging.Handler;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 
 import static beatboxserver.Session.SessionType;
 import static io.netty.handler.codec.http.HttpResponseStatus.*;
@@ -36,11 +34,6 @@ public class ClientHandler extends RequestHandler {
      */
     public ClientHandler(SessionManager clientManager, SongManager songManager) {
         super(clientManager, songManager);
-        
-        Logger logger = Logger.getLogger(this.getClass().getName());
-        for (Handler h : logger.getHandlers()) {
-            h.setLevel(Level.ALL);
-        }
     }
     
     
@@ -64,7 +57,7 @@ public class ClientHandler extends RequestHandler {
                 return;
             } catch (Exception e) {
                 
-                Logger.getLogger(SpeakerHandler.class.getName()).log(Level.WARNING, "Failure occured", e);
+                logger.warn("Failure occured", e);
                 sendError(ctx.channel(), INTERNAL_SERVER_ERROR);
                 return;
             }
@@ -111,7 +104,7 @@ public class ClientHandler extends RequestHandler {
                 return;
             } catch (Exception e) {
                 
-                Logger.getLogger(SpeakerHandler.class.getName()).log(Level.WARNING, "Failure occured", e);
+                logger.warn("Failure occured", e);
                 sendError(ctx.channel(), INTERNAL_SERVER_ERROR);
                 return;
             }
@@ -315,4 +308,6 @@ public class ClientHandler extends RequestHandler {
             sendError(ctx.channel(), METHOD_NOT_ALLOWED);
         }
     }
+    
+    private final static Logger logger = LogManager.getFormatterLogger(ClientHandler.class.getName());
 }

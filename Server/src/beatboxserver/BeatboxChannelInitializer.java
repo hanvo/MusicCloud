@@ -13,9 +13,8 @@ import io.netty.handler.codec.http.HttpRequestDecoder;
 import io.netty.handler.codec.http.HttpResponseEncoder;
 import io.netty.handler.codec.http.HttpObjectAggregator;
 
-import java.util.logging.Handler;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 
 /**
  *
@@ -29,11 +28,6 @@ public class BeatboxChannelInitializer extends ChannelInitializer<SocketChannel>
      * @param songManager {@link SongManager} for the song selection
      */
     public BeatboxChannelInitializer(SessionManager clientManager, SongManager songManager) {
-        Logger logger = Logger.getLogger(this.getClass().getName());
-        for (Handler h : logger.getHandlers()) {
-            h.setLevel(Level.ALL);
-        }
-        
         clientMgr = clientManager;
         songMgr = songManager;
     }
@@ -46,7 +40,7 @@ public class BeatboxChannelInitializer extends ChannelInitializer<SocketChannel>
     protected void initChannel(SocketChannel ch) {
         final ChannelPipeline pipeline = ch.pipeline();
 
-        Logger.getLogger(this.getClass().getName()).info("Recieved connection from " + ch.remoteAddress().getHostString());
+        logger.info("Recieved connection from %s", ch.remoteAddress().getHostString());
         
         // Create pipeline for handling HTTP requests to this channel
         pipeline.addLast("decoder", new HttpRequestDecoder());
@@ -57,4 +51,6 @@ public class BeatboxChannelInitializer extends ChannelInitializer<SocketChannel>
     
     private SessionManager clientMgr;
     private SongManager songMgr;
+    
+    private final static Logger logger = LogManager.getFormatterLogger(BeatboxChannelInitializer.class.getName());
 }

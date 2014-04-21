@@ -6,13 +6,15 @@
 
 package beatboxserver;
 
-
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.PreparedStatement;
+
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 
 /**
  *
@@ -172,4 +174,6 @@ public class DatabaseManager {
     }
     
     private Connection connection;
+    
+    private final static Logger logger = LogManager.getFormatterLogger(DatabaseManager.class.getName());
 }

@@ -15,9 +15,8 @@ import io.netty.handler.codec.http.FullHttpRequest;
 import io.netty.handler.codec.http.HttpMethod;
 import io.netty.handler.codec.http.HttpResponseStatus;
 
-import java.util.logging.Handler;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 
 import static beatboxserver.Session.SessionType;
 import static beatboxserver.RequestHandler.sendError;
@@ -37,11 +36,6 @@ public class SpeakerHandler extends RequestHandler {
      */
     public SpeakerHandler(SessionManager clientManager, SongManager songManager) {
         super(clientManager, songManager);
-        
-        Logger logger = Logger.getLogger(this.getClass().getName());
-        for (Handler h : logger.getHandlers()) {
-            h.setLevel(Level.ALL);
-        }
     }
     
     public void authenticate(ChannelHandlerContext ctx, FullHttpRequest req, long clientID, String ipAddress, Message body) {
@@ -65,7 +59,7 @@ public class SpeakerHandler extends RequestHandler {
                 return;
             } catch (Exception e) {
                 
-                Logger.getLogger(SpeakerHandler.class.getName()).log(Level.WARNING, "Failure occured", e);
+                logger.warn("Failure occured", e);
                 sendError(ctx.channel(), INTERNAL_SERVER_ERROR);
                 return;
             }
@@ -104,7 +98,7 @@ public class SpeakerHandler extends RequestHandler {
                return;
            } catch (Exception e) {
                 
-               Logger.getLogger(SpeakerHandler.class.getName()).log(Level.WARNING, "Failure occured", e);
+               logger.warn("Failure occured", e);
                sendError(ctx.channel(), INTERNAL_SERVER_ERROR);
                return;
            }
@@ -186,4 +180,6 @@ public class SpeakerHandler extends RequestHandler {
             sendError(ctx.channel(), METHOD_NOT_ALLOWED);
         }
     }
+    
+    private final static Logger logger = LogManager.getFormatterLogger(SpeakerHandler.class.getName());
 }

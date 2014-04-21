@@ -76,5 +76,5 @@ public abstract class Session {
     private String ipAddresss;
     
     private SessionType clientType;
-    private ClientUpdateQueue updateQueue;
+    private SessionUpdateQueue updateQueue;
 }

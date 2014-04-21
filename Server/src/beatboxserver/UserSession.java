@@ -18,7 +18,8 @@ public class UserSession extends Session {
     
     /**
      * 
-     * @param id 
+     * @param id
+     * @param ipAddress
      */
     public UserSession(long id, String ipAddress) {
         super(id, ipAddress, SessionType.User);
@@ -30,7 +31,8 @@ public class UserSession extends Session {
     
     /**
      * 
-     * @param songID 
+     * @param songID
+     * @param songManager
      */
     public void likeSong(String songID, SongManager songManager) {
         if (doesDislikeSong(songID)) {
