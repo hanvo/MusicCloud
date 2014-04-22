@@ -18,7 +18,7 @@ import com.google.gson.annotations.Expose;
  * Represents client update messages to be sent to clients
  * @author rahmanj
  */
-public abstract class ClientUpdate<T> {
+public abstract class SessionUpdate<T> {
     
     /**
      * Enum describing the various possible update message types
@@ -29,7 +29,7 @@ public abstract class ClientUpdate<T> {
      * Construct a new instance of ClientUpdate
      * @param value Value to be included in update, may be a class instance or array
      */
-    public ClientUpdate(UpdateType type, T value) {
+    public SessionUpdate(UpdateType type, T value) {
         this.values = value;
         this.updateType = type;
     }
@@ -43,7 +43,7 @@ public abstract class ClientUpdate<T> {
                 .setFieldNamingPolicy(FieldNamingPolicy.LOWER_CASE_WITH_UNDERSCORES)
                 .excludeFieldsWithoutExposeAnnotation()
                 .create();
-        Type type = new TypeToken<ClientUpdate<T>>(){}.getClass();
+        Type type = new TypeToken<SessionUpdate<T>>(){}.getClass();
         return gson.toJson(this, type);
     }
     

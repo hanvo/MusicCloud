@@ -10,7 +10,7 @@ package beatboxserver.updates;
  *
  * @author rahmanj
  */
-public class PlaybackCommandUpdate extends ClientUpdate<PlaybackCommand> {
+public class PlaybackCommandUpdate extends SessionUpdate<PlaybackCommand> {
     public PlaybackCommandUpdate(PlaybackCommand command) {
         super(UpdateType.playback_command, command);
     }

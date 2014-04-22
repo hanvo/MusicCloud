@@ -18,18 +18,20 @@ public class Song {
     
     /**
      * 
+     * @param songID
      * @param songName
      * @param songArtist
      * @param songAlbum
      * @param songPath
      * @param songLength 
      */
-    public Song(String songName, String songArtist, String songAlbum, String songPath, int songLength) {
-        this(songName, songArtist, songAlbum, songPath, songLength, null, null);
+    public Song(long songID, String songName, String songArtist, String songAlbum, String songPath, long songLength) {
+        this(songID, songName, songArtist, songAlbum, songPath, songLength, null, null);
     }
     
     /**
      * 
+     * @param songID
      * @param songName
      * @param songArtist
      * @param songAlbum
@@ -38,7 +40,8 @@ public class Song {
      * @param image
      * @param imageType 
      */
-    public Song(String songName, String songArtist, String songAlbum, String songPath, int songLength, ByteBuf image, String imageType) {
+    public Song(long songID, String songName, String songArtist, String songAlbum, String songPath, long songLength, ByteBuf image, String imageType) {
+        songID = songID;
         name = songName;
         artist = songArtist;
         album = songAlbum;
@@ -58,7 +61,7 @@ public class Song {
      * 
      * @return 
      */
-    public String getID() {
+    public long getID() {
         return id;
     }
     
@@ -90,7 +93,7 @@ public class Song {
      * 
      * @return 
      */
-    public int getLenth() {
+    public long getLength() {
         return length;
     }
     
@@ -107,7 +110,7 @@ public class Song {
     }
     
     @Expose
-    private String id;
+    private long id;
     
     @Expose
     private String name;
@@ -125,5 +128,5 @@ public class Song {
     private ByteBuf imageData;
     
     @Expose
-    private int length;
+    private long length;
 }

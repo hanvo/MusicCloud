@@ -12,7 +12,7 @@ import java.util.Map;
  *
  * @author rahmanj
  */
-public class LikeUpdate extends ClientUpdate<Map<String, LikeData>> {
+public class LikeUpdate extends SessionUpdate<Map<String, LikeData>> {
     public LikeUpdate(Map<String, LikeData> likes) {
         super(UpdateType.likes, likes);
     }

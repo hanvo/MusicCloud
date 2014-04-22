@@ -39,8 +39,7 @@ public class SpeakerHandler extends RequestHandler {
     }
     
     public void authenticate(ChannelHandlerContext ctx, FullHttpRequest req, long clientID, String ipAddress, Message body) {
-        if (validateMethod(req, HttpMethod.POST)) {
-            
+        if (validateMethod(ctx.channel(), req, HttpMethod.POST)) {
             
             AuthenticateMessage message;
             SpeakerSession session;
@@ -74,11 +73,12 @@ public class SpeakerHandler extends RequestHandler {
     }
     
     
-    public void deauthenticate(ChannelHandlerContext ctx, FullHttpRequest req, long clientID, String ipAddress, Message body) {
-       if (validateMethod(req, HttpMethod.POST)) {
+    public void deauthenticate(ChannelHandlerContext ctx, FullHttpRequest req, long sessionID, String ipAddress, Message body) {
+       if (validateMethod(ctx.channel(), req, HttpMethod.POST) && validateSession(ctx.channel(), sessionID, ipAddress)) {
            DeauthenticateMessage message;
            SpeakerSession session;
             
+           
            try {
                message = (DeauthenticateMessage)body;
            } catch (ClassCastException e) {
@@ -87,8 +87,7 @@ public class SpeakerHandler extends RequestHandler {
            }
            
            try {
-               session = (SpeakerSession)sessionMgr.getSession(message.id);
-               sessionMgr.destroySession(session);
+               sessionMgr.destroySession(message.id);
            } catch (SecurityException e) {
                sendError(ctx.channel(), FORBIDDEN);
                return;
@@ -110,28 +109,8 @@ public class SpeakerHandler extends RequestHandler {
     }
     
     
-    public void requestSpeakerUpdate(ChannelHandlerContext ctx, FullHttpRequest req, long clientID, String ipAddress) {
-        if (validateMethod(req, HttpMethod.GET)) {
-            sendError(ctx.channel(), NOT_IMPLEMENTED);
-        } else {
-            sendError(ctx.channel(), METHOD_NOT_ALLOWED);
-        }
-    }
-    
-    
-    public void statusUpdate(ChannelHandlerContext ctx, FullHttpRequest req, long clientID, String ipAddress, Message body) {
-        if (validateMethod(req, HttpMethod.POST)) {
-            
-            // Validate the session
-            try {
-                if (!sessionMgr.validSession(clientID, ipAddress)) {
-                    sendError(ctx.channel(), FORBIDDEN);
-                    return;
-                }
-            } catch (Exception e) {
-                sendError(ctx.channel(), FORBIDDEN);
-                return;
-            }
+    public void requestSpeakerUpdate(ChannelHandlerContext ctx, FullHttpRequest req, long sessionID, String ipAddress) {
+        if (validateMethod(ctx.channel(), req, HttpMethod.GET) && validateSession(ctx.channel(), sessionID, ipAddress)) {
             
             sendError(ctx.channel(), NOT_IMPLEMENTED);
         } else {
@@ -140,19 +119,8 @@ public class SpeakerHandler extends RequestHandler {
     }
     
     
-    public void requestSong(ChannelHandlerContext ctx, FullHttpRequest req, long clientID, String ipAddress) {
-        if (validateMethod(req, HttpMethod.GET)) {
-            
-            // Validate the session
-            try {
-                if (!sessionMgr.validSession(clientID, ipAddress)) {
-                    sendError(ctx.channel(), FORBIDDEN);
-                    return;
-                }
-            } catch (Exception e) {
-                sendError(ctx.channel(), FORBIDDEN);
-                return;
-            }
+    public void statusUpdate(ChannelHandlerContext ctx, FullHttpRequest req, long sessionID, String ipAddress, Message body) {
+        if (validateMethod(ctx.channel(), req, HttpMethod.POST) && validateSession(ctx.channel(), sessionID, ipAddress)) {
             
             sendError(ctx.channel(), NOT_IMPLEMENTED);
         } else {
@@ -161,19 +129,18 @@ public class SpeakerHandler extends RequestHandler {
     }
     
     
-    public void ready(ChannelHandlerContext ctx, FullHttpRequest req, long clientID, String ipAddress, Message body) {
-        if (validateMethod(req,HttpMethod.POST)) {
+    public void requestSong(ChannelHandlerContext ctx, FullHttpRequest req, long sessionID, String ipAddress) {
+        if (validateMethod(ctx.channel(), req, HttpMethod.GET) && validateSession(ctx.channel(), sessionID, ipAddress)) {
             
-            // Validate the session
-            try {
-                if (!sessionMgr.validSession(clientID, ipAddress)) {
-                    sendError(ctx.channel(), FORBIDDEN);
-                    return;
-                }
-            } catch (Exception e) {
-                sendError(ctx.channel(), FORBIDDEN);
-                return;
-            }
+           sendError(ctx.channel(), NOT_IMPLEMENTED);
+        } else {
+            sendError(ctx.channel(), METHOD_NOT_ALLOWED);
+        }
+    }
+    
+    
+    public void ready(ChannelHandlerContext ctx, FullHttpRequest req, long sessionID, String ipAddress, Message body) {
+        if (validateMethod(ctx.channel(), req, HttpMethod.POST) && validateSession(ctx.channel(), sessionID, ipAddress)) {
             
             sendError(ctx.channel(), NOT_IMPLEMENTED);
         } else {

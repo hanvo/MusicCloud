@@ -12,7 +12,7 @@ import java.util.Map;
  *
  * @author rahmanj
  */
-public class VoteUpdate extends ClientUpdate<Map<String, Integer>>{
+public class VoteUpdate extends SessionUpdate<Map<String, Integer>>{
     public VoteUpdate(Map<String, Integer> votes) {
         super(UpdateType.votes, votes);
     }

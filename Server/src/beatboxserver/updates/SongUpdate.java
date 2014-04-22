@@ -12,7 +12,7 @@ import beatboxserver.ActiveSong;
  *
  * @author rahmanj
  */
-public class SongUpdate extends ClientUpdate<ActiveSong> {
+public class SongUpdate extends SessionUpdate<ActiveSong> {
     public SongUpdate(ActiveSong song) {
         super(UpdateType.current_song, song);
     }

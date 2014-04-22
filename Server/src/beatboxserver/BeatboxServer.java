@@ -23,6 +23,11 @@ import org.apache.logging.log4j.LogManager;
  */
 public class BeatboxServer {
     
+    /**
+     * 
+     * @param clientManager
+     * @param songManager 
+     */
     public BeatboxServer(SessionManager clientManager, SongManager songManager) {
         this.clientManager = clientManager;
         this.songManager = songManager;
@@ -80,9 +85,9 @@ public class BeatboxServer {
             
             b.bind(RegisterService.servicePort /* TODO TEMP */).channel().closeFuture().sync();
         } catch (Exception e) {
-            Logger.getLogger(BeatboxServer.class.getName()).log(Level.SEVERE, "Exception while starting server", e);
+            logger.fatal("Exception while running server", e);
         } finally {
-            Logger.getLogger(BeatboxServer.class.getName()).info("Shutting down server...");
+            logger.info("Shutting down server...");
             
             bossGroup.shutdownGracefully();
             workerGroup.shutdownGracefully();
@@ -95,10 +100,22 @@ public class BeatboxServer {
     
     public static void main(String[] args) {
         
-        DatabaseManager databaseManager = new DatabaseManager("song_list.db");
-        AuthenticationManager authManager = new AuthenticationManager();
-        SessionManager clientManager = new SessionManager(databaseManager, authManager);
-        SongManager songManager = new SongManager(databaseManager);
+        DatabaseManager databaseManager;
+        AuthenticationManager authManager;
+        SessionManager clientManager;
+        SongManager songManager;
+        
+        
+        try {
+            databaseManager = new DatabaseManager("song_list.db");
+            authManager = new AuthenticationManager();
+            clientManager = new SessionManager(databaseManager, authManager);
+            songManager = new SongManager(databaseManager);
+        } catch (Exception e) {
+            logger.fatal("Failed to initialize server", e);
+            System.exit(1);
+            return; // Make compiler happy about uninitialized clientManager and songManager objects
+        }
         
         BeatboxServer server = new BeatboxServer(clientManager, songManager);
         
@@ -106,6 +123,7 @@ public class BeatboxServer {
             server.run();
         } catch (Exception e) {
             logger.error("Exception thrown in run()", e);
+            System.exit(1);
         }
     }
     

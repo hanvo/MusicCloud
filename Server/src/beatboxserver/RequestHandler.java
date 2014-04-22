@@ -37,6 +37,7 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
 import static io.netty.handler.codec.http.HttpHeaders.Names.*;
+import static io.netty.handler.codec.http.HttpResponseStatus.*;
 
 /**
  * Giant class to hold all our logic to handle messages
@@ -202,7 +203,7 @@ public abstract class RequestHandler {
     /**
      * Send a given response object to the client
      * @param ch {@link Channel} to be used to send the response
-     * @param response {@link FullHttpResponse} response to be sent to the client
+     * @param data {@link Object} response to be sent to the client
      * @param keepAlive 
      */
     public static void sendResponse(Channel ch, Object data, boolean keepAlive) {
@@ -260,22 +261,46 @@ public abstract class RequestHandler {
         return response;
     }
     
+    /**
+     * 
+     * @param channel
+     * @param sessionID
+     * @param ipAddress
+     * @return 
+     */
+    protected boolean validateSession(Channel channel,long sessionID, String ipAddress) {
+        // Validate the session
+        try {
+            if (!sessionMgr.validSession(sessionID, ipAddress)) {
+                sendError(channel, FORBIDDEN);
+                return false;
+            }
+        } catch (Exception e) {
+            sendError(channel, FORBIDDEN);
+            return false;
+        }
+        return true;
+    }
+    
     
     /**
      * 
+     * @param channel
      * @param req
      * @param method
      * @return 
      */
-    protected boolean validateMethod(FullHttpRequest req, HttpMethod method) {
-        if (req != null && method != null) {
+    protected boolean validateMethod(Channel channel, FullHttpRequest req, HttpMethod method) {
+        if (channel != null && req != null && method != null) {
             if (!req.getMethod().equals(method)) {
+                sendError(channel, METHOD_NOT_ALLOWED);
                 return false;
             } else {
                 return true;
             }
         } else {
-            throw new IllegalArgumentException();
+            sendError(channel, METHOD_NOT_ALLOWED);
+            return false;
         }
     }
     

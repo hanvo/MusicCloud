@@ -6,6 +6,8 @@
 
 package beatboxserver;
 
+import beatboxserver.Session.SessionType;
+
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
@@ -28,8 +30,15 @@ public class DatabaseManager {
      * @throws SQLException 
      */
     public DatabaseManager(String songDatabasePath) throws SQLException {
-        connection = DriverManager.getConnection("jdbc:sqlite::memory:");
         
+        // Load the sqlite-JDBC driver
+        try {
+            Class.forName("org.sqlite.JDBC");
+        } catch (ClassNotFoundException e) {
+            throw new SQLException(e);
+        }
+        
+        connection = DriverManager.getConnection("jdbc:sqlite:");
         
         Connection db = DriverManager.getConnection("jdbc:sqlite:" + songDatabasePath);
         
@@ -37,7 +46,7 @@ public class DatabaseManager {
         createTables(connection);
         
         // Transfer the contents over
-        transferData(db, connection);
+        //transferData(db, connection);
     }
     
     /**
@@ -101,46 +110,58 @@ public class DatabaseManager {
         stmt.setQueryTimeout(10);
         
         // Clear out any old tables
-        stmt.executeUpdate("DROP TABLE session");
-        stmt.executeUpdate("DROP TABLE song");
-        stmt.executeUpdate("DROP TABLE client_session");
-        stmt.executeUpdate("DROP TABLE speaker_session");
-        stmt.executeUpdate("DROP TABLE votes");
-        stmt.executeUpdate("DROP TABLE likes");
+        stmt.executeUpdate("DROP TABLE IF EXISTS session");
+        stmt.executeUpdate("DROP TABLE IF EXISTS song");
+        stmt.executeUpdate("DROP TABLE IF EXISTS client_session");
+        stmt.executeUpdate("DROP TABLE IF EXISTS speaker_session");
+        stmt.executeUpdate("DROP TABLE IF EXISTS votes");
+        stmt.executeUpdate("DROP TABLE IF EXISTS likes");
         
         // Create sessions table
         stmt.executeUpdate("CREATE TABLE sessions (id INTEGER PRIMARY KEY AUTOINCREMENT,"
-                                                + "ip_address STRING,"
-                                                + "session_type INTEGER,"
+                                                + "ip_address STRING, "
+                                                + "session_type INTEGER REFERENCES session_types(id) ON DELETE CASCADE, "
                                                 + "time_started INTEGER)");
         // Create client_sessions table
         stmt.executeUpdate("CREATE TABLE user_sessions (id INTEGER REFERENCES sessions(id) ON DELETE CASCADE)");
         
         // Create speaker_sessions table
-        stmt.executeUpdate("CREATE TABLE speaker_sessions (id INTEGER REFERENCES sessions(id) ON DELETE CASCADE,"
-                                                        + "current_song INTEGER REFERENCES songs(id),"
-                                                        + "current_status INTEGER,"
+        stmt.executeUpdate("CREATE TABLE speaker_sessions (id INTEGER REFERENCES sessions(id) ON DELETE CASCADE, "
+                                                        + "current_song INTEGER REFERENCES songs(id), "
+                                                        + "current_status INTEGER, "
                                                         + "playback_position INTEGER)");
         
         // Create songs table
-        stmt.executeUpdate("CREATE TABLE songs (id INTEGER PRIMARY KEY AUTOINCREMENT,"
-                                            + "name STRING,"
-                                            + "path STRING,"
-                                            + "artist STRING,"
-                                            + "album REAL,"
-                                            + "image_type STRING,"
-                                            + "image BLOB)");
+        stmt.executeUpdate("CREATE TABLE songs (id INTEGER PRIMARY KEY AUTOINCREMENT, "
+                                            + "name STRING, "
+                                            + "path STRING, "
+                                            + "artist STRING, "
+                                            + "album REAL, "
+                                            + "image_type STRING, "
+                                            + "image BLOB "
+                                            + "active BOOLEAN)");
         
         // Create votes table
-        stmt.executeUpdate("CREATE TABLE votes (session_id INTEGER REFERENCES sessions(id) ON DELETE CASCADE,"
-                                            + "song_id INTEGER REFERENCES songs(id) ON DELETE CASCADE,"
-                                            + "PRIMARY KEY(session_id, song_id))");
+        stmt.executeUpdate("CREATE TABLE votes (session_id INTEGER REFERENCES sessions(id) ON DELETE CASCADE, "
+                                            + "song_id INTEGER REFERENCES songs(id) ON DELETE CASCADE, "
+                                            + "PRIMARY KEY(session_id))");
         
         // Create likes table
-        stmt.executeUpdate("CREATE TABLE likes (session_id INTEGER REFERENCES sessions(id) ON DELETE CASCADE,"
-                                             + "song_id INTEGER REFERENCES songs(id),"
+        stmt.executeUpdate("CREATE TABLE likes (session_id INTEGER REFERENCES sessions(id) ON DELETE CASCADE, "
+                                             + "song_id INTEGER REFERENCES songs(id), "
+                                             + "value BYTE, "
                                              + "PRIMARY KEY(session_id, song_id))");
         
+        // Create session types table
+        stmt.executeUpdate("CREATE TABLE session_types (id INTEGER UNIQUE, type STRING)");
+        
+        // Insert the session types into the DB
+        int count;
+        count = stmt.executeUpdate("INSERT INTO session_types (id, type) VALUES (" + SessionType.User.ordinal() + ", '" + SessionType.User.toString() + "')");
+        count *= stmt.executeUpdate("INSERT INTO session_types (id, type) VALUES (" + SessionType.Speaker.ordinal() + ", '" + SessionType.Speaker.toString() + "')");
+        if (count != 1) {
+            throw new SQLException("Failed to insert session types");
+        }
     }
     
     /**

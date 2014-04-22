@@ -12,7 +12,7 @@ import beatboxserver.Song;
  *
  * @author rahmanj
  */
-public class UpcomingSongUpdate extends ClientUpdate<Song> {
+public class UpcomingSongUpdate extends SessionUpdate<Song> {
     public UpcomingSongUpdate(Song s) {
         super(UpdateType.upcoming_song, s);
     }

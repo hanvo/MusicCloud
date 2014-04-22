@@ -14,14 +14,14 @@ import com.google.gson.annotations.Expose;
  */
 public class SongStats {
     
-    public SongStats(String songID) {
+    public SongStats(long songID, long likes, long dislikes) {
         id = songID;
         likes = 0;
         dislikes = 0;
         balance = computeBalance();
     }
     
-    public String getID() {
+    public long getID() {
         return id;
     }
     
@@ -58,7 +58,7 @@ public class SongStats {
     }
     
     @Expose
-    private String id;
+    private long id;
     
     @Expose
     private int likes;
@@ -69,15 +69,14 @@ public class SongStats {
     @Expose
     private double balance;
     
-    
+    /**
+     * 
+     * @return 
+     */
     private double computeBalance() {
         int difference = likes - dislikes;
         int sum = likes + dislikes;
         
-        if (sum != 0) {
-            return difference / (double)sum;
-        } else {
-            return 0;
-        }
+        return balance = (sum == 0) ? 0.0 : (double)difference / (double)sum;
     }
 }

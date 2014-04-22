@@ -6,8 +6,8 @@
 
 package beatboxserver;
 
-import beatboxserver.updates.ClientUpdate;
-import beatboxserver.updates.ClientUpdate.UpdateType;
+import beatboxserver.updates.SessionUpdate;
+import beatboxserver.updates.SessionUpdate.UpdateType;
 
 import java.util.Map;
 import java.util.HashMap;
@@ -38,7 +38,7 @@ public class SessionUpdateQueue {
      * @param ch {@link Channel} representing the channel the update request was received on
      */
     public void queueRequest(Channel ch) {
-        ClientUpdate update;
+        SessionUpdate update;
         FullHttpResponse response;
         String json;
         UpdateType updateType;
@@ -73,7 +73,7 @@ public class SessionUpdateQueue {
      * Queue a {@ClientUpdate} to be matched with an incoming request
      * @param update 
      */
-    public void queueUpdate(ClientUpdate update) {
+    public void queueUpdate(SessionUpdate update) {
         FullHttpResponse response;
         Channel chan;
         String json;
@@ -107,6 +107,6 @@ public class SessionUpdateQueue {
     }
     
     private final Queue<Channel> channelQueue;
-    private final Map<UpdateType, ClientUpdate> updates;
+    private final Map<UpdateType, SessionUpdate> updates;
     private final Queue<UpdateType> updateTypeQueue;
 }

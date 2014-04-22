@@ -6,7 +6,7 @@
 
 package beatboxserver;
 
-import beatboxserver.updates.ClientUpdate;
+import beatboxserver.updates.SessionUpdate;
 import io.netty.channel.Channel;
 
 import com.google.gson.annotations.Expose;
@@ -54,7 +54,7 @@ public abstract class Session {
      * 
      * @param update 
      */
-    public void sendUpdate(ClientUpdate update) {
+    public void sendUpdate(SessionUpdate update) {
         if (update == null) {
             throw new IllegalArgumentException();
         }

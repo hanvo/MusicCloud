@@ -16,13 +16,14 @@ public class ActiveSong extends Song {
     
     public enum StatusType {Playing, Paused};
     
-    public ActiveSong(String songName,
+    public ActiveSong(long songID,
+                      String songName,
                       String songArtist,
                       String songAlbum,
                       String songPath,
                       int songLength,
                       int playbackPosition) {
-        super(songName, songArtist, songAlbum, songPath, songLength);
+        super(songID, songName, songArtist, songAlbum, songPath, songLength);
         playbackPosition = 0; // Start at playback position 0
         status = StatusType.Paused;
     }
