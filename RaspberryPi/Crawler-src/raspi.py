@@ -77,12 +77,13 @@ def serv_func():
 def communicate_func():
 	# Pop the specific request from the Queue, depending on that do the following
 	_comm_sock = httplib.HTTPConnection('klamath.dnsdynamic.com', 5050, timeout = timeout)
+	_clientID = _serv_comm_ID_queue.get() # Getting the clientID from the queue
 	# REQUEST_SONG
 	# the value of song ID is in the queue
-	_upcoming_resp = json.load("<the value in the queue>")
+	_upcoming_resp = json.load(_playback_conn_queue.get())
+	_playback_conn_queue.task_done()
 	_values = _upcoming_resp['values']
 	_songID = _values['id']
-	_clientID = _serv_comm_ID_queue.get()
 	_comm_sock.request("GET","klamath.dnsdynamic.com:5050/request_song?clientID="+str(_clientID)+"&songID"+str(_songID))
 	_song_data_json = _comm_sock.getresponse().read()
 	_song_data = json.load(_song_data_json)
