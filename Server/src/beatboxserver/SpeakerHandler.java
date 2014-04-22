@@ -67,8 +67,6 @@ public class SpeakerHandler extends RequestHandler {
             
             
             sendResponse(ctx.channel(), session, false);
-        } else {
-            sendError(ctx.channel(), METHOD_NOT_ALLOWED);
         }
     }
     
@@ -78,7 +76,6 @@ public class SpeakerHandler extends RequestHandler {
            DeauthenticateMessage message;
            SpeakerSession session;
             
-           
            try {
                message = (DeauthenticateMessage)body;
            } catch (ClassCastException e) {
@@ -103,8 +100,6 @@ public class SpeakerHandler extends RequestHandler {
            }
            
            sendResponse(ctx.channel(), HttpResponseStatus.OK, false);
-       } else {
-           sendError(ctx.channel(), METHOD_NOT_ALLOWED);
        }
     }
     
@@ -113,8 +108,6 @@ public class SpeakerHandler extends RequestHandler {
         if (validateMethod(ctx.channel(), req, HttpMethod.GET) && validateSession(ctx.channel(), sessionID, ipAddress)) {
             
             sendError(ctx.channel(), NOT_IMPLEMENTED);
-        } else {
-            sendError(ctx.channel(), METHOD_NOT_ALLOWED);
         }
     }
     
@@ -123,8 +116,6 @@ public class SpeakerHandler extends RequestHandler {
         if (validateMethod(ctx.channel(), req, HttpMethod.POST) && validateSession(ctx.channel(), sessionID, ipAddress)) {
             
             sendError(ctx.channel(), NOT_IMPLEMENTED);
-        } else {
-            sendError(ctx.channel(), METHOD_NOT_ALLOWED);
         }
     }
     
@@ -133,8 +124,6 @@ public class SpeakerHandler extends RequestHandler {
         if (validateMethod(ctx.channel(), req, HttpMethod.GET) && validateSession(ctx.channel(), sessionID, ipAddress)) {
             
            sendError(ctx.channel(), NOT_IMPLEMENTED);
-        } else {
-            sendError(ctx.channel(), METHOD_NOT_ALLOWED);
         }
     }
     
@@ -143,8 +132,6 @@ public class SpeakerHandler extends RequestHandler {
         if (validateMethod(ctx.channel(), req, HttpMethod.POST) && validateSession(ctx.channel(), sessionID, ipAddress)) {
             
             sendError(ctx.channel(), NOT_IMPLEMENTED);
-        } else {
-            sendError(ctx.channel(), METHOD_NOT_ALLOWED);
         }
     }
     

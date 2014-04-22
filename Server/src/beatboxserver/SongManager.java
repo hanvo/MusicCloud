@@ -6,6 +6,9 @@
 
 package beatboxserver;
 
+import beatboxserver.updates.VoteData;
+import beatboxserver.updates.LikeData;
+
 import java.sql.Statement;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -28,7 +31,6 @@ public class SongManager {
     }
     
 
-    
     public void vote(long songID, long sessionID) throws SQLException {
         if (songID < 0 || sessionID < 0) {
             throw new IllegalArgumentException();
@@ -76,7 +78,7 @@ public class SongManager {
      * @return
      * @throws SQLException 
      */
-    public SongStats getStats() throws SQLException {
+    public LikeData getStats() throws SQLException {
         
         long songID;
         long likes, dislikes;
@@ -110,7 +112,7 @@ public class SongManager {
             }
         }
         
-        return new SongStats(activeSongID, likes, dislikes);
+        return new LikeData(activeSongID, likes, dislikes);
     }
     
     /**
@@ -132,6 +134,21 @@ public class SongManager {
         }
         
         return songs;
+    }
+    
+    /**
+     * Get a list of current votes for the songs in the database
+     * @return
+     * @throws SQLException 
+     */
+    public List<VoteData> getVotes() throws SQLException {
+        List<VoteData> votes = new ArrayList<>();
+        Statement stmt = dbManager.createStatement();
+        ResultSet rs = stmt.executeQuery("SELECT song_id AS id, COUNT(*) as votes FROM votes GROUP BY song_id");
+        while (rs.next()) {
+            votes.add(new VoteData(rs.getLong("id"), rs.getLong("votes")));
+        }
+        return votes;
     }
     
 

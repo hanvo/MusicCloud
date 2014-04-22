@@ -12,8 +12,8 @@ import java.util.Map;
  *
  * @author rahmanj
  */
-public class LikeUpdate extends SessionUpdate<Map<String, LikeData>> {
-    public LikeUpdate(Map<String, LikeData> likes) {
+public class LikeUpdate extends SessionUpdate<LikeData> {
+    public LikeUpdate(LikeData likes) {
         super(UpdateType.likes, likes);
     }
 }

@@ -6,6 +6,7 @@
 
 package beatboxserver;
 
+import beatboxserver.updates.VoteData;
 import beatboxserver.messages.*;
 import beatboxserver.updates.*;
 
@@ -76,17 +77,6 @@ public class ClientHandler extends RequestHandler {
             DeauthenticateMessage message;
             UserSession session;
             
-            // Validate the session
-            try {
-                if (!sessionMgr.validSession(sessionID, ipAddress)) {
-                    sendError(ctx.channel(), FORBIDDEN);
-                    return;
-                }
-            } catch (Exception e) {
-                logger.warn("Failed to validate session", e);
-                sendError(ctx.channel(), FORBIDDEN);
-                return;
-            }
             
             try {
                 message = (DeauthenticateMessage)body;
@@ -116,21 +106,15 @@ public class ClientHandler extends RequestHandler {
         }
     }
     
-    
+    /**
+     * Request the full song list from the server
+     * @param ctx
+     * @param req
+     * @param sessionID
+     * @param ipAddress 
+     */
     public void requestSongList(ChannelHandlerContext ctx, FullHttpRequest req, long sessionID, String ipAddress) {
         if (validateMethod(ctx.channel(), req, HttpMethod.GET) && validateSession(ctx.channel(), sessionID, ipAddress)) {
-            
-            // Validate the session
-            try {
-                if (!sessionMgr.validSession(sessionID, ipAddress)) {
-                    sendError(ctx.channel(), FORBIDDEN);
-                    return;
-                }
-            } catch (Exception e) {
-                logger.warn("Failed to validate session", e);
-                sendError(ctx.channel(), FORBIDDEN);
-                return;
-            }
             
             List<Song> songList;
             try {
@@ -145,7 +129,15 @@ public class ClientHandler extends RequestHandler {
         }
     }
     
-    
+    /**
+     * Vote on a given song
+     * @param ctx
+     * @param req
+     * @param sessionID
+     * @param ipAddress
+     * @param body
+     * @throws SQLException 
+     */
     public void vote(ChannelHandlerContext ctx, FullHttpRequest req, long sessionID, String ipAddress, Message body) throws SQLException {
         if (validateMethod(ctx.channel(), req, HttpMethod.POST) && validateSession(ctx.channel(), sessionID, ipAddress)) {
            
@@ -184,7 +176,14 @@ public class ClientHandler extends RequestHandler {
         }
     }
     
-    
+    /**
+     * Like the current song (ID given for consistency)
+     * @param ctx
+     * @param req
+     * @param sessionID
+     * @param ipAddress
+     * @param body 
+     */
     public void like(ChannelHandlerContext ctx, FullHttpRequest req, long sessionID, String ipAddress, Message body) {
         if (validateMethod(ctx.channel(), req, HttpMethod.POST) && validateSession(ctx.channel(), sessionID, ipAddress)) {
             
@@ -209,20 +208,16 @@ public class ClientHandler extends RequestHandler {
         }
     }
     
-    
+    /**
+     * Dislike the current song (ID given for consistency)
+     * @param ctx
+     * @param req
+     * @param sessionID
+     * @param ipAddress
+     * @param body 
+     */
     public void dislike(ChannelHandlerContext ctx, FullHttpRequest req, long sessionID, String ipAddress, Message body) {
         if (validateMethod(ctx.channel(), req, HttpMethod.POST) && validateSession(ctx.channel(), sessionID, ipAddress)) {
-            
-            // Validate the session
-            try {
-                if (!sessionMgr.validSession(sessionID, ipAddress)) {
-                    sendError(ctx.channel(), FORBIDDEN);
-                    return;
-                }
-            } catch (Exception e) {
-                sendError(ctx.channel(), FORBIDDEN);
-                return;
-            }
             
             DislikeMessage message;
             try {
@@ -249,17 +244,6 @@ public class ClientHandler extends RequestHandler {
     public void requestUpdate(ChannelHandlerContext ctx, FullHttpRequest req, long sessionID, String ipAddress) {
         if (validateMethod(ctx.channel(), req, HttpMethod.GET) && validateSession(ctx.channel(), sessionID, ipAddress)) {
             
-            // Validate the session
-            try {
-                if (!sessionMgr.validSession(sessionID, ipAddress)) {
-                    sendError(ctx.channel(), FORBIDDEN);
-                    return;
-                }
-            } catch (Exception e) {
-                sendError(ctx.channel(), FORBIDDEN);
-                return;
-            }
-            
             try {
                 sessionMgr.registerRequest(sessionID, ctx.channel());
             } catch (Exception e) {
@@ -269,23 +253,17 @@ public class ClientHandler extends RequestHandler {
         }
     }
     
-    
+    /**
+     * Request an immediate like update for the current song
+     * @param ctx
+     * @param req
+     * @param sessionID
+     * @param ipAddress 
+     */
     public void requestLikeUpdate(ChannelHandlerContext ctx, FullHttpRequest req, long sessionID, String ipAddress) {
         if (validateMethod(ctx.channel(), req, HttpMethod.GET) && validateSession(ctx.channel(), sessionID, ipAddress)) {
             
-            // Validate the session
-            try {
-                if (!sessionMgr.validSession(sessionID, ipAddress)) {
-                    sendError(ctx.channel(), FORBIDDEN);
-                    return;
-                }
-            } catch (Exception e) {
-                sendError(ctx.channel(), FORBIDDEN);
-                return;
-            }
-            
-            // TODO, use like data? Change SongManager Interface?
-            SongStats stats;
+            LikeData stats;
             try {
                 stats = songMgr.getStats();
             } catch (Exception e) {
@@ -299,47 +277,46 @@ public class ClientHandler extends RequestHandler {
                 return;
             }
             
-            // TODO sendResponse(ctx.channel(), new LikeUpdate(stats), false);
+            sendResponse(ctx.channel(), new LikeUpdate(stats), false);
         }
     }
     
-    
+    /**
+     * Request an immediate vote update
+     * @param ctx
+     * @param req
+     * @param sessionID
+     * @param ipAddress 
+     */
     public void requestVoteUpdate(ChannelHandlerContext ctx, FullHttpRequest req, long sessionID, String ipAddress) {
         if (validateMethod(ctx.channel(), req, HttpMethod.GET) && validateSession(ctx.channel(), sessionID, ipAddress)) {
             
-            // Validate the session
+            List<VoteData> votes;
             try {
-                if (!sessionMgr.validSession(sessionID, ipAddress)) {
-                    sendError(ctx.channel(), FORBIDDEN);
-                    return;
-                }
+                votes = songMgr.getVotes();
             } catch (Exception e) {
-                sendError(ctx.channel(), FORBIDDEN);
+                logger.warn("Failed to get votes", e);
+                sendError(ctx.channel(), INTERNAL_SERVER_ERROR);
                 return;
             }
             
-            sendError(ctx.channel(), NOT_IMPLEMENTED);
+            sendResponse(ctx.channel(), new VoteUpdate(votes), false);
         }
     }
     
-    
+    /**
+     * Request an immediate update on the current song
+     * @param ctx
+     * @param req
+     * @param sessionID
+     * @param ipAddress 
+     */
     public void requestSongUpdate(ChannelHandlerContext ctx, FullHttpRequest req, long sessionID, String ipAddress) {
         if (validateMethod(ctx.channel(), req, HttpMethod.GET) && validateSession(ctx.channel(), sessionID, ipAddress)) {
             
-            // Validate the session
-            try {
-                if (!sessionMgr.validSession(sessionID, ipAddress)) {
-                    sendError(ctx.channel(), FORBIDDEN);
-                    return;
-                }
-            } catch (Exception e) {
-                sendError(ctx.channel(), FORBIDDEN);
-                return;
-            }
-            
             ActiveSong activeSong;
             try {
-                activeSong = songMgr.getActiveSong();
+                activeSong = songMgr.getActiveSong(); // TODO Need to finish this
             } catch (Exception e) {
                 logger.warn("Failed to get active song", e);
                 sendError(ctx.channel(), INTERNAL_SERVER_ERROR);
@@ -356,6 +333,13 @@ public class ClientHandler extends RequestHandler {
     }
     
     
+    /**
+     * Request the photo for a given song
+     * @param ctx
+     * @param req
+     * @param sessionID
+     * @param ipAddress 
+     */
     public void requestPhoto(ChannelHandlerContext ctx, FullHttpRequest req, long sessionID, String ipAddress) {
         if (validateMethod(ctx.channel(), req, HttpMethod.GET) && validateSession(ctx.channel(), sessionID, ipAddress)) {
             
