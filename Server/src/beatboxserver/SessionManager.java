@@ -161,7 +161,6 @@ public class SessionManager {
      * Register an update request for a given session
      * @param sessionID
      * @param chan
-     * @param type 
      */
     public void registerRequest(long sessionID, Channel chan) {
         if (chan == null) {
@@ -214,7 +213,7 @@ public class SessionManager {
         }
         
         try {
-            String query = "SELECT (ip_address, time_started) FROM sessions WHERE id = '?'";
+            String query = "SELECT ip_address, time_started FROM sessions WHERE id = '?'";
             try (PreparedStatement stmt = dbManager.createPreparedStatement(query)) {
                 stmt.setLong(1, sessionID);
 

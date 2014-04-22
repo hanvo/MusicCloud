@@ -6,9 +6,16 @@
 
 package beatboxserver;
 
+
 import beatboxserver.messages.*;
 
+import java.sql.SQLException;
+
+import java.io.IOException;
+
 import io.netty.channel.ChannelHandlerContext;
+
+import io.netty.handler.codec.http.QueryStringDecoder;
 import io.netty.handler.codec.http.FullHttpRequest;
 import io.netty.handler.codec.http.HttpMethod;
 import io.netty.handler.codec.http.HttpResponseStatus;
@@ -17,9 +24,9 @@ import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.LogManager;
 
 import static beatboxserver.Session.SessionType;
-import static beatboxserver.RequestHandler.sendError;
 import static beatboxserver.RequestHandler.sendResponse;
 import static io.netty.handler.codec.http.HttpResponseStatus.*;
+
 
 /**
  *
@@ -38,10 +45,10 @@ public class SpeakerHandler extends RequestHandler {
     
     /**
      * 
-     * @param ctx
-     * @param req
-     * @param clientID
-     * @param ipAddress
+     * @param ctx {@link ChannelHandlerContext} for this request
+     * @param req {@link FullHttpRequest} send by the client
+     * @param sessionID {@link long} Session ID parsed from the URI
+     * @param ipAddress {@link String} IP address of the remote client
      * @param body 
      */
     public void authenticate(ChannelHandlerContext ctx, FullHttpRequest req, long clientID, String ipAddress, Message body) {
@@ -75,10 +82,10 @@ public class SpeakerHandler extends RequestHandler {
     
     /**
      * 
-     * @param ctx
-     * @param req
-     * @param sessionID
-     * @param ipAddress
+     * @param ctx {@link ChannelHandlerContext} for this request
+     * @param req {@link FullHttpRequest} send by the client
+     * @param sessionID {@link long} Session ID parsed from the URI
+     * @param ipAddress {@link String} IP address of the remote client
      * @param body 
      */
     public void deauthenticate(ChannelHandlerContext ctx, FullHttpRequest req, long sessionID, String ipAddress, Message body) {
@@ -115,12 +122,12 @@ public class SpeakerHandler extends RequestHandler {
     
     /**
      * 
-     * @param ctx
-     * @param req
-     * @param sessionID
-     * @param ipAddress 
+     * @param ctx {@link ChannelHandlerContext} for this request
+     * @param req {@link FullHttpRequest} send by the client
+     * @param sessionID {@link long} Session ID parsed from the URI
+     * @param ipAddress {@link String} IP address of the remote client
      */
-    public void requestSpeakerUpdate(ChannelHandlerContext ctx, FullHttpRequest req, long sessionID, String ipAddress) {
+    public void requestUpdate(ChannelHandlerContext ctx, FullHttpRequest req, long sessionID, String ipAddress) {
         if (validateMethod(ctx.channel(), req, HttpMethod.GET) && validateSession(ctx.channel(), sessionID, ipAddress)) {
             
             try {
@@ -134,10 +141,10 @@ public class SpeakerHandler extends RequestHandler {
     
     /**
      * 
-     * @param ctx
-     * @param req
-     * @param sessionID
-     * @param ipAddress
+     * @param ctx {@link ChannelHandlerContext} for this request
+     * @param req {@link FullHttpRequest} send by the client
+     * @param sessionID {@link long} Session ID parsed from the URI
+     * @param ipAddress {@link String} IP address of the remote client
      * @param body 
      */
     public void statusUpdate(ChannelHandlerContext ctx, FullHttpRequest req, long sessionID, String ipAddress, Message body) {
@@ -167,15 +174,38 @@ public class SpeakerHandler extends RequestHandler {
     
     /**
      * 
-     * @param ctx
-     * @param req
-     * @param sessionID
-     * @param ipAddress 
+     * @param ctx {@link ChannelHandlerContext} for this request
+     * @param req {@link FullHttpRequest} send by the client
+     * @param sessionID {@link long} Session ID parsed from the URI
+     * @param ipAddress {@link String} IP address of the remote client
      */
     public void requestSong(ChannelHandlerContext ctx, FullHttpRequest req, long sessionID, String ipAddress) {
         if (validateMethod(ctx.channel(), req, HttpMethod.GET) && validateSession(ctx.channel(), sessionID, ipAddress)) {
             
-           sendError(ctx.channel(), NOT_IMPLEMENTED);
+            QueryStringDecoder decoder;
+            long songID;
+            try {
+                decoder = new QueryStringDecoder(req.getUri());
+                songID = Long.parseLong(decoder.parameters().get("songID").get(0));
+            } catch (Exception e) {
+                logger.warn("Invalid song ID", e);
+                sendError(ctx.channel(), BAD_REQUEST);
+                return;
+            }
+            
+            SongData data;
+            try {
+                data = songMgr.getSongData(songID);
+            } catch (SQLException|IOException e) {
+                logger.warn("Song not found", e);
+                sendError(ctx.channel(), NOT_FOUND);
+                return;
+            } catch (Exception e) {
+                sendError(ctx.channel(), INTERNAL_SERVER_ERROR);
+                return;
+            }
+            
+            sendResponse(ctx.channel(), data.getSongData(), data.getSongType(), false);
         }
     }
     

@@ -42,6 +42,14 @@ public class ClientHandler extends RequestHandler {
     }
     
     
+    /**
+     * 
+     * @param ctx {@link ChannelHandlerContext} for this request
+     * @param req {@link FullHttpRequest} send by the client
+     * @param sessionID {@link long} Session ID parsed from the URI
+     * @param ipAddress {@link String} IP address of the remote client
+     * @param body 
+     */
     public void authenticate(ChannelHandlerContext ctx, FullHttpRequest req, long sessionID, String ipAddress, Message body) {
         if (validateMethod(ctx.channel(), req, HttpMethod.POST)) {
             
@@ -71,7 +79,14 @@ public class ClientHandler extends RequestHandler {
         }
     }
     
-    
+    /**
+     * 
+     * @param ctx {@link ChannelHandlerContext} for this request
+     * @param req {@link FullHttpRequest} send by the client
+     * @param sessionID {@link long} Session ID parsed from the URI
+     * @param ipAddress {@link String} IP address of the remote client
+     * @param body 
+     */
     public void deauthenticate(ChannelHandlerContext ctx, FullHttpRequest req, long sessionID, String ipAddress, Message body) {
         if (validateMethod(ctx.channel(), req, HttpMethod.POST) && validateSession(ctx.channel(), sessionID, ipAddress)) {
             DeauthenticateMessage message;
@@ -106,41 +121,20 @@ public class ClientHandler extends RequestHandler {
         }
     }
     
-    /**
-     * Request the full song list from the server
-     * @param ctx
-     * @param req
-     * @param sessionID
-     * @param ipAddress 
-     */
-    public void requestSongList(ChannelHandlerContext ctx, FullHttpRequest req, long sessionID, String ipAddress) {
-        if (validateMethod(ctx.channel(), req, HttpMethod.GET) && validateSession(ctx.channel(), sessionID, ipAddress)) {
-            
-            List<Song> songList;
-            try {
-                songList = songMgr.getSongList();
-            } catch (SQLException e) {
-                logger.warn("Exception while retreiving the song list", e);
-                sendError(ctx.channel(), INTERNAL_SERVER_ERROR);
-                return;
-            }
-            
-            sendResponse(ctx.channel(), songList, false);
-        }
-    }
-    
+
+//<editor-fold defaultstate="collapsed" desc="Client Actions">
     /**
      * Vote on a given song
-     * @param ctx
-     * @param req
-     * @param sessionID
-     * @param ipAddress
+     * @param ctx {@link ChannelHandlerContext} for this request
+     * @param req {@link FullHttpRequest} send by the client
+     * @param sessionID {@link long} Session ID parsed from the URI
+     * @param ipAddress {@link String} IP address of the remote client
      * @param body
-     * @throws SQLException 
+     * @throws SQLException
      */
     public void vote(ChannelHandlerContext ctx, FullHttpRequest req, long sessionID, String ipAddress, Message body) throws SQLException {
         if (validateMethod(ctx.channel(), req, HttpMethod.POST) && validateSession(ctx.channel(), sessionID, ipAddress)) {
-           
+            
             // Validate the session
             try {
                 if (!sessionMgr.validSession(sessionID, ipAddress)) {
@@ -154,7 +148,7 @@ public class ClientHandler extends RequestHandler {
             }
             
             UserSession client = (UserSession)sessionMgr.getSession(sessionID);
-  
+            
             // TODO, your patriotic duty, and vote
             VoteMessage message;
             try {
@@ -178,11 +172,11 @@ public class ClientHandler extends RequestHandler {
     
     /**
      * Like the current song (ID given for consistency)
-     * @param ctx
-     * @param req
-     * @param sessionID
-     * @param ipAddress
-     * @param body 
+     * @param ctx {@link ChannelHandlerContext} for this request
+     * @param req {@link FullHttpRequest} send by the client
+     * @param sessionID {@link long} Session ID parsed from the URI
+     * @param ipAddress {@link String} IP address of the remote client
+     * @param body
      */
     public void like(ChannelHandlerContext ctx, FullHttpRequest req, long sessionID, String ipAddress, Message body) {
         if (validateMethod(ctx.channel(), req, HttpMethod.POST) && validateSession(ctx.channel(), sessionID, ipAddress)) {
@@ -210,11 +204,11 @@ public class ClientHandler extends RequestHandler {
     
     /**
      * Dislike the current song (ID given for consistency)
-     * @param ctx
-     * @param req
-     * @param sessionID
-     * @param ipAddress
-     * @param body 
+     * @param ctx {@link ChannelHandlerContext} for this request
+     * @param req {@link FullHttpRequest} send by the client
+     * @param sessionID {@link long} Session ID parsed from the URI
+     * @param ipAddress {@link String} IP address of the remote client
+     * @param body
      */
     public void dislike(ChannelHandlerContext ctx, FullHttpRequest req, long sessionID, String ipAddress, Message body) {
         if (validateMethod(ctx.channel(), req, HttpMethod.POST) && validateSession(ctx.channel(), sessionID, ipAddress)) {
@@ -239,8 +233,17 @@ public class ClientHandler extends RequestHandler {
             sendResponse(ctx.channel(), OK, false);
         }
     }
+//</editor-fold>
     
+    //<editor-fold defaultstate="collapsed" desc="Client Requests">
     
+    /**
+     * 
+     * @param ctx {@link ChannelHandlerContext} for this request
+     * @param req {@link FullHttpRequest} send by the client
+     * @param sessionID {@link long} Session ID parsed from the URI
+     * @param ipAddress {@link String} IP address of the remote client 
+     */
     public void requestUpdate(ChannelHandlerContext ctx, FullHttpRequest req, long sessionID, String ipAddress) {
         if (validateMethod(ctx.channel(), req, HttpMethod.GET) && validateSession(ctx.channel(), sessionID, ipAddress)) {
             
@@ -255,10 +258,10 @@ public class ClientHandler extends RequestHandler {
     
     /**
      * Request an immediate like update for the current song
-     * @param ctx
-     * @param req
-     * @param sessionID
-     * @param ipAddress 
+     * @param ctx {@link ChannelHandlerContext} for this request
+     * @param req {@link FullHttpRequest} send by the client
+     * @param sessionID {@link long} Session ID parsed from the URI
+     * @param ipAddress {@link String} IP address of the remote client
      */
     public void requestLikeUpdate(ChannelHandlerContext ctx, FullHttpRequest req, long sessionID, String ipAddress) {
         if (validateMethod(ctx.channel(), req, HttpMethod.GET) && validateSession(ctx.channel(), sessionID, ipAddress)) {
@@ -283,10 +286,10 @@ public class ClientHandler extends RequestHandler {
     
     /**
      * Request an immediate vote update
-     * @param ctx
-     * @param req
-     * @param sessionID
-     * @param ipAddress 
+     * @param ctx {@link ChannelHandlerContext} for this request
+     * @param req {@link FullHttpRequest} send by the client
+     * @param sessionID {@link long} Session ID parsed from the URI
+     * @param ipAddress {@link String} IP address of the remote client
      */
     public void requestVoteUpdate(ChannelHandlerContext ctx, FullHttpRequest req, long sessionID, String ipAddress) {
         if (validateMethod(ctx.channel(), req, HttpMethod.GET) && validateSession(ctx.channel(), sessionID, ipAddress)) {
@@ -309,7 +312,7 @@ public class ClientHandler extends RequestHandler {
      * @param ctx
      * @param req
      * @param sessionID
-     * @param ipAddress 
+     * @param ipAddress
      */
     public void requestSongUpdate(ChannelHandlerContext ctx, FullHttpRequest req, long sessionID, String ipAddress) {
         if (validateMethod(ctx.channel(), req, HttpMethod.GET) && validateSession(ctx.channel(), sessionID, ipAddress)) {
@@ -332,13 +335,35 @@ public class ClientHandler extends RequestHandler {
         }
     }
     
+    /**
+     * Request the full song list from the server
+     * @param ctx {@link ChannelHandlerContext} for this request
+     * @param req {@link FullHttpRequest} send by the client
+     * @param sessionID {@link long} Session ID parsed from the URI
+     * @param ipAddress {@link String} IP address of the remote client 
+     */
+    public void requestSongList(ChannelHandlerContext ctx, FullHttpRequest req, long sessionID, String ipAddress) {
+        if (validateMethod(ctx.channel(), req, HttpMethod.GET) && validateSession(ctx.channel(), sessionID, ipAddress)) {
+            
+            List<Song> songList;
+            try {
+                songList = songMgr.getSongList();
+            } catch (SQLException e) {
+                logger.warn("Exception while retreiving the song list", e);
+                sendError(ctx.channel(), INTERNAL_SERVER_ERROR);
+                return;
+            }
+            
+            sendResponse(ctx.channel(), songList, false);
+        }
+    }
     
     /**
      * Request the photo for a given song
-     * @param ctx
-     * @param req
-     * @param sessionID
-     * @param ipAddress 
+     * @param ctx {@link ChannelHandlerContext} for this request
+     * @param req {@link FullHttpRequest} send by the client
+     * @param sessionID {@link long} Session ID parsed from the URI
+     * @param ipAddress {@link String} IP address of the remote client
      */
     public void requestPhoto(ChannelHandlerContext ctx, FullHttpRequest req, long sessionID, String ipAddress) {
         if (validateMethod(ctx.channel(), req, HttpMethod.GET) && validateSession(ctx.channel(), sessionID, ipAddress)) {
@@ -373,6 +398,8 @@ public class ClientHandler extends RequestHandler {
             sendResponse(ctx.channel(), photo.getImageData(), photo.getImageType(), false);
         }
     }
+    
+//</editor-fold>
     
     private final static Logger logger = LogManager.getFormatterLogger(ClientHandler.class.getName());
 }

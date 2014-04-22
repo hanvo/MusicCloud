@@ -23,6 +23,10 @@ import java.sql.Blob;
 import java.util.List;
 import java.util.ArrayList;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.LogManager;
 
@@ -35,19 +39,34 @@ public class SongManager {
     /**
      * Construct a new instance of the {@link SongManager}
      * @param databaseManager The {@link DatabaseManager} instance to use with this {@link SongManager}
+     * @param sessionManager The {@link SessionManager} instance to use with this {@link SongManager}
      */
-    public SongManager(DatabaseManager databaseManager) {
-        dbManager = databaseManager;
+    public SongManager(DatabaseManager databaseManager, SessionManager sessionManager) {
+        databaseMgr = databaseManager;
+        sessionMgr = sessionManager;
     }
     
-
+    /**
+     * Order playback to start for the next song
+     */
+    public void playNextSong() {
+        
+    }
+    
     //<editor-fold defaultstate="collapsed" desc="Client Actions">
+    
+    /**
+     * 
+     * @param songID
+     * @param sessionID
+     * @throws SQLException 
+     */
     public void vote(long songID, long sessionID) throws SQLException {
         if (songID < 0 || sessionID < 0) {
             throw new IllegalArgumentException();
         }
         
-        try (PreparedStatement stmt = dbManager.createPreparedStatement("INSERT OR REPLACE votes(session_id, song_id) VALUES (?, ?)")) {
+        try (PreparedStatement stmt = databaseMgr.createPreparedStatement("INSERT OR REPLACE votes(session_id, song_id) VALUES (?, ?)")) {
             stmt.setLong(1, sessionID);
             stmt.setLong(2, songID);
             if (stmt.executeUpdate() != 1) {
@@ -56,12 +75,18 @@ public class SongManager {
         }
     }
     
+    /**
+     * 
+     * @param songID
+     * @param sessionID
+     * @throws SQLException 
+     */
     public void like(long songID, long sessionID) throws SQLException {
         if (songID < 0 || sessionID < 0) {
             throw new IllegalArgumentException();
         }
         
-        try (PreparedStatement stmt = dbManager.createPreparedStatement("INSERT OR REPLACE likes() VALUES (?, ?, 1)")) {
+        try (PreparedStatement stmt = databaseMgr.createPreparedStatement("INSERT OR REPLACE likes (session_id, song_id) VALUES (?, ?, 1)")) {
             stmt.setLong(1, sessionID);
             stmt.setLong(2, songID);
             if (stmt.executeUpdate() != 1) {
@@ -81,7 +106,7 @@ public class SongManager {
             throw new IllegalArgumentException();
         }
         
-        try (PreparedStatement stmt = dbManager.createPreparedStatement("INSERT OR REPLACE likes() VALUES (?, ?, -1)")) {
+        try (PreparedStatement stmt = databaseMgr.createPreparedStatement("INSERT OR REPLACE likes (session_id, song_id) VALUES (?, ?, -1)")) {
             stmt.setLong(1, sessionID);
             stmt.setLong(2, songID);
             if (stmt.executeUpdate() != 1) {
@@ -89,9 +114,11 @@ public class SongManager {
             }
         }
     }
+    
 //</editor-fold>
     
     //<editor-fold defaultstate="collapsed" desc="Client Get Methods">
+    
     /**
      *
      * @return
@@ -101,7 +128,7 @@ public class SongManager {
         
         long songID;
         long likes, dislikes;
-        try (Statement stmt = dbManager.createStatement()) {
+        try (Statement stmt = databaseMgr.createStatement()) {
             
             // Use the active field to filter out likes for non-active songs
             String query = "SELECT songs.id AS id, value, COUNT(*) AS likes FROM likes "
@@ -141,7 +168,7 @@ public class SongManager {
      */
     public List<Song> getSongList() throws SQLException {
         List<Song> songs = new ArrayList<>();
-        Statement stmt = dbManager.createStatement();
+        Statement stmt = databaseMgr.createStatement();
         ResultSet rs = stmt.executeQuery("SELECT id, name, path, artist, album, length FROM songs");
         while (rs.next()) {
             songs.add(new Song(rs.getLong("id"),
@@ -162,7 +189,7 @@ public class SongManager {
      */
     public List<VoteData> getVotes() throws SQLException {
         List<VoteData> votes = new ArrayList<>();
-        Statement stmt = dbManager.createStatement();
+        Statement stmt = databaseMgr.createStatement();
         ResultSet rs = stmt.executeQuery("SELECT song_id AS id, COUNT(*) as votes FROM votes GROUP BY song_id");
         while (rs.next()) {
             votes.add(new VoteData(rs.getLong("id"), rs.getLong("votes")));
@@ -195,7 +222,7 @@ public class SongManager {
         SongPhoto photo;
         Blob blob;
         
-        try (PreparedStatement stmt = dbManager.createPreparedStatement("SELECT image, image_type FROM songs WHERE id = '?'")) {
+        try (PreparedStatement stmt = databaseMgr.createPreparedStatement("SELECT image, image_type FROM songs WHERE id = '?'")) {
             stmt.setLong(1, songID);
             ResultSet rs = stmt.executeQuery();
             if (rs.next()) {
@@ -210,10 +237,11 @@ public class SongManager {
         
         return photo;
     }
+    
 //</editor-fold>
     
-    
     //<editor-fold defaultstate="collapsed" desc="Speaker Actions">
+    
     public void speakerStatusUpdate(long sessionID, StatusUpdateMessage update) {
         if (sessionID < 0 || update == null) {
             throw new IllegalArgumentException();
@@ -237,10 +265,51 @@ public class SongManager {
 
 //</editor-fold>
     
+    //<editor-fold defaultstate="collapsed" desc="Speaker Get Methods">
+    
+    public SongData getSongData(long songID) throws SQLException, IOException {
+        if (songID < 0) {
+            throw new IllegalArgumentException();
+        }
+        
+        String path;
+        try (PreparedStatement stmt = databaseMgr.createPreparedStatement("SELECT path FROM songs WHERE id = '?'")) {
+            stmt.setLong(1, songID);
+            ResultSet rs = stmt.executeQuery();
+            if (rs.next()) {
+                path = rs.getString("name");
+            } else {
+                throw new SQLException("Not found"); // TODO Replace with more descriptive exception
+            }
+        }
+        
+        File file = new File(path);
+        int length = (int)file.length();
+        FileInputStream fs = new FileInputStream(file);
+        
+        byte[] data = new byte[length];
+        int bytesRead = 0;
+        int bytesLeft = length;
+        int lastRead;
+        
+        do {
+            lastRead = fs.read(data, bytesRead, bytesLeft);
+            bytesRead = bytesRead + lastRead;
+            bytesLeft = length - bytesRead;
+        } while (lastRead > 0 && bytesLeft > 0);
+        
+        ByteBuf buf = Unpooled.copiedBuffer(data);
+        SongData songData = new SongData(buf, "audio/mp3");
+        
+        return songData;
+    }
+    
+//</editor-fold>
+    
     //<editor-fold defaultstate="collapsed" desc="Fields">
     private long activeSongID;
-    private final DatabaseManager dbManager;
-    
+    private final DatabaseManager databaseMgr;
+    private final SessionManager sessionMgr;
     private final static Logger logger = LogManager.getFormatterLogger(SongManager.class.getName());
 //</editor-fold>
 }

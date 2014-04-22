@@ -119,24 +119,24 @@ public class DatabaseManager {
         
         // Create sessions table
         stmt.executeUpdate("CREATE TABLE sessions (id INTEGER PRIMARY KEY AUTOINCREMENT,"
-                                                + "ip_address STRING, "
-                                                + "session_type INTEGER REFERENCES session_types(id) ON DELETE CASCADE, "
-                                                + "time_started INTEGER)");
+                                                + "ip_address STRING NOT NULL, "
+                                                + "session_type INTEGER REFERENCES session_types(id) ON DELETE CASCADE NOT NULL, "
+                                                + "time_started INTEGER NOT NULL)");
         // Create client_sessions table
         stmt.executeUpdate("CREATE TABLE user_sessions (id INTEGER REFERENCES sessions(id) ON DELETE CASCADE)");
         
         // Create speaker_sessions table
         stmt.executeUpdate("CREATE TABLE speaker_sessions (id INTEGER REFERENCES sessions(id) ON DELETE CASCADE, "
                                                         + "current_song INTEGER REFERENCES songs(id), "
-                                                        + "current_status INTEGER, "
-                                                        + "playback_position INTEGER)");
+                                                        + "current_status INTEGER NOT NULL, "
+                                                        + "playback_position INTEGER NOT NULL)");
         
         // Create songs table
         stmt.executeUpdate("CREATE TABLE songs (id INTEGER PRIMARY KEY AUTOINCREMENT, "
-                                            + "name STRING, "
-                                            + "path STRING, "
-                                            + "artist STRING, "
-                                            + "album REAL, "
+                                            + "name STRING NOT NULL, "
+                                            + "path STRING NOT NULL, "
+                                            + "artist STRING NOT NULL, "
+                                            + "album REAL NOT NULL, "
                                             + "image_type STRING, "
                                             + "image BLOB "
                                             + "active BOOLEAN)");
@@ -149,11 +149,11 @@ public class DatabaseManager {
         // Create likes table
         stmt.executeUpdate("CREATE TABLE likes (session_id INTEGER REFERENCES sessions(id) ON DELETE CASCADE, "
                                              + "song_id INTEGER REFERENCES songs(id), "
-                                             + "value BYTE, "
+                                             + "value BYTE NOT NULL, "
                                              + "PRIMARY KEY(session_id, song_id))");
         
         // Create session types table
-        stmt.executeUpdate("CREATE TABLE session_types (id INTEGER UNIQUE, type STRING)");
+        stmt.executeUpdate("CREATE TABLE session_types (id INTEGER UNIQUE, type STRING NOT NULL)");
         
         // Insert the session types into the DB
         int count;

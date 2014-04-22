@@ -35,7 +35,7 @@ public class SessionUpdateQueue {
     
     /**
      * Queue an incoming update request to be matched with an update for the client
-     * @param ch {@link Channel} representing the channel the update request was received on
+     * @param ch The {@link Channel} the update request was received on
      */
     public void queueRequest(Channel ch) {
         SessionUpdate update;
@@ -87,6 +87,8 @@ public class SessionUpdateQueue {
                 
                 RequestHandler.sendResponse(chan, response, false);
             } else {
+                
+                // Overwrite the old update with the same type
                 updates.put(update.getUpdateType(), update);
             }
         }

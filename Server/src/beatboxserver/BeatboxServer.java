@@ -102,22 +102,22 @@ public class BeatboxServer {
         
         DatabaseManager databaseManager;
         AuthenticationManager authManager;
-        SessionManager clientManager;
+        SessionManager sessionManager;
         SongManager songManager;
         
         
         try {
             databaseManager = new DatabaseManager("song_list.db");
             authManager = new AuthenticationManager();
-            clientManager = new SessionManager(databaseManager, authManager);
-            songManager = new SongManager(databaseManager);
+            sessionManager = new SessionManager(databaseManager, authManager);
+            songManager = new SongManager(databaseManager, sessionManager);
         } catch (Exception e) {
             logger.fatal("Failed to initialize server", e);
             System.exit(1);
-            return; // Make compiler happy about uninitialized clientManager and songManager objects
+            return; // Make compiler happy about uninitialized sessionManager and songManager objects
         }
         
-        BeatboxServer server = new BeatboxServer(clientManager, songManager);
+        BeatboxServer server = new BeatboxServer(sessionManager, songManager);
         
         try {
             server.run();
