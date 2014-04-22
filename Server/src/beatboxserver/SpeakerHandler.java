@@ -6,9 +6,7 @@
 
 package beatboxserver;
 
-import beatboxserver.messages.AuthenticateMessage;
-import beatboxserver.messages.DeauthenticateMessage;
-import beatboxserver.messages.Message;
+import beatboxserver.messages.*;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.FullHttpRequest;
@@ -38,6 +36,14 @@ public class SpeakerHandler extends RequestHandler {
         super(clientManager, songManager);
     }
     
+    /**
+     * 
+     * @param ctx
+     * @param req
+     * @param clientID
+     * @param ipAddress
+     * @param body 
+     */
     public void authenticate(ChannelHandlerContext ctx, FullHttpRequest req, long clientID, String ipAddress, Message body) {
         if (validateMethod(ctx.channel(), req, HttpMethod.POST)) {
             
@@ -64,21 +70,22 @@ public class SpeakerHandler extends RequestHandler {
             }
             
             sendResponse(ctx.channel(), session, false);
-            
-            
-            sendResponse(ctx.channel(), session, false);
-        } else {
-            sendError(ctx.channel(), METHOD_NOT_ALLOWED);
         }
     }
     
-    
+    /**
+     * 
+     * @param ctx
+     * @param req
+     * @param sessionID
+     * @param ipAddress
+     * @param body 
+     */
     public void deauthenticate(ChannelHandlerContext ctx, FullHttpRequest req, long sessionID, String ipAddress, Message body) {
        if (validateMethod(ctx.channel(), req, HttpMethod.POST) && validateSession(ctx.channel(), sessionID, ipAddress)) {
            DeauthenticateMessage message;
            SpeakerSession session;
             
-           
            try {
                message = (DeauthenticateMessage)body;
            } catch (ClassCastException e) {
@@ -97,56 +104,81 @@ public class SpeakerHandler extends RequestHandler {
                return;
            } catch (Exception e) {
                 
-               logger.warn("Failure occured", e);
+               logger.warn("Failed to destroy session", e);
                sendError(ctx.channel(), INTERNAL_SERVER_ERROR);
                return;
            }
            
            sendResponse(ctx.channel(), HttpResponseStatus.OK, false);
-       } else {
-           sendError(ctx.channel(), METHOD_NOT_ALLOWED);
        }
     }
     
-    
+    /**
+     * 
+     * @param ctx
+     * @param req
+     * @param sessionID
+     * @param ipAddress 
+     */
     public void requestSpeakerUpdate(ChannelHandlerContext ctx, FullHttpRequest req, long sessionID, String ipAddress) {
         if (validateMethod(ctx.channel(), req, HttpMethod.GET) && validateSession(ctx.channel(), sessionID, ipAddress)) {
             
-            sendError(ctx.channel(), NOT_IMPLEMENTED);
-        } else {
-            sendError(ctx.channel(), METHOD_NOT_ALLOWED);
+            try {
+                sessionMgr.registerRequest(sessionID, ctx.channel());
+            } catch (Exception e) {
+                logger.warn("Failed to register update request", e);
+                sendError(ctx.channel(), INTERNAL_SERVER_ERROR);
+            }
         }
     }
     
-    
+    /**
+     * 
+     * @param ctx
+     * @param req
+     * @param sessionID
+     * @param ipAddress
+     * @param body 
+     */
     public void statusUpdate(ChannelHandlerContext ctx, FullHttpRequest req, long sessionID, String ipAddress, Message body) {
         if (validateMethod(ctx.channel(), req, HttpMethod.POST) && validateSession(ctx.channel(), sessionID, ipAddress)) {
             
-            sendError(ctx.channel(), NOT_IMPLEMENTED);
-        } else {
-            sendError(ctx.channel(), METHOD_NOT_ALLOWED);
+            StatusUpdateMessage message;
+            
+            try {
+                message = (StatusUpdateMessage)body;
+            } catch (ClassCastException e) {
+                
+                sendError(ctx.channel(), BAD_REQUEST);
+                return;
+            }
+            
+            try {
+                songMgr.speakerStatusUpdate(sessionID, message);
+            } catch (Exception e) {
+                logger.warn("Speaker status update failed", e);
+                sendError(ctx.channel(), INTERNAL_SERVER_ERROR);
+                return;
+            }
+            
+            sendResponse(ctx.channel(), OK, false);
         }
     }
     
-    
+    /**
+     * 
+     * @param ctx
+     * @param req
+     * @param sessionID
+     * @param ipAddress 
+     */
     public void requestSong(ChannelHandlerContext ctx, FullHttpRequest req, long sessionID, String ipAddress) {
         if (validateMethod(ctx.channel(), req, HttpMethod.GET) && validateSession(ctx.channel(), sessionID, ipAddress)) {
             
            sendError(ctx.channel(), NOT_IMPLEMENTED);
-        } else {
-            sendError(ctx.channel(), METHOD_NOT_ALLOWED);
         }
     }
     
-    
-    public void ready(ChannelHandlerContext ctx, FullHttpRequest req, long sessionID, String ipAddress, Message body) {
-        if (validateMethod(ctx.channel(), req, HttpMethod.POST) && validateSession(ctx.channel(), sessionID, ipAddress)) {
-            
-            sendError(ctx.channel(), NOT_IMPLEMENTED);
-        } else {
-            sendError(ctx.channel(), METHOD_NOT_ALLOWED);
-        }
-    }
     
     private final static Logger logger = LogManager.getFormatterLogger(SpeakerHandler.class.getName());
 }

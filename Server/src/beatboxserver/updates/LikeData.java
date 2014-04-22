@@ -19,17 +19,16 @@ public class LikeData {
      * @param songID
      * @param songLikes
      * @param songDislikes
-     * @param likeBalance 
      */
-    public LikeData(String songID, int songLikes, int songDislikes, double likeBalance) {
+    public LikeData(long songID, long songLikes, long songDislikes) {
         id = songID;
-        likes = songLikes;
-        dislikes = songDislikes;
-        balance = likeBalance;
+        likes = 0;
+        dislikes = 0;
+        balance = computeBalance();
     }
     
     @Expose
-    private String id;
+    private long id;
             
     @Expose
     private int likes;
@@ -39,4 +38,15 @@ public class LikeData {
     
     @Expose
     private double balance;
+    
+    /**
+     * 
+     * @return 
+     */
+    private double computeBalance() {
+        int difference = likes - dislikes;
+        int sum = likes + dislikes;
+        
+        return balance = (sum == 0) ? 0.0 : (double)difference / (double)sum;
+    }
 }

@@ -6,14 +6,22 @@
 
 package beatboxserver.updates;
 
-import java.util.List;
+import com.google.gson.annotations.Expose;
 
 /**
  *
  * @author rahmanj
  */
-public class VoteUpdate extends SessionUpdate<List<VoteData>>{
-    public VoteUpdate(List<VoteData> votes) {
-        super(UpdateType.votes, votes);
+public class VoteData {
+    
+    public VoteData(long songID, long votes) {
+        id = songID;
+        this.votes = votes;
     }
+    
+    @Expose
+    private long id;
+    
+    @Expose
+    private long votes;
 }

@@ -117,13 +117,16 @@ Requests: (From Client to server)
 			 Content-Length: <JsonLength>\r\n
 			 \r\n
 			 {"id": "<SongID>",
-			  "status": "Playing|Paused",
+			  "status": "Playing|Paused|Stopped|Ready",
 			  "position": "<PlaybackPosition(MS)>"}"
 		Remarks:
-			Sent to the server periodically and whenever a status change occurs.
+			Sent to the server periodically to the server to indicate the current status of the speaker
 				Status changes include changes to playback position,
 				Playing->Paused, Paused->Playing transitions,
 				Changing the currently played song
+			If a song is successfully received from the server, then a "Ready" update should be sent
+			Likewise, once playback successfully starts, a "Playing" update should be sent
+			Finally, once the song finishes playback, a "Stopped" update should be sent
 
 	REQUEST_SONG:
 		Description:
@@ -136,15 +139,6 @@ Requests: (From Client to server)
 			The client is repsonsible for determing when to get the song from the server
 			It can use a variety of methods to identify when and which song to fetch
 
-	READY:
-		Description:
-			Indicate to the server that the given song is ready to play
-		Format:
-			"POST /speaker/ready?clientID=<ClientID> HTTP/1.1\r\n
-			(<Key>: <Value\r\n)*
-			 \r\n
-			 {"id": <SongID>}"
-		Remarks:
 
 
 Responses: (From Server to Client)

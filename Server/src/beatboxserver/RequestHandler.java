@@ -171,6 +171,21 @@ public abstract class RequestHandler {
         }
     }
     
+    /**
+     * 
+     * @param ch
+     * @param data
+     * @param contentType
+     * @param keepAlive 
+     */
+    public static void sendResponse(Channel ch, ByteBuf data, String contentType, boolean keepAlive) {
+        if (ch == null || data == null || contentType == null) {
+            throw new IllegalArgumentException();
+        }
+        
+        FullHttpResponse response = createResponse(OK, data, contentType);
+        sendResponse(ch, response, keepAlive);
+    }
     
     /**
      * 
@@ -181,20 +196,9 @@ public abstract class RequestHandler {
     public static void sendResponse(Channel ch, HttpResponseStatus status, boolean keepAlive) {
         if (ch != null) {
             
-            InetSocketAddress addr = (InetSocketAddress)ch.remoteAddress();
-            logger.info("Sending response to %s", addr.getHostString());
-
             FullHttpResponse response = createResponse(status);
             
-            if (keepAlive) {
-                
-                // Keep alive in effect
-                ch.writeAndFlush(response).addListener(ChannelFutureListener.CLOSE_ON_FAILURE);
-            } else {
-                
-                // No keep alive
-                ch.writeAndFlush(response).addListener(ChannelFutureListener.CLOSE);
-            }
+            sendResponse(ch, response, keepAlive);
         } else {
             throw new IllegalArgumentException();
         }
@@ -207,29 +211,42 @@ public abstract class RequestHandler {
      * @param keepAlive 
      */
     public static void sendResponse(Channel ch, Object data, boolean keepAlive) {
-        if (ch != null && data != null) {
-            
-            InetSocketAddress addr = (InetSocketAddress)ch.remoteAddress();
-            logger.info("Sending response to %s", addr.getHostString());
-            
-            Gson gson = (new GsonBuilder())
-                    .excludeFieldsWithoutExposeAnnotation()
-                    .setFieldNamingPolicy(FieldNamingPolicy.LOWER_CASE_WITH_UNDERSCORES).create();
-            
-            String body = gson.toJson(data);
-            FullHttpResponse response = createResponse(HttpResponseStatus.OK, body);
-            
-            if (keepAlive) {
-                
-                // Keep alive in effect
-                ch.writeAndFlush(response).addListener(ChannelFutureListener.CLOSE_ON_FAILURE);
-            } else {
-                
-                // No keep alive
-                ch.writeAndFlush(response).addListener(ChannelFutureListener.CLOSE);
-            }
-        } else {
+        if (ch == null || data == null) {
             throw new IllegalArgumentException();
+        }
+            
+        Gson gson = (new GsonBuilder())
+                .excludeFieldsWithoutExposeAnnotation()
+                .setFieldNamingPolicy(FieldNamingPolicy.LOWER_CASE_WITH_UNDERSCORES).create();
+            
+        String body = gson.toJson(data);
+        FullHttpResponse response = createResponse(HttpResponseStatus.OK, body);
+        sendResponse(ch, response, keepAlive);
+        
+    }
+    
+    /**
+     * 
+     * @param ch
+     * @param response
+     * @param keepAlive 
+     */
+    public static void sendResponse(Channel ch, FullHttpResponse response, boolean keepAlive) {
+        if (ch == null || response == null) {
+            throw new IllegalArgumentException();
+        }
+        
+        InetSocketAddress addr = (InetSocketAddress)ch.remoteAddress();
+        logger.info("Sending response to %s", addr.getHostString());
+        
+        if (keepAlive) {
+                
+            // Keep alive in effect
+            ch.writeAndFlush(response).addListener(ChannelFutureListener.CLOSE_ON_FAILURE);
+        } else {
+                
+            // No keep alive
+            ch.writeAndFlush(response).addListener(ChannelFutureListener.CLOSE);
         }
     }
     
@@ -246,6 +263,21 @@ public abstract class RequestHandler {
         
         FullHttpResponse response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, status, body);
         response.headers().add(CONTENT_TYPE, "application/json");
+        
+        return response;
+    }
+    
+    /**
+     * Creates an {@link FullHttpResponse} object with the given ByteBuf as the content
+     * @param status {@link HttpResponseStatus} for the response
+     * @param content {@link ByteBuffer} containing the desired response content
+     * @param contentType {@link String} describing the MIME type of the response body
+     * @return An {@link FullHttpResponse} object
+     */
+    protected static FullHttpResponse createResponse(HttpResponseStatus status, ByteBuf content, String contentType) {
+        
+        FullHttpResponse response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, status, content);
+        response.headers().add(CONTENT_TYPE, contentType);
         
         return response;
     }
@@ -284,11 +316,12 @@ public abstract class RequestHandler {
     
     
     /**
-     * 
-     * @param channel
-     * @param req
-     * @param method
-     * @return 
+     * Confirm that the request method is indeed the expected method.
+     * In the event of mismatch, an HTTP METHOD_NOT_ALLOWED response is sent to the client.
+     * @param channel {@link Channel} over which to send any response
+     * @param req {@link FullHttpRequest} that initiated this validation check
+     * @param method {@link HttpMethod} we were expecting
+     * @return TRUE if the validation passed, FALSE if not, and an error response has been sent
      */
     protected boolean validateMethod(Channel channel, FullHttpRequest req, HttpMethod method) {
         if (channel != null && req != null && method != null) {
