@@ -6,7 +6,6 @@
 
 package beatboxserver;
 
-import beatboxserver.Session.SessionType;
 
  /**
   *

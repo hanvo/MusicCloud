@@ -352,9 +352,25 @@ public class ClientHandler extends RequestHandler {
             } catch (Exception e) {
                 logger.warn("Invalid song ID", e);
                 sendError(ctx.channel(), BAD_REQUEST);
+                return;
             }
             
-            sendError(ctx.channel(), NOT_IMPLEMENTED);
+            SongPhoto photo;
+            try {
+                photo = songMgr.getSongPhoto(songID);
+            } catch (SQLException e) {
+                if (e.getMessage().equals("Song not found")) {
+                    sendError(ctx.channel(), NOT_FOUND);
+                    return;
+                }
+                sendError(ctx.channel(), INTERNAL_SERVER_ERROR);
+                return;
+            } catch (Exception e) {
+                sendError(ctx.channel(), INTERNAL_SERVER_ERROR);
+                return;
+            }
+            
+            sendResponse(ctx.channel(), photo.getImageData(), photo.getImageType(), false);
         }
     }
     

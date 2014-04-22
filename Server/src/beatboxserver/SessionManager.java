@@ -126,8 +126,8 @@ public class SessionManager {
     }
     
     /**
-     * 
-     * @param update
+     * Broadcast a given update to all the sessions of a given type
+     * @param update The {@link SessionUpdate} to broadcast to the sessions
      * @param sessionType {@link long} as the database ID (ordinal) for the session type
      * @throws SQLException
      */
@@ -139,7 +139,7 @@ public class SessionManager {
         List<Long> sessions = new ArrayList<>();
         
         // Get the list of sessions with the given type from the DB
-        String query = "SELECT id FROM sessions WHERE sessions.session_type = ?";
+        String query = "SELECT id FROM sessions WHERE sessions.session_type = '?'";
         try (PreparedStatement stmt = dbManager.createPreparedStatement(query)) {
             stmt.setLong(1, sessionType);
             ResultSet rs = stmt.executeQuery();
@@ -203,38 +203,37 @@ public class SessionManager {
     }
     
     /**
-     * 
-     * @param id
+     * Check if the given session is valid
+     * @param sessionID
      * @param ipAddress
      * @return 
      */
-    public boolean validSession(long id, String ipAddress) {
-        if (id < 0 || ipAddress == null) {
+    public boolean validSession(long sessionID, String ipAddress) {
+        if (sessionID < 0 || ipAddress == null) {
             throw new IllegalArgumentException();
         }
         
-        PreparedStatement stmt;
         try {
-            stmt = dbManager.createPreparedStatement("SELECT (ip_address, time_started) FROM sessions WHERE id = '?'");
-            stmt.setLong(1, id);
-            
-            // Check to ensure we selected (1) row
-            ResultSet rs = stmt.executeQuery();
-            int size = 0;
-            while (rs.next()) {
-                if (!rs.getString("ip_address").equals(ipAddress)) {
+            String query = "SELECT (ip_address, time_started) FROM sessions WHERE id = '?'";
+            try (PreparedStatement stmt = dbManager.createPreparedStatement(query)) {
+                stmt.setLong(1, sessionID);
+
+                // Check to ensure we selected (1) row
+                ResultSet rs = stmt.executeQuery();
+                int size = 0;
+                while (rs.next()) {
+                    if (!rs.getString("ip_address").equals(ipAddress)) {
+                        stmt.close();
+                        return false;
+                    }
+                    size++;
+                }
+
+                if (size != 1) {
                     stmt.close();
                     return false;
                 }
-                size++;
             }
-            
-            if (size != 1) {
-                stmt.close();
-                return false;
-            }
-                
-            stmt.close();
         } catch (SQLException e) {
             logger.warn("Failed to authenticate session", e);
             return false;
