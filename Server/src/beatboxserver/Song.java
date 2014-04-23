@@ -25,10 +25,11 @@ public class Song {
      * @param songArtist
      * @param songAlbum
      * @param songPath
-     * @param songLength 
+     * @param songLength
+     * @param songVotes
      */
-    public Song(long songID, String songName, String songArtist, String songAlbum, String songPath, long songLength) {
-        this(songID, songName, songArtist, songAlbum, songPath, songLength, null, null);
+    public Song(long songID, String songName, String songArtist, String songAlbum, String songPath, long songLength, long songVotes) {
+        this(songID, songName, songArtist, songAlbum, songPath, songLength, songVotes, null, null);
     }
     
     /**
@@ -42,13 +43,14 @@ public class Song {
      * @param image
      * @param imageType 
      */
-    public Song(long songID, String songName, String songArtist, String songAlbum, String songPath, long songLength, ByteBuf image, String imageType) {
+    public Song(long songID, String songName, String songArtist, String songAlbum, String songPath, long songLength, long songVotes, ByteBuf image, String imageType) {
         songID = songID;
         name = songName;
         artist = songArtist;
         album = songAlbum;
         path = songPath;
         length = songLength;
+        votes = songVotes;
         if (image != null) {
             imageData = image.duplicate();
         } else {
@@ -111,6 +113,15 @@ public class Song {
         return imageMimeType;
     }
     
+    
+    /**
+     * 
+     * @return 
+     */
+    public long getVotes() {
+        return votes;
+    }
+    
     @Expose
     private long id;
     
@@ -131,4 +142,7 @@ public class Song {
     
     @Expose
     private long length;
+    
+    @Expose
+    private long votes;
 }

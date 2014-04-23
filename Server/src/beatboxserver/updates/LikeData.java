@@ -20,11 +20,14 @@ public class LikeData {
      * @param songLikes
      * @param songDislikes
      */
-    public LikeData(long songID, long songLikes, long songDislikes) {
+    public LikeData(long songID, long songLikes, long songDislikes, double balance) {
+        if (songID < 0 || songLikes < 0 || songDislikes < 0 || balance < -1 || balance > 1) {
+            throw new IllegalArgumentException();
+        }
         id = songID;
         likes = 0;
         dislikes = 0;
-        balance = computeBalance();
+        this.balance = balance;
     }
     
     @Expose
@@ -39,14 +42,4 @@ public class LikeData {
     @Expose
     private double balance;
     
-    /**
-     * 
-     * @return 
-     */
-    private double computeBalance() {
-        int difference = likes - dislikes;
-        int sum = likes + dislikes;
-        
-        return balance = (sum == 0) ? 0.0 : (double)difference / (double)sum;
-    }
 }

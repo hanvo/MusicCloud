@@ -11,6 +11,7 @@ import beatboxserver.messages.*;
 import beatboxserver.updates.*;
 
 import java.util.List;
+import java.util.NoSuchElementException;
 
 import io.netty.channel.ChannelHandlerContext;
 
@@ -382,12 +383,8 @@ public class ClientHandler extends RequestHandler {
             SongPhoto photo;
             try {
                 photo = songMgr.getSongPhoto(songID);
-            } catch (SQLException e) {
-                if (e.getMessage().equals("Song not found")) {
-                    sendError(ctx.channel(), NOT_FOUND);
-                    return;
-                }
-                sendError(ctx.channel(), INTERNAL_SERVER_ERROR);
+            } catch (NoSuchElementException e) {
+                sendError(ctx.channel(), NOT_FOUND);
                 return;
             } catch (Exception e) {
                 sendError(ctx.channel(), INTERNAL_SERVER_ERROR);

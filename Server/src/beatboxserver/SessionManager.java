@@ -15,6 +15,7 @@ import java.util.Map;
 import java.util.HashMap;
 import java.util.List;
 import java.util.ArrayList;
+import java.util.NoSuchElementException;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
@@ -40,7 +41,7 @@ public class SessionManager {
      * @param authenticationManager 
      */
     public SessionManager(DatabaseManager databaseManager, AuthenticationManager authenticationManager) {
-        dbManager = databaseManager;
+        databaseMgr = databaseManager;
         authManager = authenticationManager;
         sessionMap = new HashMap<>();
     }
@@ -68,7 +69,7 @@ public class SessionManager {
         authenticated = this.authManager.authenticate(pin);
         
         if (authenticated) {
-            try (Statement stmt = dbManager.createStatement()) {
+            try (Statement stmt = databaseMgr.createStatement()) {
 
                 String query = "INSERT INTO session (ip_address, session_type, time_started) VALUES ( '" + ipAddress + "', '" + type.ordinal() + "', )";
                 if (stmt.executeUpdate(query) != 1) {
@@ -114,7 +115,7 @@ public class SessionManager {
         }
         
         synchronized(this) {
-            try (PreparedStatement stmt = dbManager.createPreparedStatement("DELETE FROM sessions WHERE id = ?")) {
+            try (PreparedStatement stmt = databaseMgr.createPreparedStatement("DELETE FROM sessions WHERE id = ?")) {
                 stmt.setLong(1, sessionID);
                 stmt.executeUpdate();
             }
@@ -140,7 +141,7 @@ public class SessionManager {
         
         // Get the list of sessions with the given type from the DB
         String query = "SELECT id FROM sessions WHERE sessions.session_type = '?'";
-        try (PreparedStatement stmt = dbManager.createPreparedStatement(query)) {
+        try (PreparedStatement stmt = databaseMgr.createPreparedStatement(query)) {
             stmt.setLong(1, sessionType);
             ResultSet rs = stmt.executeQuery();
             while (rs.next()) {
@@ -177,30 +178,14 @@ public class SessionManager {
         }
     }
     
+    
     /**
      * 
-     * @param id
-     * @retur 
-     * @throws java.sql.SQLExceptionn 
+     * @return
      */
-    /*public Session getSession(long id) throws SQLException {
-    if (id < 0) {
-    throw new IllegalArgumentException();
+    public long getSessionCount() throws SQLException {
+        return sessionMap.size();
     }
-    
-    synchronized(this) {
-    Statement stmt = dbManager.createPreparedStatement("SELECT ");
-    ResultSet rs = stmt.executeQuery("SELECT sessions.id as session_id, sessions.ip_address as ip_address, session_types.type as type "
-    + "FROM sessions INNER JOIN session_types ON sessions.session_type = session_types.id "
-    + "WHERE sessions.id = " + id);
-    
-    if (rs.next()) {
-    //switch (rs.getString())
-    }
-    
-    }
-    return null;
-    }*/
     
     /**
      * Check if the given session is valid
@@ -215,7 +200,7 @@ public class SessionManager {
         
         try {
             String query = "SELECT ip_address, time_started FROM sessions WHERE id = '?'";
-            try (PreparedStatement stmt = dbManager.createPreparedStatement(query)) {
+            try (PreparedStatement stmt = databaseMgr.createPreparedStatement(query)) {
                 stmt.setLong(1, sessionID);
 
                 // Check to ensure we selected (1) row
@@ -243,7 +228,7 @@ public class SessionManager {
     }
     
     private final Map<Long, Session> sessionMap;
-    private final DatabaseManager dbManager;
+    private final DatabaseManager databaseMgr;
     private final AuthenticationManager authManager;
     
     private final static Logger logger = LogManager.getFormatterLogger(SessionManager.class.getName());

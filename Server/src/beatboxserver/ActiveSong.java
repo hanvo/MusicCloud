@@ -22,7 +22,8 @@ public class ActiveSong extends Song {
      * @param songAlbum
      * @param songPath
      * @param songLength
-     * @param status 
+     * @param status
+     * @param songVotes
      */
     public ActiveSong(long songID,
                       String songName,
@@ -30,8 +31,9 @@ public class ActiveSong extends Song {
                       String songAlbum,
                       String songPath,
                       long songLength,
+                      long songVotes,
                       SongStatus status) {
-        super(songID, songName, songArtist, songAlbum, songPath, songLength);
+        super(songID, songName, songArtist, songAlbum, songPath, songLength, songVotes);
         this.status = status;
     }
     
@@ -42,15 +44,17 @@ public class ActiveSong extends Song {
      * @param songArtist
      * @param songAlbum
      * @param songPath
-     * @param songLength 
+     * @param songLength
+     * @param songVotes
      */
     public ActiveSong(long songID,
                       String songName,
                       String songArtist,
                       String songAlbum,
                       String songPath,
-                      long songLength) {
-        super(songID, songName, songArtist, songAlbum, songPath, songLength);
+                      long songLength,
+                      long songVotes) {
+        super(songID, songName, songArtist, songAlbum, songPath, songLength, songVotes);
         this.status = SongStatus.Stopped;
     }
     

@@ -9,9 +9,8 @@ package beatboxserver;
 
 import beatboxserver.messages.*;
 
-import java.sql.SQLException;
 
-import java.io.IOException;
+import java.util.NoSuchElementException;
 
 import io.netty.channel.ChannelHandlerContext;
 
@@ -196,7 +195,7 @@ public class SpeakerHandler extends RequestHandler {
             SongData data;
             try {
                 data = songMgr.getSongData(songID);
-            } catch (SQLException|IOException e) {
+            } catch (NoSuchElementException e) {
                 logger.warn("Song not found", e);
                 sendError(ctx.channel(), NOT_FOUND);
                 return;

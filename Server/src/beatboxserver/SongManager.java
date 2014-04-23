@@ -23,6 +23,7 @@ import java.sql.Blob;
 
 import java.util.List;
 import java.util.ArrayList;
+import java.util.NoSuchElementException;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -107,13 +108,15 @@ public class SongManager {
             throw new IllegalArgumentException();
         }
         
-        try (PreparedStatement stmt = databaseMgr.createPreparedStatement("INSERT OR REPLACE likes (session_id, song_id) VALUES (?, ?, -1)")) {
+        try (PreparedStatement stmt = databaseMgr.createPreparedStatement("INSERT OR REPLACE likes (session_id, song_id, value) VALUES (?, ?, '-1')")) {
             stmt.setLong(1, sessionID);
             stmt.setLong(2, songID);
             if (stmt.executeUpdate() != 1) {
                 throw new SQLException();
             }
         }
+        
+        // TODO Include logic for removing the current song if dislikes reach certain level
     }
     
 //</editor-fold>
@@ -127,14 +130,14 @@ public class SongManager {
      */
     public LikeData getStats() throws SQLException {
         
-        long songID;
+        long songID = -1;
         long likes, dislikes;
         try (Statement stmt = databaseMgr.createStatement()) {
             
-            // Use the active field to filter out likes for non-active songs
+            // Use the status field to filter out likes for non-active songs
             String query = "SELECT songs.id AS id, value, COUNT(*) AS likes FROM likes "
                     + "INNER JOIN songs ON songs.id = song_id "
-                    + "WHERE active = TRUE "
+                    + "WHERE status != '" + SongStatus.Inactive.ordinal() + "' "
                     + "GROUP BY songs.id, value";
             ResultSet rs = stmt.executeQuery(query);
             
@@ -149,17 +152,19 @@ public class SongManager {
                 songID = rs.getLong("id");
                 
                 // Dislikes are stored as -1, likes are stored as 1
-                if (songID == activeSongID) {
-                    if (value < 0) {
-                        dislikes = count;
-                    } else if (value > 0) {
-                        likes = count;
-                    }
+                if (value < 0) {
+                    dislikes = count;
+                } else if (value > 0) {
+                    likes = count;
                 }
             }
         }
         
-        return new LikeData(activeSongID, likes, dislikes);
+        if (songID == -1) {
+            throw new NoSuchElementException();
+        }
+        
+        return new LikeData(songID, likes, dislikes, computeLikeBalance(likes, dislikes));
     }
     
     /**
@@ -170,14 +175,19 @@ public class SongManager {
     public List<Song> getSongList() throws SQLException {
         List<Song> songs = new ArrayList<>();
         Statement stmt = databaseMgr.createStatement();
-        ResultSet rs = stmt.executeQuery("SELECT id, name, path, artist, album, length FROM songs");
+        
+        // Search for songs, while sorting by votes (Sub query to get the vote count)
+        ResultSet rs = stmt.executeQuery("SELECT id, name, path, artist, album, length, votes FROM songs "
+                                       + "LEFT OUTER JOIN (SELECT song_id, COUNT(*) as vote_count FROM votes GROUP BY song_id) counts "
+                                       + "ON counts.song_id = id ORDER BY counts.vote_count DESC NULLS LAST");
         while (rs.next()) {
             songs.add(new Song(rs.getLong("id"),
                     rs.getString("name"),
                     rs.getString("artist"),
                     rs.getString("album"),
                     rs.getString("path"),
-                    rs.getLong("length")));
+                    rs.getLong("length"),
+                    rs.getLong("votes")));
         }
         
         return songs;
@@ -207,7 +217,10 @@ public class SongManager {
         
         ActiveSong activeSong;
         
-        String query = "SELECT id, name, path, artist, album, length FROM songs WHERE status = '" + SongStatus.Playing.ordinal() + "' LIMIT 1";
+        String query = "SELECT id, name, path, artist, album, length, votes FROM songs "
+                     + "LEFT OUTER JOIN (SELECT song_id, COUNT(*) as vote_count FROM votes GROUP BY song_id) counts "
+                     + "ON counts.song_id = id WHERE status = '" + SongStatus.Playing.ordinal() + "' LIMIT 1";
+        //query = "SELECT id, name, path, artist, album, length FROM songs WHERE status = '" + SongStatus.Playing.ordinal() + "' LIMIT 1";
         try (Statement stmt = databaseMgr.createStatement()) {
             ResultSet rs = stmt.executeQuery(query);
             
@@ -219,9 +232,10 @@ public class SongManager {
                     rs.getString("album"),
                     rs.getString("path"),
                     rs.getLong("length"),
+                    rs.getLong("votes"),
                     SongStatus.values()[rs.getInt("status")]);
             } else {
-                throw new SQLException("Not found");
+                throw new NoSuchElementException();
             }
             
             // Check for duplicate playing songs, this should never happen
@@ -256,7 +270,7 @@ public class SongManager {
                 ByteBuf buf = Unpooled.copiedBuffer(blob.getBytes(1, (int)blob.length()));
                 photo = new SongPhoto(buf, rs.getString("image_type"));
             } else {
-                throw new SQLException("Song not found");
+                throw new NoSuchElementException();
             }
         }
         
@@ -267,6 +281,11 @@ public class SongManager {
     
     //<editor-fold defaultstate="collapsed" desc="Speaker Actions">
     
+    /**
+     * 
+     * @param sessionID
+     * @param update 
+     */
     public void speakerStatusUpdate(long sessionID, StatusUpdateMessage update) {
         if (sessionID < 0 || update == null) {
             throw new IllegalArgumentException();
@@ -275,12 +294,15 @@ public class SongManager {
         switch (update.status) {
             case Playing:
                 // TODO
+                // Mark the current song as Playing
                 break;
             case Stopped:
                 // TODO
+                // Mark the current song as Stopped
                 break;
             case Ready:
                 // TODO
+                // Send the playback command if the song ID matches the active song
                 break;
         }
     }
@@ -308,7 +330,7 @@ public class SongManager {
             if (rs.next()) {
                 path = rs.getString("name");
             } else {
-                throw new SQLException("Not found"); // TODO Replace with more descriptive exception
+                throw new NoSuchElementException();
             }
         }
         
@@ -336,6 +358,33 @@ public class SongManager {
     }
     
 //</editor-fold>
+    
+    
+    /**
+     * 
+     * @param likes
+     * @param dislikes
+     * @return 
+     */
+    public double computeLikeBalance(long likes, long dislikes) {
+        if (likes < 0 || dislikes < 0) {
+            throw new IllegalArgumentException();
+        }
+        
+        long difference = likes - dislikes;
+        long sum = likes + dislikes;
+        
+        return (sum == 0) ? 0.0 : (double)difference / (double)sum;
+    }
+    
+    /**
+     * 
+     * @return 
+     */
+    public boolean skipToNext() {
+        ActiveSong song = getActiveSong();
+        //LikeData data 
+    }
     
     //<editor-fold defaultstate="collapsed" desc="Fields">
     private long activeSongID;
