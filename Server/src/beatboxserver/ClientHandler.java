@@ -147,9 +147,7 @@ public class ClientHandler extends RequestHandler {
                 return;
             }
             
-            UserSession client = (UserSession)sessionMgr.getSession(sessionID);
-            
-            // TODO, your patriotic duty, and vote
+            // Do, your patriotic duty, and vote
             VoteMessage message;
             try {
                 message = (VoteMessage)body;
@@ -267,6 +265,7 @@ public class ClientHandler extends RequestHandler {
         if (validateMethod(ctx.channel(), req, HttpMethod.GET) && validateSession(ctx.channel(), sessionID, ipAddress)) {
             
             LikeData stats;
+            
             try {
                 stats = songMgr.getStats();
             } catch (Exception e) {

@@ -8,6 +8,7 @@ package beatboxserver;
 
 import beatboxserver.updates.VoteData;
 import beatboxserver.updates.LikeData;
+import beatboxserver.Song.SongStatus;
 
 import beatboxserver.messages.*;
 
@@ -202,10 +203,34 @@ public class SongManager {
      *
      * @return
      */
-    public ActiveSong getActiveSong() {
+    public ActiveSong getActiveSong() throws SQLException {
         
-        // TODO
-        return null;
+        ActiveSong activeSong;
+        
+        String query = "SELECT id, name, path, artist, album, length FROM songs WHERE status = '" + SongStatus.Playing.ordinal() + "' LIMIT 1";
+        try (Statement stmt = databaseMgr.createStatement()) {
+            ResultSet rs = stmt.executeQuery(query);
+            
+            
+            if (rs.next()) {
+                activeSong = new ActiveSong(rs.getLong("id"),
+                    rs.getString("name"),
+                    rs.getString("artist"),
+                    rs.getString("album"),
+                    rs.getString("path"),
+                    rs.getLong("length"),
+                    SongStatus.values()[rs.getInt("status")]);
+            } else {
+                throw new SQLException("Not found");
+            }
+            
+            // Check for duplicate playing songs, this should never happen
+            if (rs.next()) {
+                throw new IllegalStateException("Duplicate active songs");
+            }
+        }
+        
+        return activeSong;
     }
     
     /**
@@ -251,9 +276,6 @@ public class SongManager {
             case Playing:
                 // TODO
                 break;
-            case Paused:
-                // TODO
-                break;
             case Stopped:
                 // TODO
                 break;
@@ -267,6 +289,13 @@ public class SongManager {
     
     //<editor-fold defaultstate="collapsed" desc="Speaker Get Methods">
     
+    /**
+     * 
+     * @param songID
+     * @return
+     * @throws SQLException
+     * @throws IOException 
+     */
     public SongData getSongData(long songID) throws SQLException, IOException {
         if (songID < 0) {
             throw new IllegalArgumentException();
@@ -283,6 +312,8 @@ public class SongManager {
             }
         }
         
+        // Read mp3 file from disk into RAM and send off to the client
+        // This could *probably* be optimized quite a bit
         File file = new File(path);
         int length = (int)file.length();
         FileInputStream fs = new FileInputStream(file);

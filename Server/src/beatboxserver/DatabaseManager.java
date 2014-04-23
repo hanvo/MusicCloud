@@ -7,6 +7,7 @@
 package beatboxserver;
 
 import beatboxserver.Session.SessionType;
+import beatboxserver.Song.SongStatus;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -139,7 +140,7 @@ public class DatabaseManager {
                                             + "album REAL NOT NULL, "
                                             + "image_type STRING, "
                                             + "image BLOB "
-                                            + "active BOOLEAN)");
+                                            + "status INTEGER)");
         
         // Create votes table
         stmt.executeUpdate("CREATE TABLE votes (session_id INTEGER REFERENCES sessions(id) ON DELETE CASCADE, "
@@ -157,8 +158,8 @@ public class DatabaseManager {
         
         // Insert the session types into the DB
         int count;
-        count = stmt.executeUpdate("INSERT INTO session_types (id, type) VALUES (" + SessionType.User.ordinal() + ", '" + SessionType.User.toString() + "')");
-        count *= stmt.executeUpdate("INSERT INTO session_types (id, type) VALUES (" + SessionType.Speaker.ordinal() + ", '" + SessionType.Speaker.toString() + "')");
+        count = stmt.executeUpdate("INSERT INTO session_types (id, type) VALUES ('" + SessionType.User.ordinal() + "', '" + SessionType.User.toString() + "')");
+        count *= stmt.executeUpdate("INSERT INTO session_types (id, type) VALUES ('" + SessionType.Speaker.ordinal() + "', '" + SessionType.Speaker.toString() + "')");
         if (count != 1) {
             throw new SQLException("Failed to insert session types");
         }
@@ -175,14 +176,24 @@ public class DatabaseManager {
             throw new IllegalArgumentException();
         }
         
-        // "(name STRING, path STRING, artist STRING, album STRING, length REAL, image_type STRING, image BLOB)"
-        PreparedStatement insertStmt = newDatabase.prepareStatement("INSERT INTO songs VALUES (?, ?, ?, ?, ?, ?, ?)", Statement.RETURN_GENERATED_KEYS);
+        // "(name STRING, path STRING, artist STRING, album STRING, length REAL, image_type STRING, image BLOB, status INTEGER)"
+        PreparedStatement insertStmt = newDatabase.prepareStatement("INSERT INTO songs VALUES (?, ?, ?, ?, ?, ?, ?, ?)", Statement.RETURN_GENERATED_KEYS);
         
         Statement getStatement = oldDatabase.createStatement();
         ResultSet results = getStatement.executeQuery("SELECT id, song, path, artist, album, lengthOfSong, art, artType FROM music");
         
         // Iterate through the result set to transfer the contents over
         while (results.next()) {
+            
+            logger.trace("Inserting song: %s, %s, %s, %s, %d, %s",
+                        results.getString("song"),
+                        results.getString("path"),
+                        results.getString("artist"),
+                        results.getString("album"),
+                        results.getDouble("lengthOfSong"),
+                        results.getString("artType")
+            );
+            
             insertStmt.setString(1, results.getString("song"));
             insertStmt.setString(2, results.getString("path"));
             insertStmt.setString(3, results.getString("artist"));
@@ -190,7 +201,11 @@ public class DatabaseManager {
             insertStmt.setDouble(5, results.getDouble("lengthOfSong"));
             insertStmt.setString(6, results.getString("artType"));
             insertStmt.setBlob(7, results.getBlob("art"));
-            insertStmt.executeUpdate();
+            insertStmt.setLong(8, SongStatus.Inactive.ordinal());
+            
+            if (insertStmt.executeUpdate() != 1) {
+                logger.warn("Failed to add song to the internal DB");
+            }
         }
     }
     

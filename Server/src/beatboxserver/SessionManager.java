@@ -70,7 +70,7 @@ public class SessionManager {
         if (authenticated) {
             try (Statement stmt = dbManager.createStatement()) {
 
-                String query = "INSERT INTO session (ip_address, session_type, time_started) VALUES (" + ipAddress + ", " + type.ordinal() + ", )";
+                String query = "INSERT INTO session (ip_address, session_type, time_started) VALUES ( '" + ipAddress + "', '" + type.ordinal() + "', )";
                 if (stmt.executeUpdate(query) != 1) {
                     stmt.close();
                     throw new IllegalStateException();
@@ -80,7 +80,7 @@ public class SessionManager {
 
                 // Insert into child table
                 tableName = type.toString().toLowerCase() + "_sessions";
-                stmt.executeUpdate("INSERT INTO " + tableName + " (id) VALUES (" + sessionID + ")");
+                stmt.executeUpdate("INSERT INTO " + tableName + " (id) VALUES ('" + sessionID + "')");
 
             }
         } else { 
@@ -167,7 +167,7 @@ public class SessionManager {
             throw new IllegalArgumentException();
         }
         
-        if (sessionMap.containsKey(sessionID)) {
+        if (!sessionMap.containsKey(sessionID)) {
             throw new IllegalArgumentException("No session with given ID");
         }
         
@@ -180,26 +180,27 @@ public class SessionManager {
     /**
      * 
      * @param id
-     * @return 
+     * @retur 
+     * @throws java.sql.SQLExceptionn 
      */
-    public Session getSession(long id) throws SQLException {
-        if (id < 0) {
-            throw new IllegalArgumentException();
-        }
-        
-        synchronized(this) {
-            Statement stmt = dbManager.createPreparedStatement("SELECT ");
-            ResultSet rs = stmt.executeQuery("SELECT sessions.id as session_id, sessions.ip_address as ip_address, session_types.type as type "
-                                            + "FROM sessions INNER JOIN session_types ON sessions.session_type = session_types.id "
-                                            + "WHERE sessions.id = " + id);
-            
-            if (rs.next()) {
-                //switch (rs.getString())
-            }
-                
-        }
-        return null;
+    /*public Session getSession(long id) throws SQLException {
+    if (id < 0) {
+    throw new IllegalArgumentException();
     }
+    
+    synchronized(this) {
+    Statement stmt = dbManager.createPreparedStatement("SELECT ");
+    ResultSet rs = stmt.executeQuery("SELECT sessions.id as session_id, sessions.ip_address as ip_address, session_types.type as type "
+    + "FROM sessions INNER JOIN session_types ON sessions.session_type = session_types.id "
+    + "WHERE sessions.id = " + id);
+    
+    if (rs.next()) {
+    //switch (rs.getString())
+    }
+    
+    }
+    return null;
+    }*/
     
     /**
      * Check if the given session is valid

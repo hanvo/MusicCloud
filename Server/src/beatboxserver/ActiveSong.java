@@ -14,39 +14,55 @@ import com.google.gson.annotations.Expose;
  */
 public class ActiveSong extends Song {
     
-    public enum StatusType {Playing, Paused};
-    
+    /**
+     * 
+     * @param songID
+     * @param songName
+     * @param songArtist
+     * @param songAlbum
+     * @param songPath
+     * @param songLength
+     * @param status 
+     */
     public ActiveSong(long songID,
                       String songName,
                       String songArtist,
                       String songAlbum,
                       String songPath,
-                      int songLength,
-                      int playbackPosition) {
+                      long songLength,
+                      SongStatus status) {
         super(songID, songName, songArtist, songAlbum, songPath, songLength);
-        playbackPosition = 0; // Start at playback position 0
-        status = StatusType.Paused;
+        this.status = status;
     }
     
     /**
      * 
-     * @param pos 
+     * @param songID
+     * @param songName
+     * @param songArtist
+     * @param songAlbum
+     * @param songPath
+     * @param songLength 
      */
-    public void setPlaybackPosition(int pos) {
-        position = pos;
+    public ActiveSong(long songID,
+                      String songName,
+                      String songArtist,
+                      String songAlbum,
+                      String songPath,
+                      long songLength) {
+        super(songID, songName, songArtist, songAlbum, songPath, songLength);
+        this.status = SongStatus.Stopped;
     }
+    
     
     /**
      * 
      * @param s 
      */
-    public void setPlaybackStatus(StatusType s) {
+    public void setPlaybackStatus(SongStatus s) {
         status = s;
     }
     
     @Expose
-    protected int position;
-    
-    @Expose
-    protected StatusType status;
+    protected SongStatus status;
 }
