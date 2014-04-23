@@ -179,7 +179,7 @@ public class SongManager {
         // Search for songs, while sorting by votes (Sub query to get the vote count)
         ResultSet rs = stmt.executeQuery("SELECT id, name, path, artist, album, length, votes FROM songs "
                                        + "LEFT OUTER JOIN (SELECT song_id, COUNT(*) as vote_count FROM votes GROUP BY song_id) counts "
-                                       + "ON counts.song_id = id ORDER BY counts.vote_count DESC NULLS LAST");
+                                       + "ON counts.song_id = id ORDER BY counts.vote_count IS NOT NULL, counts.vote_count DESC");
         while (rs.next()) {
             songs.add(new Song(rs.getLong("id"),
                     rs.getString("name"),
