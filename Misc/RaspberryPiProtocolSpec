@@ -20,7 +20,7 @@ Encoding:
 	
 HTTP Requests:
 	Our format is basically HTTP with a custom JSON request/response body to convey protocol information.
-	Use standard HTTP libraries to make requests, using <ServerName>/<MessageName> as the URL to request
+	Use standard HTTP libraries to make requests, using /<Endpoint>/<MessageName> as the URL to request
 		a message with a given name.
 
 Song ID:
@@ -34,7 +34,7 @@ Connection Behavior:
 	should be reused for continued communication.
 
 Connection Protocol:
-	We will use TCP/HTTP over port 42422
+	We will use TCP/HTTP over port 5050
 	Port is temporary, likely to switch to Bonjour for auto-discover of port and IP.
 
 General Protocol:
@@ -117,7 +117,7 @@ Requests: (From Client to server)
 			 Content-Length: <JsonLength>\r\n
 			 \r\n
 			 {"id": "<SongID>",
-			  "status": "Playing|Paused|Stopped|Ready",
+			  "status": "Playing|Stopped|Ready",
 			  "position": "<PlaybackPosition(MS)>"}"
 		Remarks:
 			Sent to the server periodically to the server to indicate the current status of the speaker
@@ -182,7 +182,7 @@ Responses: (From Server to Client)
 			 { "update_type": "playback_command",
 			   "values": {
 					"id": <SongID>,
-					"command": "<Play|Pause|Stop>"
+					"command": "<Play|Stop>"
 				} 
 			}"
 		Remarks:
