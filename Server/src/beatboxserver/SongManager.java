@@ -348,9 +348,9 @@ public class SongManager {
                     } else {
                         
                         // Inform the speaker it's confused
-                        if (nextSong != null) {
-                            sessionMgr.sendUpdate(new UpcomingSongUpdate(nextSong), sessionID);
-                        }
+                        sessionMgr.sendUpdate(new PlaybackCommandUpdate(
+                                new PlaybackCommand(PlaybackCommand.Command.Play, activeSong.getID())),
+                                sessionID);
                     }
                     
                     break;
@@ -359,7 +359,6 @@ public class SongManager {
                     // TODO Mark the current song as Stopped in the DB
                     
                     // The speaker should ask us for the next song, but politely remind it who's boss around here
-                    // Inform the speaker it's confused
                     if (nextSong != null) {
                         sessionMgr.sendUpdate(new UpcomingSongUpdate(nextSong), sessionID);
                     } else {
@@ -374,13 +373,21 @@ public class SongManager {
                         
                         // TODO Mark the active song as inactive now that a new song is starting
                         
+                        // TODO Wipe likes for the previous song from the DB
+                        
                         // Send message to start playback
                         sessionMgr.sendUpdate(new PlaybackCommandUpdate(
                                 new PlaybackCommand(PlaybackCommand.Command.Play, activeSong.getID())),
                                 sessionID);
                         
                         // TODO, this is a problem for multiple speakers
-                        activeSong = nextSong;
+                        activeSong = new ActiveSong(nextSong.getID(),
+                                                    nextSong.getName(),
+                                                    nextSong.getArtist(),
+                                                    nextSong.getAlbum(),
+                                                    nextSong.getPath(),
+                                                    nextSong.getLength(),
+                                                    nextSong.getVotes());
                         nextSong = null;
                     } else {
                         
@@ -471,10 +478,20 @@ public class SongManager {
     public boolean skipToNext() throws SQLException {
         
         // TODO Finish this logic
-        ActiveSong song = getActiveSong();
+        ActiveSong song = null;
+        
+        try {
+            song = getActiveSong();
+        } catch (NoSuchElementException e) {
+            // TODO, no active song
+        }
+        
         //LikeData data
         synchronized (this) {
-            nextSong = getNextSong();
+            
+            if (nextSong == null || nextSong.getID() == activeSong.getID()) {
+                nextSong = getNextSong();
+            }
             
 
             // Need to remove votes for this song, then retrieve the next most voted song

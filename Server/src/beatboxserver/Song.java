@@ -101,6 +101,18 @@ public class Song {
         return length;
     }
     
+    /**
+     * 
+     * @return 
+     */
+    public String getPath() {
+        return path;
+    }
+    
+    /**
+     * 
+     * @return 
+     */
     public ByteBuf getImageBuffer() {
         return imageData;
     }
