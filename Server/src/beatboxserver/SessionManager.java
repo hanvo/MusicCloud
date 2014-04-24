@@ -140,7 +140,7 @@ public class SessionManager {
         List<Long> sessions = new ArrayList<>();
         
         // Get the list of sessions with the given type from the DB
-        String query = "SELECT id FROM sessions WHERE sessions.session_type = '?'";
+        String query = "SELECT id FROM sessions WHERE sessions.session_type = ?";
         try (PreparedStatement stmt = databaseMgr.createPreparedStatement(query)) {
             stmt.setLong(1, sessionType);
             ResultSet rs = stmt.executeQuery();
@@ -154,6 +154,24 @@ public class SessionManager {
                 if (sessionMap.containsKey(id)) {
                     sessionMap.get(id).sendUpdate(update);
                 }
+            }
+        }
+    }
+    
+    /**
+     * 
+     * @param update
+     * @param sessionID
+     * @throws SQLException 
+     */
+    public void sendUpdate(SessionUpdate update, long sessionID) {
+        if (update == null) {
+            throw new IllegalArgumentException();
+        }
+        
+        synchronized(this) {
+            if (sessionMap.containsKey(sessionID)) {
+                sessionMap.get(sessionID).sendUpdate(update);
             }
         }
     }
@@ -183,7 +201,7 @@ public class SessionManager {
      * 
      * @return
      */
-    public long getSessionCount() throws SQLException {
+    public long getSessionCount() {
         return sessionMap.size();
     }
     

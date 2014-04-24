@@ -137,9 +137,10 @@ public class DatabaseManager {
                                             + "name STRING NOT NULL, "
                                             + "path STRING NOT NULL, "
                                             + "artist STRING NOT NULL, "
-                                            + "album REAL NOT NULL, "
+                                            + "album STRING NOT NULL, "
+                                            + "length REAL NOT NULL, "
                                             + "image_type STRING, "
-                                            + "image BLOB "
+                                            + "image BLOB, "
                                             + "status INTEGER)");
         
         // Create votes table
@@ -176,8 +177,11 @@ public class DatabaseManager {
             throw new IllegalArgumentException();
         }
         
+        logger.info("Loading data from file");
+        
         // "(name STRING, path STRING, artist STRING, album STRING, length REAL, image_type STRING, image BLOB, status INTEGER)"
-        PreparedStatement insertStmt = newDatabase.prepareStatement("INSERT INTO songs VALUES (?, ?, ?, ?, ?, ?, ?, ?)", Statement.RETURN_GENERATED_KEYS);
+        String query = "INSERT INTO songs (name, path, artist, album, length, image_type, image, status) VALUES (?, ?, ?, ?, ?, ?, ?, '" + SongStatus.Inactive.ordinal() + "')";
+        PreparedStatement insertStmt = newDatabase.prepareStatement(query, Statement.RETURN_GENERATED_KEYS);
         
         Statement getStatement = oldDatabase.createStatement();
         ResultSet results = getStatement.executeQuery("SELECT id, song, path, artist, album, lengthOfSong, art, artType FROM music");

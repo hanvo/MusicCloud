@@ -7,8 +7,16 @@
 package beatboxserver;
 
 import beatboxserver.updates.VoteData;
+import beatboxserver.updates.VoteUpdate;
 import beatboxserver.updates.LikeData;
+import beatboxserver.updates.LikeUpdate;
+import beatboxserver.updates.UpcomingSongUpdate;
+import beatboxserver.updates.PlaybackCommand;
+import beatboxserver.updates.PlaybackCommandUpdate;
+
 import beatboxserver.Song.SongStatus;
+
+import beatboxserver.Session.SessionType;
 
 import beatboxserver.messages.*;
 
@@ -46,6 +54,9 @@ public class SongManager {
     public SongManager(DatabaseManager databaseManager, SessionManager sessionManager) {
         databaseMgr = databaseManager;
         sessionMgr = sessionManager;
+        
+        nextSong = null;
+        activeSong = null;
     }
     
     /**
@@ -88,7 +99,7 @@ public class SongManager {
             throw new IllegalArgumentException();
         }
         
-        try (PreparedStatement stmt = databaseMgr.createPreparedStatement("INSERT OR REPLACE likes (session_id, song_id) VALUES (?, ?, 1)")) {
+        try (PreparedStatement stmt = databaseMgr.createPreparedStatement("INSERT OR REPLACE likes (session_id, song_id) VALUES (?, ?, '1')")) {
             stmt.setLong(1, sessionID);
             stmt.setLong(2, songID);
             if (stmt.executeUpdate() != 1) {
@@ -215,18 +226,17 @@ public class SongManager {
      */
     public ActiveSong getActiveSong() throws SQLException {
         
-        ActiveSong activeSong;
+        ActiveSong active;
         
         String query = "SELECT id, name, path, artist, album, length, votes FROM songs "
                      + "LEFT OUTER JOIN (SELECT song_id, COUNT(*) as vote_count FROM votes GROUP BY song_id) counts "
-                     + "ON counts.song_id = id WHERE status = '" + SongStatus.Playing.ordinal() + "' LIMIT 1";
-        //query = "SELECT id, name, path, artist, album, length FROM songs WHERE status = '" + SongStatus.Playing.ordinal() + "' LIMIT 1";
+                     + "ON counts.song_id = id WHERE status != '" + SongStatus.Inactive.ordinal() + "' LIMIT 1";
         try (Statement stmt = databaseMgr.createStatement()) {
             ResultSet rs = stmt.executeQuery(query);
             
             
             if (rs.next()) {
-                activeSong = new ActiveSong(rs.getLong("id"),
+                active = new ActiveSong(rs.getLong("id"),
                     rs.getString("name"),
                     rs.getString("artist"),
                     rs.getString("album"),
@@ -244,7 +254,44 @@ public class SongManager {
             }
         }
         
-        return activeSong;
+        return active;
+    }
+    
+    /**
+     * Get the next song from the database to be played based on votes
+     * @return 
+     */
+    public Song getNextSong() throws SQLException {
+        Song song;
+        
+        String query = "SELECT id, name, path, artist, album, length, votes FROM songs "
+                     + "LEFT OUTER JOIN (SELECT song_id, COUNT(*) as vote_count FROM votes GROUP BY song_id) counts "
+                     + "ON counts.song_id = id WHERE status = '" + SongStatus.Inactive.ordinal() + "' "
+                     + "ORDER BY counts.vote_count IS NOT NULL, counts.vote_count DESC LIMIT 1";
+        
+        try (Statement stmt = databaseMgr.createStatement()) {
+            ResultSet rs = stmt.executeQuery(query);
+            
+            
+            if (rs.next()) {
+                song = new Song(rs.getLong("id"),
+                    rs.getString("name"),
+                    rs.getString("artist"),
+                    rs.getString("album"),
+                    rs.getString("path"),
+                    rs.getLong("length"),
+                    rs.getLong("votes"));
+            } else {
+                throw new NoSuchElementException();
+            }
+            
+            // Check for duplicate playing songs, this should never happen
+            if (rs.next()) {
+                throw new IllegalStateException("Duplicate active songs");
+            }
+        }
+        
+        return song;
     }
     
     /**
@@ -291,19 +338,59 @@ public class SongManager {
             throw new IllegalArgumentException();
         }
         
-        switch (update.status) {
-            case Playing:
-                // TODO
-                // Mark the current song as Playing
-                break;
-            case Stopped:
-                // TODO
-                // Mark the current song as Stopped
-                break;
-            case Ready:
-                // TODO
-                // Send the playback command if the song ID matches the active song
-                break;
+        synchronized(this) {
+            switch (update.status) {
+                case Playing:
+                    // TODO
+                    // Mark the current song as Playing
+                    if (update.id == activeSong.getID()) {
+                        // TODO Update the database with the next status for this song
+                    } else {
+                        
+                        // Inform the speaker it's confused
+                        if (nextSong != null) {
+                            sessionMgr.sendUpdate(new UpcomingSongUpdate(nextSong), sessionID);
+                        }
+                    }
+                    
+                    break;
+                case Stopped:
+                    
+                    // TODO Mark the current song as Stopped in the DB
+                    
+                    // The speaker should ask us for the next song, but politely remind it who's boss around here
+                    // Inform the speaker it's confused
+                    if (nextSong != null) {
+                        sessionMgr.sendUpdate(new UpcomingSongUpdate(nextSong), sessionID);
+                    } else {
+                        logger.warn("Received STOP message, but no next song selected");
+                    }
+                    
+                    break;
+                case Ready:
+                    
+                    // Send the playback command if the song ID matches the active song
+                    if (update.id == nextSong.getID()) {
+                        
+                        // TODO Mark the active song as inactive now that a new song is starting
+                        
+                        // Send message to start playback
+                        sessionMgr.sendUpdate(new PlaybackCommandUpdate(
+                                new PlaybackCommand(PlaybackCommand.Command.Play, activeSong.getID())),
+                                sessionID);
+                        
+                        // TODO, this is a problem for multiple speakers
+                        activeSong = nextSong;
+                        nextSong = null;
+                    } else {
+                        
+                        // Inform the speaker it's confused
+                        if (nextSong != null) {
+                            sessionMgr.sendUpdate(new UpcomingSongUpdate(nextSong), sessionID);
+                        }
+                    }
+                    break;
+            }
         }
     }
 
@@ -381,13 +468,38 @@ public class SongManager {
      * 
      * @return 
      */
-    public boolean skipToNext() {
+    public boolean skipToNext() throws SQLException {
+        
+        // TODO Finish this logic
         ActiveSong song = getActiveSong();
-        //LikeData data 
+        //LikeData data
+        synchronized (this) {
+            nextSong = getNextSong();
+            
+
+            // Need to remove votes for this song, then retrieve the next most voted song
+            UpcomingSongUpdate message = new UpcomingSongUpdate(nextSong);
+            
+            // Then broadcast a message the speaker and clients about the new song
+            sessionMgr.broadcastUpdate(message, SessionType.Speaker.ordinal());
+            
+
+            // Wait for speakers to request the song
+
+            // Wait for READY from the speakers
+
+            // Then send play
+
+        }
+        
+        return true;
     }
     
     //<editor-fold defaultstate="collapsed" desc="Fields">
-    private long activeSongID;
+    private Song nextSong;
+    private ActiveSong activeSong;
+    
+    
     private final DatabaseManager databaseMgr;
     private final SessionManager sessionMgr;
     private final static Logger logger = LogManager.getFormatterLogger(SongManager.class.getName());
