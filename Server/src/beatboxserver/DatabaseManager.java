@@ -122,15 +122,15 @@ public class DatabaseManager {
         stmt.executeUpdate("CREATE TABLE sessions (id INTEGER PRIMARY KEY AUTOINCREMENT,"
                                                 + "ip_address STRING NOT NULL, "
                                                 + "session_type INTEGER REFERENCES session_types(id) ON DELETE CASCADE NOT NULL, "
-                                                + "time_started INTEGER NOT NULL)");
+                                                + "time_started INTEGER NOT NULL, "
+                                                + "CONSTRAINT unique_session UNIQUE(ip_address,session_type))");
         // Create client_sessions table
         stmt.executeUpdate("CREATE TABLE user_sessions (id INTEGER REFERENCES sessions(id) ON DELETE CASCADE)");
         
         // Create speaker_sessions table
         stmt.executeUpdate("CREATE TABLE speaker_sessions (id INTEGER REFERENCES sessions(id) ON DELETE CASCADE, "
                                                         + "current_song INTEGER REFERENCES songs(id), "
-                                                        + "current_status INTEGER NOT NULL, "
-                                                        + "playback_position INTEGER NOT NULL)");
+                                                        + "current_status INTEGER NOT NULL DEFAULT '" + SongStatus.Inactive + "')");
         
         // Create songs table
         stmt.executeUpdate("CREATE TABLE songs (id INTEGER PRIMARY KEY AUTOINCREMENT, "

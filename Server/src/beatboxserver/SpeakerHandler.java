@@ -88,24 +88,29 @@ public class SpeakerHandler extends RequestHandler {
      * @param body 
      */
     public void deauthenticate(ChannelHandlerContext ctx, FullHttpRequest req, long sessionID, String ipAddress, Message body) {
-       if (validateMethod(ctx.channel(), req, HttpMethod.POST) && validateSession(ctx.channel(), sessionID, ipAddress)) {
-           DeauthenticateMessage message;
-           SpeakerSession session;
-            
-           try {
-               message = (DeauthenticateMessage)body;
-           } catch (ClassCastException e) {
-               sendError(ctx.channel(), BAD_REQUEST);
-               return;
-           }
-           
-           try {
-               sessionMgr.destroySession(message.id);
-           } catch (SecurityException e) {
-               sendError(ctx.channel(), FORBIDDEN);
-               return;
-           } catch (ClassCastException e) {
-               
+       if (validateMethod(ctx.channel(), req, HttpMethod.POST)) {
+            DeauthenticateMessage message;
+            SpeakerSession session;
+
+            try {
+                message = (DeauthenticateMessage)body;
+            } catch (ClassCastException e) {
+                sendError(ctx.channel(), BAD_REQUEST);
+                return;
+            }
+
+            //  Validate session before deauthenticating
+            if (!validateSession(ctx.channel(), message.id, ipAddress)) {
+                return;
+            }
+
+            try {
+                sessionMgr.destroySession(message.id);
+            } catch (SecurityException e) {
+                sendError(ctx.channel(), FORBIDDEN);
+                return;
+            } catch (ClassCastException e) {
+
                sendError(ctx.channel(), BAD_REQUEST);
                return;
            } catch (Exception e) {

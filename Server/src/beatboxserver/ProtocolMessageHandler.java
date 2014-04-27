@@ -174,6 +174,7 @@ public class ProtocolMessageHandler extends SimpleChannelInboundHandler<FullHttp
                 return;
             }
         } else {
+            logger.warn("No session id given in request");
             sessionID = -1;
         }
         

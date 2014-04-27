@@ -308,6 +308,7 @@ public abstract class RequestHandler {
                 return false;
             }
         } catch (Exception e) {
+            logger.warn("Exception while validating session", e);
             sendError(channel, FORBIDDEN);
             return false;
         }

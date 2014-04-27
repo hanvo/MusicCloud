@@ -71,14 +71,22 @@ public class SessionManager {
         if (authenticated) {
             try (Statement stmt = databaseMgr.createStatement()) {
 
-                String query = "INSERT INTO session (ip_address, session_type, time_started) VALUES ( '" + ipAddress + "', '" + type.ordinal() + "', )";
+                int unixTimestamp = (int)(System.currentTimeMillis() / 1000L);
+                String query = "INSERT INTO sessions (ip_address, session_type, time_started) VALUES ( '" + ipAddress + "', '" + type.ordinal() + "', " + unixTimestamp + ")";
                 if (stmt.executeUpdate(query) != 1) {
                     stmt.close();
                     throw new IllegalStateException();
                 }
 
-                sessionID = stmt.getGeneratedKeys().getLong("id");
-
+                // Get the newly created ID of the session
+                // Statment.getGeneratedKeys() doesn't work for SQLite :(
+                try (PreparedStatement s = databaseMgr.createPreparedStatement("SELECT id FROM sessions WHERE ip_address = ? AND session_type = ?")) {
+                    s.setString(1, ipAddress);
+                    s.setLong(2, type.ordinal());
+                    ResultSet rs = s.executeQuery();
+                    sessionID = rs.getLong("id");
+                }
+                
                 // Insert into child table
                 tableName = type.toString().toLowerCase() + "_sessions";
                 stmt.executeUpdate("INSERT INTO " + tableName + " (id) VALUES ('" + sessionID + "')");
@@ -88,6 +96,7 @@ public class SessionManager {
             throw new SecurityException("Invalid pin");
         }
         
+        // Create instance of session class
         String typeName = this.getClass().getPackage().getName() + "." + type.toString() + "Session";
         try {
             Class cls = Class.forName(typeName);
@@ -99,6 +108,10 @@ public class SessionManager {
             
         } catch (Exception e) {
             throw new InvocationTargetException(e);
+        }
+        
+        synchronized(this) {
+            sessionMap.put(sessionID, session);
         }
         
         return session;
@@ -217,7 +230,7 @@ public class SessionManager {
         }
         
         try {
-            String query = "SELECT ip_address, time_started FROM sessions WHERE id = '?'";
+            String query = "SELECT ip_address, time_started FROM sessions WHERE id = ?";
             try (PreparedStatement stmt = databaseMgr.createPreparedStatement(query)) {
                 stmt.setLong(1, sessionID);
 
@@ -226,14 +239,14 @@ public class SessionManager {
                 int size = 0;
                 while (rs.next()) {
                     if (!rs.getString("ip_address").equals(ipAddress)) {
-                        stmt.close();
+                        logger.warn("Session IP address mismatch");
                         return false;
                     }
                     size++;
                 }
 
                 if (size != 1) {
-                    stmt.close();
+                    logger.warn("Invalid number of clientID given");
                     return false;
                 }
             }

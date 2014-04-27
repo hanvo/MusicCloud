@@ -188,7 +188,7 @@ public class SongManager {
         Statement stmt = databaseMgr.createStatement();
         
         // Search for songs, while sorting by votes (Sub query to get the vote count)
-        ResultSet rs = stmt.executeQuery("SELECT id, name, path, artist, album, length, votes FROM songs "
+        ResultSet rs = stmt.executeQuery("SELECT id, name, path, artist, album, length, counts.vote_count as votes FROM songs "
                                        + "LEFT OUTER JOIN (SELECT song_id, COUNT(*) as vote_count FROM votes GROUP BY song_id) counts "
                                        + "ON counts.song_id = id ORDER BY counts.vote_count IS NOT NULL, counts.vote_count DESC");
         while (rs.next()) {

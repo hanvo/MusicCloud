@@ -32,6 +32,7 @@ public abstract class Session {
         this.id = id;
         this.clientType = type;
         this.ipAddresss = ipAddress;
+        updateQueue = new SessionUpdateQueue();
     }
     
     
