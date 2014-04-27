@@ -228,13 +228,14 @@ public class SongManager {
         
         ActiveSong active;
         
-        String query = "SELECT id, name, path, artist, album, length, votes FROM songs "
+        String query = "SELECT id, name, path, artist, album, length, counts.vote_count AS votes FROM songs "
                      + "LEFT OUTER JOIN (SELECT song_id, COUNT(*) as vote_count FROM votes GROUP BY song_id) counts "
-                     + "ON counts.song_id = id WHERE status != '" + SongStatus.Inactive.ordinal() + "' LIMIT 1";
+                     + "ON counts.song_id = id WHERE status != '" + SongStatus.Inactive.ordinal() + "' "
+                     + "ORDER BY counts.vote_count IS NOT NULL, counts.vote_count DESC LIMIT 1";
         try (Statement stmt = databaseMgr.createStatement()) {
             ResultSet rs = stmt.executeQuery(query);
             
-            
+            // Check if we even have an active song
             if (rs.next()) {
                 active = new ActiveSong(rs.getLong("id"),
                     rs.getString("name"),
@@ -264,7 +265,7 @@ public class SongManager {
     public Song getNextSong() throws SQLException {
         Song song;
         
-        String query = "SELECT id, name, path, artist, album, length, votes FROM songs "
+        String query = "SELECT id, name, path, artist, album, length, counts.vote_count AS votes FROM songs "
                      + "LEFT OUTER JOIN (SELECT song_id, COUNT(*) as vote_count FROM votes GROUP BY song_id) counts "
                      + "ON counts.song_id = id WHERE status = '" + SongStatus.Inactive.ordinal() + "' "
                      + "ORDER BY counts.vote_count IS NOT NULL, counts.vote_count DESC LIMIT 1";
@@ -272,7 +273,7 @@ public class SongManager {
         try (Statement stmt = databaseMgr.createStatement()) {
             ResultSet rs = stmt.executeQuery(query);
             
-            
+            // Check if we even have a next song
             if (rs.next()) {
                 song = new Song(rs.getLong("id"),
                     rs.getString("name"),
@@ -333,7 +334,7 @@ public class SongManager {
      * @param sessionID
      * @param update 
      */
-    public void speakerStatusUpdate(long sessionID, StatusUpdateMessage update) {
+    public void speakerStatusUpdate(long sessionID, StatusUpdateMessage update) throws SQLException {
         if (sessionID < 0 || update == null) {
             throw new IllegalArgumentException();
         }
@@ -368,12 +369,53 @@ public class SongManager {
                     break;
                 case Ready:
                     
+                    if (nextSong != null) {
+                        // Pick a new song
+                        nextSong = getNextSong();
+                    }
+                    
                     // Send the playback command if the song ID matches the active song
                     if (update.id == nextSong.getID()) {
                         
-                        // TODO Mark the active song as inactive now that a new song is starting
+                        try {
+                            databaseMgr.startTransaction();
+                            
+                            // Wipe likes for the previous song from the DB
+                            String query = "DELETE FROM likes where song_id = ?";
+                            try (PreparedStatement stmt = databaseMgr.createPreparedStatement(query)) {
+                                stmt.setLong(1, activeSong.getID());
+                                stmt.executeUpdate();
+                            }
+                            
+                            // Wipe votes for the new song from the DB
+                            query = "DELETE FROM votes WHERE song_id = ?";
+                            try (PreparedStatement stmt = databaseMgr.createPreparedStatement(query)) {
+                                stmt.setLong(1, nextSong.getID());
+                                stmt.executeUpdate();
+                            }
+
+                            // Mark the active song as inactive now that a new song is starting
+                            query = "UPDATE songs SET status = " + SongStatus.Inactive.ordinal() + " WHERE song_id = ?";
+                            try (PreparedStatement stmt = databaseMgr.createPreparedStatement(query)) {
+                                stmt.setLong(1, activeSong.getID());
+                                stmt.executeUpdate();
+                            }
+                            
+                            // Mark the next song as active
+                            query = "UPDATE songs SET status = " + SongStatus.Playing.ordinal() + " WHERE song_id = ?";
+                            try (PreparedStatement stmt = databaseMgr.createPreparedStatement(query)) {
+                                stmt.setLong(1, nextSong.getID());
+                            }
+                                
+                        } catch (Exception e) {
+                            
+                            // TODO, what if startTransaction() threw the exception??? Answer: Bad things!
+                            databaseMgr.rollbackTransaction();
+                            throw e;
+                        }
                         
-                        // TODO Wipe likes for the previous song from the DB
+                        // Commit our changes
+                        databaseMgr.stopTransaction();
                         
                         // Send message to start playback
                         sessionMgr.sendUpdate(new PlaybackCommandUpdate(
@@ -381,6 +423,7 @@ public class SongManager {
                                 sessionID);
                         
                         // TODO, this is a problem for multiple speakers
+
                         activeSong = new ActiveSong(nextSong.getID(),
                                                     nextSong.getName(),
                                                     nextSong.getArtist(),
@@ -392,9 +435,7 @@ public class SongManager {
                     } else {
                         
                         // Inform the speaker it's confused
-                        if (nextSong != null) {
-                            sessionMgr.sendUpdate(new UpcomingSongUpdate(nextSong), sessionID);
-                        }
+                        sessionMgr.sendUpdate(new UpcomingSongUpdate(nextSong), sessionID);
                     }
                     break;
             }

@@ -9,6 +9,9 @@ package beatboxserver;
 import beatboxserver.Session.SessionType;
 import beatboxserver.Song.SongStatus;
 
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
+
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
@@ -48,6 +51,8 @@ public class DatabaseManager {
         
         // Transfer the contents over
         //transferData(db, connection);
+        
+        transactionLock = new ReentrantLock();
     }
     
     /**
@@ -70,6 +75,48 @@ public class DatabaseManager {
      */
     public Statement createStatement() throws SQLException {
         return connection.createStatement();
+    }
+    
+    /**
+     * Initiate a transaction operations
+     * Must call stopTransaction or deadlock will likely occur
+     * @throws SQLException 
+     */
+    public void startTransaction() throws SQLException {
+        transactionLock.lock();
+        connection.setAutoCommit(false);
+    }
+    
+    /**
+     * 
+     * @throws SQLException 
+     */
+    public void stopTransaction() throws SQLException {
+        if (transactionLock.isHeldByCurrentThread()) {
+            try {
+                connection.commit();
+                connection.setAutoCommit(true);
+            } catch (Exception e) {
+                transactionLock.unlock();
+                throw e;
+            }
+        } else {
+            throw new IllegalStateException();
+        }
+    }
+    
+    public void rollbackTransaction()  throws SQLException {
+        if (transactionLock.isHeldByCurrentThread()) {
+            try {
+                connection.rollback();
+                connection.setAutoCommit(true);
+            } catch (Exception e) {
+                transactionLock.unlock();
+                throw e;
+            }
+        } else {
+            throw new IllegalStateException();
+        }
     }
     
     
@@ -141,7 +188,7 @@ public class DatabaseManager {
                                             + "length REAL NOT NULL, "
                                             + "image_type STRING, "
                                             + "image BLOB, "
-                                            + "status INTEGER)");
+                                            + "status INTEGER NOT NULL DEFAULT '" + SongStatus.Inactive + "')");
         
         // Create votes table
         stmt.executeUpdate("CREATE TABLE votes (session_id INTEGER REFERENCES sessions(id) ON DELETE CASCADE, "
@@ -150,9 +197,9 @@ public class DatabaseManager {
         
         // Create likes table
         stmt.executeUpdate("CREATE TABLE likes (session_id INTEGER REFERENCES sessions(id) ON DELETE CASCADE, "
-                                             + "song_id INTEGER REFERENCES songs(id), "
-                                             + "value BYTE NOT NULL, "
-                                             + "PRIMARY KEY(session_id, song_id))");
+                                            + "song_id INTEGER REFERENCES songs(id), "
+                                            + "value BYTE NOT NULL, "
+                                            + "PRIMARY KEY(session_id, song_id))");
         
         // Create session types table
         stmt.executeUpdate("CREATE TABLE session_types (id INTEGER UNIQUE, type STRING NOT NULL)");
@@ -213,6 +260,7 @@ public class DatabaseManager {
         }
     }
     
+    private ReentrantLock transactionLock;
     private Connection connection;
     
     private final static Logger logger = LogManager.getFormatterLogger(DatabaseManager.class.getName());

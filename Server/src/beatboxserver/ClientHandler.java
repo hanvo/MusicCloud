@@ -89,10 +89,8 @@ public class ClientHandler extends RequestHandler {
      * @param body 
      */
     public void deauthenticate(ChannelHandlerContext ctx, FullHttpRequest req, long sessionID, String ipAddress, Message body) {
-        if (validateMethod(ctx.channel(), req, HttpMethod.POST) && validateSession(ctx.channel(), sessionID, ipAddress)) {
+        if (validateMethod(ctx.channel(), req, HttpMethod.POST)) {
             DeauthenticateMessage message;
-            UserSession session;
-            
             
             try {
                 message = (DeauthenticateMessage)body;
@@ -101,9 +99,15 @@ public class ClientHandler extends RequestHandler {
                 return;
             }
             
+            //  Validate session before deauthenticating
+            if (!validateSession(ctx.channel(), message.id, ipAddress)) {
+                return;
+            }
+            
             try {
                 sessionMgr.destroySession(message.id);
             } catch (SecurityException e) {
+                
                 sendError(ctx.channel(), FORBIDDEN);
                 return;
             } catch (ClassCastException e) {
@@ -117,13 +121,12 @@ public class ClientHandler extends RequestHandler {
                 return;
             }
             
-        } else {
-            sendError(ctx.channel(), METHOD_NOT_ALLOWED);
+            sendResponse(ctx.channel(), OK, false);
         }
     }
     
 
-//<editor-fold defaultstate="collapsed" desc="Client Actions">
+    //<editor-fold defaultstate="collapsed" desc="Client Actions">
     /**
      * Vote on a given song
      * @param ctx {@link ChannelHandlerContext} for this request
@@ -269,7 +272,13 @@ public class ClientHandler extends RequestHandler {
             
             try {
                 stats = songMgr.getStats();
+            } catch (NoSuchElementException e) {
+                
+                logger.warn("No current song with stats available");
+                sendError(ctx.channel(), SERVICE_UNAVAILABLE);
+                return;
             } catch (Exception e) {
+                
                 logger.warn("Failed to get current like stats", e);
                 sendError(ctx.channel(), INTERNAL_SERVER_ERROR);
                 return;
