@@ -48,7 +48,9 @@ General Protocol:
 		2. Server sends UPCOMING_SONG command
 		3. Client responds by sending REQUEST_SONG to get file
 			3.A Client saves response body into file, whose name is associated with the SongID
-		4. Client send READY message with ID of song ready to play
+		4. Client finishes playing back the current song
+		5. Client sends STATUS_UPDATE message with information about the song that finished playing
+		4. Client sends READY message with ID of song ready to play
 		5. Client sends REQUEST_SPEAKER_UPDATE again and waits for command from server
 		6. Server sends PLAYBACK_COMMAND response and client begins playback on playback thread
 		7. (goto step 1)
@@ -57,7 +59,7 @@ General Protocol:
 		1. Once playback successfully starts
 		2. Once playback reached the end of the song
 		3. Once a major change in playback position occurs (Optional)
-		4. When playback status (Playing|Paused) changes
+		4. When playback status changes
 	
 
 Requests: (From Client to server)
