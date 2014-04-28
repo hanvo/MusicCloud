@@ -25,7 +25,6 @@ import os
 import sys
 import sqlite3
 from mutagen.mp3 import MP3
-from mutagen import File
 import eyed3
 
 
@@ -97,7 +96,7 @@ def crawl():
             artist = audioFile.tag.artist
             album = audioFile.tag.album
             audio = MP3(path) #for audio lenth
-            audioLength = audio.info.length
+            
 
             print "Inserting values: \"" + str(songCount) + "\" \"" + str(y) + "\" \"" + str(path) + "\" \"" + str(audioLength) + "\" \"" + str(artist) + "\" \"" + str(album) + "\" \"" + str(artType) + "\""# Debug statement
 
@@ -113,6 +112,12 @@ def crawl():
     #picture=c.fetchone()[0]
     #with open('test122.jpg','wb') as img:
     #    img.write(picture)
+
+    # Commit the changes to the database
+    conn.commit()
+
+    # Flush to the disk
+    conn.close()
         
 
 if __name__ == "__main__":
