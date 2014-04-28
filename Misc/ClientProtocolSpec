@@ -21,7 +21,7 @@ Encoding:
 	
 HTTP Requests:
 	Our format is basically HTTP with a custom JSON request/response body to convey protocol information.
-	Use standard HTTP libraries to make requests, using <ServerName>/<MessageName> as the URL to request
+	Use standard HTTP libraries to make requests, using /<Endpoint>/<MessageName> as the URL to request
 		a message with a given name.
 
 Song ID:
@@ -35,7 +35,7 @@ Connection Behavior:
 	should be reused for continued communication.
 
 Connection Protocol:
-	We will use TCP/HTTP over port 42422
+	We will use TCP/HTTP over port 5050
 	Port is temporary, likely to switch to Bonjour for auto-discover of port and IP.
 
 General Protocol:
@@ -223,13 +223,10 @@ Server to Client messages:
 				   "artist": "<Artist>",
 				   "album": "<Album>",
 				   "length": <Length>,
-				   "status": "(Playing|Paused)",
-				   "position": <Playback Position>
+				   "status": "(Playing|Stopped)"
 				}
 			}"
 		Remarks:
-			Playback position is formatted as an integer indicating the number of milliseconds
-			the song has played up to the point of the update.
 		Notes:
 			The client should use the REQUEST_PHOTO request to get
 			album or song artwork.
@@ -256,7 +253,7 @@ Server to Client messages:
 			 Content-Length: <JsonLength>\r\n
 			 \r\n
 			 { "update_type": "likes",
-			   "values": [({"id": <SongID>, "likes": <Likes>, "dislikes": <Dislikes>, "Balance": <Balance>})*]}"
+			   "values": [({"id": <SongID>, "likes": <Likes>, "dislikes": <Dislikes>, "balance": <Balance>})*]}"
 		Remarks:
 			Likes and dislikes are integers, while balance is a double in the interval [-1,1]
 			Likes and dislikes are the raw data, while balance has been computed by the server.

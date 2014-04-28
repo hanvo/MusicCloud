@@ -11,7 +11,8 @@ import java.io.IOException;
 import javax.jmdns.JmDNS;
 import javax.jmdns.ServiceInfo;
 
-import java.util.logging.Logger;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 
 /**
  *
@@ -29,22 +30,43 @@ public class RegisterService {
      */
     public final static int servicePort = 5050;
     
+    public RegisterService() throws IOException {
+        dns = JmDNS.create();
+        serviceInfo = null;
+    }
+    
     /**
      * Register this instance
      * @param serverName {@link String} Human readable server name
      * @param serverPort Port over which the server is operating
+     * @throws IOException
      */
-    public static void registerService(String serverName, int serverPort) throws IOException {  
-        JmDNS dns = JmDNS.create();
+    public void registerService(String serverName, int serverPort) throws IOException {  
+        
+        if (serviceInfo != null) {
+            throw new IllegalStateException();
+        }
         
         String instanceName = RegisterService.normalizeServerName(serverName);
+
+        logger.info("Registering mDNS name \"%s.%s:%d\"", instanceName, serviceName, serverPort);
         
-        String logMessage = "Registering mDNS name \"" + instanceName + "." + serviceName + ":" + serverPort+ "\"";
-        Logger.getLogger(RegisterService.class.getName()).info(logMessage);
+        serviceInfo = ServiceInfo.create(serviceName, instanceName, serverPort, serverName);
         
-        ServiceInfo info = ServiceInfo.create(serviceName, instanceName, serverPort, serverName);
-        
-        dns.registerService(info);
+        dns.registerService(serviceInfo);
+    }
+    
+    /**
+     * 
+     */
+    public void DeregisterService() {
+        if (serviceInfo != null) {
+            dns.unregisterService(serviceInfo);
+            dns.unregisterAllServices();
+            serviceInfo = null;
+        } else {
+            throw new IllegalStateException();
+        }
     }
     
     /**
@@ -62,7 +84,8 @@ public class RegisterService {
         return serverName;
     }
     
-    private RegisterService() {
-        // NO-OP, prevent instantiation
-    }
+    private ServiceInfo serviceInfo;
+    private JmDNS dns;
+    
+    private final static Logger logger = LogManager.getFormatterLogger(RegisterService.class.getName());
 }

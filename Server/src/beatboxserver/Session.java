@@ -6,29 +6,33 @@
 
 package beatboxserver;
 
-import beatboxserver.updates.ClientUpdate;
+import beatboxserver.updates.SessionUpdate;
 import io.netty.channel.Channel;
+
+import com.google.gson.annotations.Expose;
 
 /**
  * 
  * @author rahmanj
  */
-public abstract class Client {
+public abstract class Session {
     
-    public enum ClientType {User, Speaker};
+    /**
+     * Enumeration used to track different session types
+     * Associated classes are named EnumValueSession
+     */
+    public enum SessionType {User, Speaker};
     
     /**
      * 
      * @param id
      * @param type 
      */
-    public Client(String id, ClientType type) {
-        if (id != null) {
-            this.id = id;
-            this.clientType = type;
-        } else {
-            throw new IllegalArgumentException();
-        }
+    public Session(long id, String ipAddress, SessionType type) {
+        this.id = id;
+        this.clientType = type;
+        this.ipAddresss = ipAddress;
+        updateQueue = new SessionUpdateQueue();
     }
     
     
@@ -36,7 +40,7 @@ public abstract class Client {
      * 
      * @return 
      */
-    public String getID() {
+    public long getID() {
         return id;
     }
     
@@ -51,7 +55,7 @@ public abstract class Client {
      * 
      * @param update 
      */
-    public void sendUpdate(ClientUpdate update) {
+    public void sendUpdate(SessionUpdate update) {
         if (update == null) {
             throw new IllegalArgumentException();
         }
@@ -67,7 +71,11 @@ public abstract class Client {
         updateQueue.queueRequest(ch);
     }
     
-    private ClientType clientType;
-    private String id;
-    private ClientUpdateQueue updateQueue;
+    @Expose
+    private long id;
+    
+    private String ipAddresss;
+    
+    private SessionType clientType;
+    private SessionUpdateQueue updateQueue;
 }

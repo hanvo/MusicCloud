@@ -26,39 +26,84 @@ from threading import Thread
 import threading
 import httplib
 import json
+import socket
+import sys
+import Queue
 
-_Rlock = thread.RLock()
+timeout = 100
+_Rlock = threading.RLock()
+flag_serv_func = 0
+_clientID = -1
+_serv_playback_queue = Queue.Queue(0)
+_playback_conn_queue = Queue.Queue(0)
+_conn_playback_queue = Queue.Queue(0)
+_serv_comm_ID_queue = Queue.Queue(0)
 
-def play_back_func:
+def play_back_func():
+	# playback command, possibly from REQUEST_SPEAKER_UPDATE, implemented in play back thread
 	pass
 
-def serv_func:
-	_serv_sock = httplib.HTTPConnection('klamath.dnsdynamic.com', 5050, timeout = 60)
-	_serv_sock.connect()
-	params = json.dumps({"pin":12345},encoding = "ASCII")
-	headers = {"Content-Type": "application/json"}
-	_serv_sock.request("POST","klamath.dnsdynamic.com:5050/speaker/authenticate",params,headers)
-	_serv_resp_json = _serv_sock.getresponse()
-	_serv_response = json.load(_serv_resp_json)
-	_clientID = _serv_response['id']
-	while true:
-		_serv_sock.request("GET","klamath.dnsdynamic.com:5050/speaker/request_update?clientID="+_clientID)
-		#Format:
-		#	"GET /speaker/request_update?clientID=<ClientID> HTTP/1.1\r\n
-		#	(<Key>: <Value>\r\n)*
-		#	 \r\n"
+def serv_func():
+	_serv_sock = httplib.HTTPConnection('klamath.dnsdynamic.com', 5050, timeout = timeout)
+	socket.setdefaulttimeout(timeout)
+	if flag_serv_func == 0:
+		flag_serv_func = flag_serv_func + 1
+		params = json.dumps({"pin":1234},encoding = "ASCII")
+		headers = {"Content-Type": "application/json"}
+		_serv_sock.request("POST","klamath.dnsdynamic.com:5050/speaker/authenticate",params,headers)
+		_serv_resp_json = _serv_sock.getresponse()
+
+		if _serv_resp_json.status != 200:
+			sys.exit(-1)
+		else:
+			pass
+		_serv_response = json.load(_serv_resp_json.read())
+		_clientID = _serv_response['id']
+		_serv_comm_ID_queue.put(_clientID)
+	else:
+		pass
+	
+	try:
+		while True:
+		_serv_sock.request("GET","klamath.dnsdynamic.com:5050/speaker/request_update?clientID="+str(_clientID))
+		_upcoming_song_resp = _serv_sock.getresponse()
+		#Push _upcoming_song_resp.read() the Queue
+		_serv_playback_queue.put(_upcoming_song_resp.read())
+	except socket.timeout:
+		serv_func()
 	_serv_sock.close()
 
 
+def communicate_func():
+	# Pop the specific request from the Queue, depending on that do the following
+	_comm_sock = httplib.HTTPConnection('klamath.dnsdynamic.com', 5050, timeout = timeout)
+	_clientID = _serv_comm_ID_queue.get() # Getting the clientID from the queue
+	# REQUEST_SONG
+	# the value of song ID is in the queue
+	_upcoming_resp = json.load(_playback_conn_queue.get())
+	_playback_conn_queue.task_done()
+	_values = _upcoming_resp['values']
+	_songID = _values['id']
+	_comm_sock.request("GET","klamath.dnsdynamic.com:5050/request_song?clientID="+str(_clientID)+"&songID"+str(_songID))
+	_song_data_json = _comm_sock.getresponse().read()
+	_song_data = json.load(_song_data_json)
+	# Ready
+	# get the song ID that is ready to play from the queue, it will have to be located and then decoded and encoded
+	_params_ready = json.dumps({"id":_songID},encoding = "ASCII") #songID might be different
+	_comm_sock.request("POST","klamath.dnsdynamic.com:5050/speaker/ready?clientID="+str(_clientID),_params_ready)
 
-
-if __name__ = "__main__":
-	thread1 = Thread(target = play_back_func, args =() )
-	thread2 = Thread(target = serv_func, args =() )
+	# Status update depeding on the playback thread
+	_params_update = json.dumps({"id":_songID,"status":"playing/pause","position":position(?)},encoding = "ASCII")
+	_headers_update = {"Content-Type":"application/json"}
+	_comm_sock.request("POST","klamath.dnsdynamic.com:5050/speaker/status_update?clientID="+str(_clientID),_params_update,_headers_update)
+	
+if __name__ == "__main__":
+	#thread1 = Thread(target = play_back_func, args =() )
+	thread2 = Thread(target = serv_func, args=() )
 	thread3 = Thread(target = communicate_func, args =() )
-	thread1.start()
+	#thread1.start()
 	thread2.start()
 	thread3.start()
-	thread1.join()
+	#thread1.join()
 	thread2.join()
 	thread3.join()

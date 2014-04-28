@@ -19,5 +19,5 @@ public class VoteMessage extends Message {
     }
     
     @Expose
-    public String id;
+    public long id;
 }

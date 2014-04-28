@@ -6,6 +6,8 @@
 
 package beatboxserver;
 
+import io.netty.buffer.ByteBuf;
+
 import com.google.gson.annotations.Expose;
 
 /**
@@ -14,29 +16,56 @@ import com.google.gson.annotations.Expose;
  */
 public class Song {
     
+    public enum SongStatus {Playing, Stopped, Inactive};
+    
     /**
      * 
+     * @param songID
      * @param songName
      * @param songArtist
      * @param songAlbum
      * @param songPath
-     * @param songCoverPath
-     * @param songLength 
+     * @param songLength
+     * @param songVotes
      */
-    public Song(String songName, String songArtist, String songAlbum, String songPath, String songCoverPath, int songLength) {
+    public Song(long songID, String songName, String songArtist, String songAlbum, String songPath, long songLength, long songVotes) {
+        this(songID, songName, songArtist, songAlbum, songPath, songLength, songVotes, null, null);
+    }
+    
+    /**
+     * 
+     * @param songID
+     * @param songName
+     * @param songArtist
+     * @param songAlbum
+     * @param songPath
+     * @param songLength
+     * @param image
+     * @param imageType 
+     */
+    public Song(long songID, String songName, String songArtist, String songAlbum, String songPath, long songLength, long songVotes, ByteBuf image, String imageType) {
+        songID = songID;
         name = songName;
         artist = songArtist;
         album = songAlbum;
         path = songPath;
-        coverPath = songCoverPath;
         length = songLength;
+        votes = songVotes;
+        if (image != null) {
+            imageData = image.duplicate();
+        } else {
+            imageData = null;
+        }
+        imageMimeType = imageType;
     }
+    
+    
     
     /**
      * 
      * @return 
      */
-    public String getID() {
+    public long getID() {
         return id;
     }
     
@@ -68,12 +97,45 @@ public class Song {
      * 
      * @return 
      */
-    public int getLenth() {
+    public long getLength() {
         return length;
     }
     
+    /**
+     * 
+     * @return 
+     */
+    public String getPath() {
+        return path;
+    }
+    
+    /**
+     * 
+     * @return 
+     */
+    public ByteBuf getImageBuffer() {
+        return imageData;
+    }
+    
+    /**
+     * 
+     * @return a string containing the mime type for the image, or null if no image was included
+     */
+    public String getImageMimeType() {
+        return imageMimeType;
+    }
+    
+    
+    /**
+     * 
+     * @return 
+     */
+    public long getVotes() {
+        return votes;
+    }
+    
     @Expose
-    private String id;
+    private long id;
     
     @Expose
     private String name;
@@ -84,9 +146,15 @@ public class Song {
     @Expose
     private String album;
     
+    
     private String path;
-    private String coverPath;
+    
+    private String imageMimeType;
+    private ByteBuf imageData;
     
     @Expose
-    private int length;
+    private long length;
+    
+    @Expose
+    private long votes;
 }

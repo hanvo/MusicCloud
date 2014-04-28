@@ -19,5 +19,5 @@ public class LikeMessage extends Message {
     }
     
     @Expose
-    public String id;
+    public long id;
 }
