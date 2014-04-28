@@ -8,6 +8,11 @@
 
 /* Begin PBXBuildFile section */
 		030C29A718FF1C4400AFB2B1 /* SongTableViewCell.m in Sources */ = {isa = PBXBuildFile; fileRef = 030C29A618FF1C4400AFB2B1 /* SongTableViewCell.m */; };
+		038C7136190EB27D00C761B3 /* icon-76.png in Resources */ = {isa = PBXBuildFile; fileRef = 038C7131190EB27D00C761B3 /* icon-76.png */; };
+		038C7137190EB27D00C761B3 /* icon-120.png in Resources */ = {isa = PBXBuildFile; fileRef = 038C7132190EB27D00C761B3 /* icon-120.png */; };
+		038C7138190EB27D00C761B3 /* icon-152.png in Resources */ = {isa = PBXBuildFile; fileRef = 038C7133190EB27D00C761B3 /* icon-152.png */; };
+		038C7139190EB27D00C761B3 /* logo-square.png in Resources */ = {isa = PBXBuildFile; fileRef = 038C7134190EB27D00C761B3 /* logo-square.png */; };
+		038C713A190EB27D00C761B3 /* logo.png in Resources */ = {isa = PBXBuildFile; fileRef = 038C7135190EB27D00C761B3 /* logo.png */; };
 		03A29C4E19039408003210D9 /* SongScrollView.m in Sources */ = {isa = PBXBuildFile; fileRef = 03A29C4D19039408003210D9 /* SongScrollView.m */; };
 		03A29C5519039904003210D9 /* SongTileView.xib in Resources */ = {isa = PBXBuildFile; fileRef = 03A29C5419039904003210D9 /* SongTileView.xib */; };
 		03A29C58190399DD003210D9 /* SongTileView.m in Sources */ = {isa = PBXBuildFile; fileRef = 03A29C57190399DD003210D9 /* SongTileView.m */; };
@@ -62,6 +67,11 @@
 /* Begin PBXFileReference section */
 		030C29A518FF1C4400AFB2B1 /* SongTableViewCell.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SongTableViewCell.h; sourceTree = "<group>"; };
 		030C29A618FF1C4400AFB2B1 /* SongTableViewCell.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SongTableViewCell.m; sourceTree = "<group>"; };
+		038C7131190EB27D00C761B3 /* icon-76.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "icon-76.png"; sourceTree = "<group>"; };
+		038C7132190EB27D00C761B3 /* icon-120.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "icon-120.png"; sourceTree = "<group>"; };
+		038C7133190EB27D00C761B3 /* icon-152.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "icon-152.png"; sourceTree = "<group>"; };
+		038C7134190EB27D00C761B3 /* logo-square.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "logo-square.png"; sourceTree = "<group>"; };
+		038C7135190EB27D00C761B3 /* logo.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = logo.png; sourceTree = "<group>"; };
 		03A29C4C19039408003210D9 /* SongScrollView.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SongScrollView.h; sourceTree = "<group>"; };
 		03A29C4D19039408003210D9 /* SongScrollView.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SongScrollView.m; sourceTree = "<group>"; };
 		03A29C5419039904003210D9 /* SongTileView.xib */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.xib; path = SongTileView.xib; sourceTree = "<group>"; };
@@ -244,6 +254,11 @@
 		03B5D8DA18FCE960006ACB60 /* images */ = {
 			isa = PBXGroup;
 			children = (
+				038C7131190EB27D00C761B3 /* icon-76.png */,
+				038C7132190EB27D00C761B3 /* icon-120.png */,
+				038C7133190EB27D00C761B3 /* icon-152.png */,
+				038C7134190EB27D00C761B3 /* logo-square.png */,
+				038C7135190EB27D00C761B3 /* logo.png */,
 				03FCE9BA18FEDBFE00D363E2 /* down.png */,
 				03FCE9BB18FEDBFE00D363E2 /* up.png */,
 				03B5D8EA18FCF719006ACB60 /* menu@2x.png */,
@@ -398,14 +413,19 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				038C713A190EB27D00C761B3 /* logo.png in Resources */,
 				03FCE9BD18FEDBFE00D363E2 /* up.png in Resources */,
+				038C7139190EB27D00C761B3 /* logo-square.png in Resources */,
 				03A29C5519039904003210D9 /* SongTileView.xib in Resources */,
 				03B5D8BA18FCE86C006ACB60 /* Images.xcassets in Resources */,
 				03B5D8EB18FCF719006ACB60 /* menu@2x.png in Resources */,
+				038C7137190EB27D00C761B3 /* icon-120.png in Resources */,
 				03B5D8DC18FCE960006ACB60 /* placeholder.png in Resources */,
 				03B5D8AC18FCE86C006ACB60 /* InfoPlist.strings in Resources */,
+				038C7138190EB27D00C761B3 /* icon-152.png in Resources */,
 				03B5D8B518FCE86C006ACB60 /* Main.storyboard in Resources */,
 				03FCE9BC18FEDBFE00D363E2 /* down.png in Resources */,
+				038C7136190EB27D00C761B3 /* icon-76.png in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
