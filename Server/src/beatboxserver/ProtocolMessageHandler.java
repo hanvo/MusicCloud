@@ -189,7 +189,9 @@ public class ProtocolMessageHandler extends SimpleChannelInboundHandler<FullHttp
         // Parse out JSON encoded contents if needed
         if (request.getMethod().equals(HttpMethod.POST)) {
             try {
+                logger.trace("JSON Message: %s", request.content().toString(CharsetUtil.US_ASCII));
                 message = Message.constructMessage(messageName, request.content().toString(CharsetUtil.US_ASCII));
+                logger.trace("Message class: %s", message.getClass().getName());
             } catch (Exception e) {
                 logger.error("Exception occured while creating message", e);
                 RequestHandler.sendError(ctx.channel(), BAD_REQUEST);
