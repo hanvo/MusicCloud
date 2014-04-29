@@ -12,12 +12,15 @@ import beatboxserver.Song.SongStatus;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
+import java.io.ByteArrayInputStream;
+
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.PreparedStatement;
+import java.sql.Blob;
 
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.LogManager;
@@ -50,7 +53,7 @@ public class DatabaseManager {
         createTables(connection);
         
         // Transfer the contents over
-        //transferData(db, connection);
+        transferData(db, connection);
         
         transactionLock = new ReentrantLock();
     }
@@ -227,7 +230,7 @@ public class DatabaseManager {
         logger.info("Loading data from file");
         
         // "(name STRING, path STRING, artist STRING, album STRING, length REAL, image_type STRING, image BLOB, status INTEGER)"
-        String query = "INSERT INTO songs (name, path, artist, album, length, image_type, image, status) VALUES (?, ?, ?, ?, ?, ?, ?, '" + SongStatus.Inactive.ordinal() + "')";
+        String query = "INSERT INTO songs (name, path, artist, album, length, image_type, image, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
         PreparedStatement insertStmt = newDatabase.prepareStatement(query, Statement.RETURN_GENERATED_KEYS);
         
         Statement getStatement = oldDatabase.createStatement();
@@ -236,7 +239,7 @@ public class DatabaseManager {
         // Iterate through the result set to transfer the contents over
         while (results.next()) {
             
-            logger.trace("Inserting song: %s, %s, %s, %s, %d, %s",
+            logger.info("Inserting song: %s, %s, %s, %s, %f, %s",
                         results.getString("song"),
                         results.getString("path"),
                         results.getString("artist"),
@@ -251,7 +254,7 @@ public class DatabaseManager {
             insertStmt.setString(4, results.getString("album"));
             insertStmt.setDouble(5, results.getDouble("lengthOfSong"));
             insertStmt.setString(6, results.getString("artType"));
-            insertStmt.setBlob(7, results.getBlob("art"));
+            insertStmt.setBytes(7, results.getBytes("art"));
             insertStmt.setLong(8, SongStatus.Inactive.ordinal());
             
             if (insertStmt.executeUpdate() != 1) {

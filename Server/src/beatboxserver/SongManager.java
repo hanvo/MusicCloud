@@ -28,12 +28,13 @@ import java.sql.Statement;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Blob;
 
 import java.util.List;
 import java.util.ArrayList;
 import java.util.NoSuchElementException;
 
+import java.io.ByteArrayOutputStream;
+import java.io.InputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -310,22 +311,25 @@ public class SongManager {
      * @param songID {@link long} containing the ID for the requested song photo
      * @return
      * @throws SQLException
+     * @throws IOException
      */
-    public SongPhoto getSongPhoto(long songID) throws SQLException {
+    public SongPhoto getSongPhoto(long songID) throws SQLException, IOException {
         if (songID < 0) {
             throw new IllegalArgumentException();
         }
         
         SongPhoto photo;
-        Blob blob;
         
-        try (PreparedStatement stmt = databaseMgr.createPreparedStatement("SELECT image, image_type FROM songs WHERE id = '?'")) {
+        logger.trace("Requesting photo for song: %d", songID); // TODO TEMP DEBUG
+        
+        try (PreparedStatement stmt = databaseMgr.createPreparedStatement("SELECT image, image_type FROM songs WHERE id = ?")) {
             stmt.setLong(1, songID);
             ResultSet rs = stmt.executeQuery();
             if (rs.next()) {
                 
-                blob = rs.getBlob("image");
-                ByteBuf buf = Unpooled.copiedBuffer(blob.getBytes(1, (int)blob.length()));
+                byte[] data = rs.getBytes("image");
+
+                ByteBuf buf = Unpooled.copiedBuffer(data);
                 photo = new SongPhoto(buf, rs.getString("image_type"));
             } else {
                 throw new NoSuchElementException();
@@ -445,7 +449,7 @@ public class SongManager {
         }
         
         String path;
-        try (PreparedStatement stmt = databaseMgr.createPreparedStatement("SELECT path FROM songs WHERE id = '?'")) {
+        try (PreparedStatement stmt = databaseMgr.createPreparedStatement("SELECT path FROM songs WHERE id = ?")) {
             stmt.setLong(1, songID);
             ResultSet rs = stmt.executeQuery();
             if (rs.next()) {

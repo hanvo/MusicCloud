@@ -65,8 +65,12 @@ public class ClientHandler extends RequestHandler {
             }
             
             try {
+                if (message.pin == null) {
+                    logger.trace("Null PIN");
+                }
                 session = (UserSession)sessionMgr.createSession(message.pin, ipAddress, SessionType.User);
             } catch (SecurityException e) {
+                logger.warn("Security exception", e);
                 sendError(ctx.channel(), FORBIDDEN);
                 return;
             } catch (Exception e) {
@@ -358,12 +362,13 @@ public class ClientHandler extends RequestHandler {
             try {
                 songList = songMgr.getSongList();
             } catch (SQLException e) {
+                
                 logger.warn("Exception while retreiving the song list", e);
                 sendError(ctx.channel(), INTERNAL_SERVER_ERROR);
                 return;
             }
             
-            sendResponse(ctx.channel(), songList, false);
+            sendResponse(ctx.channel(), new SongListUpdate(songList), false);
         }
     }
     
@@ -393,9 +398,13 @@ public class ClientHandler extends RequestHandler {
             try {
                 photo = songMgr.getSongPhoto(songID);
             } catch (NoSuchElementException e) {
+                
+                logger.warn("Failed to find photo", e);
                 sendError(ctx.channel(), NOT_FOUND);
                 return;
             } catch (Exception e) {
+                
+                logger.warn("Error retrieving photo", e);
                 sendError(ctx.channel(), INTERNAL_SERVER_ERROR);
                 return;
             }

@@ -36,6 +36,7 @@ public class Message {
         Class messageClass = Class.forName(name);
         Gson gson = (new GsonBuilder()).create();
         
+        
         // Check if messageClass is a subclass of Message as required
         if (!Message.class.isAssignableFrom(messageClass)) {
             throw new ClassNotFoundException();

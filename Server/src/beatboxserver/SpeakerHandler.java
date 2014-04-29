@@ -11,6 +11,7 @@ import beatboxserver.messages.*;
 
 
 import java.util.NoSuchElementException;
+import java.util.List;
 
 import io.netty.channel.ChannelHandlerContext;
 
@@ -66,6 +67,8 @@ public class SpeakerHandler extends RequestHandler {
             try {
                 session = (SpeakerSession)sessionMgr.createSession(message.pin, ipAddress, SessionType.Speaker);
             } catch (SecurityException e) {
+                
+                logger.error("Security failure", e);
                 sendError(ctx.channel(), FORBIDDEN);
                 return;
             } catch (Exception e) {
@@ -190,6 +193,11 @@ public class SpeakerHandler extends RequestHandler {
             long songID;
             try {
                 decoder = new QueryStringDecoder(req.getUri());
+                if (!decoder.parameters().containsKey("songID")) {
+                    logger.warn("No song ID given");
+                    sendError(ctx.channel(), BAD_REQUEST);
+                    return;
+                }
                 songID = Long.parseLong(decoder.parameters().get("songID").get(0));
             } catch (Exception e) {
                 logger.warn("Invalid song ID", e);
@@ -205,6 +213,7 @@ public class SpeakerHandler extends RequestHandler {
                 sendError(ctx.channel(), NOT_FOUND);
                 return;
             } catch (Exception e) {
+                logger.warn("Failed to retrieve song", e);
                 sendError(ctx.channel(), INTERNAL_SERVER_ERROR);
                 return;
             }
