@@ -8,6 +8,8 @@
 
 #import "AppDelegate.h"
 
+#import "ClientSession.h"
+
 @implementation AppDelegate
 
 - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions
@@ -47,9 +49,12 @@
     // Restart any tasks that were paused (or not yet started) while the application was inactive. If the application was previously in the background, optionally refresh the user interface.
 }
 
-- (void)applicationWillTerminate:(UIApplication *)application
-{
-    // Called when the application is about to terminate. Save data if appropriate. See also applicationDidEnterBackground:.
+- (void)applicationWillTerminate:(UIApplication *)application {
+    ClientSession *session = [ClientSession sharedSession];
+    if (session.isAuthenticated) {
+        NSLog(@"Deauthenticating client with clientID %d", session.clientID);
+        [session deauthenticateClient];
+    }
 }
 
 @end
