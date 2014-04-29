@@ -23,6 +23,8 @@ enum {
 @property (nonatomic) NSInteger position;
 @property (nonatomic) SongStatus status;
 
+@property (strong, nonatomic) UIImage *albumArt;
+
 @property (nonatomic) NSInteger votes;
 
 @end

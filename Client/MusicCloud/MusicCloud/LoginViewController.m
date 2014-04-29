@@ -118,13 +118,18 @@
 #pragma mark - IBAction
 
 - (IBAction)enterPressed:(id)sender {
-    [UIView animateWithDuration:0.3 animations:^{
-        [self.view endEditing:YES];
-        [_overlay setAlpha:1.0];
-    }];
-    
     NSString *pin = _pinField.text;
-    [[ClientSession sharedSession] authenticateClient:pin];
+    if (pin.length > 0) {
+        [UIView animateWithDuration:0.3 animations:^{
+            [self.view endEditing:YES];
+            [_overlay setAlpha:1.0];
+        }];
+        
+        [[ClientSession sharedSession] authenticateClient:pin];
+    } else {
+        UIAlertView *alert = [[UIAlertView alloc] initWithTitle:@"MusicCloud" message:@"You gotta enter a PIN" delegate:nil cancelButtonTitle:nil otherButtonTitles:@"OK", nil];
+        [alert show];
+    }
 }
 
 @end
