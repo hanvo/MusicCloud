@@ -271,7 +271,7 @@ Server to Client messages:
 			 Content-Length: <JsonLength>\r\n
 			 \r\n
 			 {"update_type": "song_list",
-			  "songs": [({"id": <SongID>,
+			  "values": [({"id": <SongID>,
 						  "name": "<SongName>",
 						  "artist": "<SongArtist>",
 						  "album": "<SongAlbum>",

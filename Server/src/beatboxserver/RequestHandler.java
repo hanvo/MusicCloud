@@ -268,7 +268,7 @@ public abstract class RequestHandler {
     }
     
     /**
-     * Creates an {@link FullHttpResponse} object with the given ByteBuf as the content
+     * Create an {@link FullHttpResponse} object with the given ByteBuf as the content
      * @param status {@link HttpResponseStatus} for the response
      * @param content {@link ByteBuffer} containing the desired response content
      * @param contentType {@link String} describing the MIME type of the response body

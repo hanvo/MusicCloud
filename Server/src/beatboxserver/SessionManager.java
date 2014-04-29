@@ -73,9 +73,18 @@ public class SessionManager {
 
                 int unixTimestamp = (int)(System.currentTimeMillis() / 1000L);
                 String query = "INSERT INTO sessions (ip_address, session_type, time_started) VALUES ( '" + ipAddress + "', '" + type.ordinal() + "', " + unixTimestamp + ")";
-                if (stmt.executeUpdate(query) != 1) {
-                    stmt.close();
-                    throw new IllegalStateException();
+                try {
+                    if (stmt.executeUpdate(query) != 1) {
+                        stmt.close();
+                        throw new IllegalStateException();
+                    }
+                } catch (SQLException e) {
+                    if (e.getMessage().equals("columns ip_address, session_type are not unique")) {
+                        logger.warn("Ignoring duplicate login");
+                        
+                    } else {
+                        throw e;
+                    }
                 }
 
                 // Get the newly created ID of the session
@@ -246,7 +255,7 @@ public class SessionManager {
                 }
 
                 if (size != 1) {
-                    logger.warn("Invalid number of clientID given");
+                    logger.warn("Invalid number of client IDs found");
                     return false;
                 }
             }

@@ -25,12 +25,11 @@ import os
 import sys
 import sqlite3
 from mutagen.mp3 import MP3
-from mutagen import File
 import eyed3
-
+import warnings
 
 def main():
-    crawl()
+        crawl()
 
     
 def crawl():
@@ -54,7 +53,7 @@ def crawl():
     x = "root"
     y = "song name"
     songCount = 0
-    for root, dirnames, filenames in os.walk(r'.'):
+    for root, dirnames, filenames in os.walk(r'C:\Users\QuakeZ\Desktop\Music Folder'):
         x = root
         print "Root: ", root
         print "Song List:"
@@ -69,13 +68,15 @@ def crawl():
             if not path.endswith(".mp3"): # Skip non-mp3 files
                 continue
 
-            print "Checking file: ", path            
+            print "Checking file: ", path
+            print "\n" 
 
             data = File(path)
             if 'APIC:' in data.tags: # Check if we even have an APIC frame available
                 if isinstance(data.tags['APIC:'], list): # Check if we have a list of photos
 
                     print "Found ", length(data.tags['APIC:']), " APIC images" # Debug statement
+                    print "\n"
 
                     for apic in data.tags['APIC:']:
                         artwork = apic.data
@@ -89,6 +90,7 @@ def crawl():
                     artCoverID = data.tags['APIC:'].type
             else:
                 print "No Album Art work - ", y
+                print "\n"
                 artwork = 'null'
                 artType = 'null'
                 artCoverID = 'null'
@@ -97,22 +99,29 @@ def crawl():
             artist = audioFile.tag.artist
             album = audioFile.tag.album
             audio = MP3(path) #for audio lenth
-            audioLength = audio.info.length
+            
 
-            print "Inserting values: \"" + str(songCount) + "\" \"" + str(y) + "\" \"" + str(path) + "\" \"" + str(audioLength) + "\" \"" + str(artist) + "\" \"" + str(album) + "\" \"" + str(artType) + "\""# Debug statement
-
+            #print "Inserting values: \"" + str(songCount) + "\" \"" + str(y) + "\" \"" + str(path) + "\" \"" + str(audioLength) + "\" \"" + str(artist) + "\" \"" + str(album) + "\" \"" + str(artType) + "\""# Debug statement
+            print "\n"
+    
             c.execute('insert into music values (?,?,?,?,?,?,?,?,?)', (songCount,y,path,audioLength,artist,album,artwork,artType,artCoverID,))
             songCount = songCount + 1
                 
     print "\n"
     for row in c.execute('SELECT id,song,path,lengthOfSong,artist,album,artType,artCoverID FROM music '):
-        print row
+       print row
 
 
     #c.execute('SELECT art FROM music')
     #picture=c.fetchone()[0]
     #with open('test122.jpg','wb') as img:
     #    img.write(picture)
+
+    # Commit the changes to the database
+    conn.commit()
+
+    # Flush to the disk
+    conn.close()
         
 
 if __name__ == "__main__":
