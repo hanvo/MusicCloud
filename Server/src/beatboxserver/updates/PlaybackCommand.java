@@ -18,14 +18,14 @@ public class PlaybackCommand {
     /**
      * 
      */
-    public enum Command {Play, Pause, Stop};
+    public enum Command {Play, Stop};
     
     /**
      * 
      * @param command
      * @param songID 
      */
-    public PlaybackCommand(Command command, String songID) {
+    public PlaybackCommand(Command command, long songID) {
         this.command = command;
         id = songID;
     }
@@ -35,5 +35,5 @@ public class PlaybackCommand {
     private Command command;
     
     @Expose
-    private String id;
+    private long id;
 }

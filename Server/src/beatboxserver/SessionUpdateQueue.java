@@ -6,9 +6,10 @@
 
 package beatboxserver;
 
-import beatboxserver.updates.ClientUpdate;
-import beatboxserver.updates.ClientUpdate.UpdateType;
+import beatboxserver.updates.SessionUpdate;
+import beatboxserver.updates.SessionUpdate.UpdateType;
 
+import java.util.Map;
 import java.util.HashMap;
 import java.util.ArrayDeque;
 import java.util.Queue;
@@ -23,9 +24,9 @@ import io.netty.handler.codec.http.HttpResponseStatus;
  *
  * @author rahmanj
  */
-public class ClientUpdateQueue {
+public class SessionUpdateQueue {
     
-    public ClientUpdateQueue() {
+    public SessionUpdateQueue() {
         /*executor = Executors.newFixedThreadPool(1);*/
         channelQueue = new ArrayDeque<>();
         updateTypeQueue = new ArrayDeque<>();
@@ -34,10 +35,10 @@ public class ClientUpdateQueue {
     
     /**
      * Queue an incoming update request to be matched with an update for the client
-     * @param ch {@link Channel} representing the channel the update request was received on
+     * @param ch The {@link Channel} the update request was received on
      */
     public void queueRequest(Channel ch) {
-        ClientUpdate update;
+        SessionUpdate update;
         FullHttpResponse response;
         String json;
         UpdateType updateType;
@@ -72,7 +73,7 @@ public class ClientUpdateQueue {
      * Queue a {@ClientUpdate} to be matched with an incoming request
      * @param update 
      */
-    public void queueUpdate(ClientUpdate update) {
+    public void queueUpdate(SessionUpdate update) {
         FullHttpResponse response;
         Channel chan;
         String json;
@@ -86,6 +87,8 @@ public class ClientUpdateQueue {
                 
                 RequestHandler.sendResponse(chan, response, false);
             } else {
+                
+                // Overwrite the old update with the same type
                 updates.put(update.getUpdateType(), update);
             }
         }
@@ -106,6 +109,6 @@ public class ClientUpdateQueue {
     }
     
     private final Queue<Channel> channelQueue;
-    private final HashMap<UpdateType, ClientUpdate> updates;
+    private final Map<UpdateType, SessionUpdate> updates;
     private final Queue<UpdateType> updateTypeQueue;
 }

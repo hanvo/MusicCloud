@@ -6,7 +6,7 @@
 
 package beatboxserver;
 
-import beatboxserver.updates.ClientUpdate;
+import beatboxserver.updates.SessionUpdate;
 import io.netty.channel.Channel;
 
 import com.google.gson.annotations.Expose;
@@ -32,6 +32,7 @@ public abstract class Session {
         this.id = id;
         this.clientType = type;
         this.ipAddresss = ipAddress;
+        updateQueue = new SessionUpdateQueue();
     }
     
     
@@ -54,7 +55,7 @@ public abstract class Session {
      * 
      * @param update 
      */
-    public void sendUpdate(ClientUpdate update) {
+    public void sendUpdate(SessionUpdate update) {
         if (update == null) {
             throw new IllegalArgumentException();
         }
@@ -76,5 +77,5 @@ public abstract class Session {
     private String ipAddresss;
     
     private SessionType clientType;
-    private ClientUpdateQueue updateQueue;
+    private SessionUpdateQueue updateQueue;
 }

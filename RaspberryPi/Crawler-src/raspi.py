@@ -28,13 +28,19 @@ import httplib
 import json
 import socket
 import sys
+import Queue
 
 timeout = 100
 _Rlock = threading.RLock()
 flag_serv_func = 0
 _clientID = -1
+_serv_playback_queue = Queue.Queue(0)
+_playback_conn_queue = Queue.Queue(0)
+_conn_playback_queue = Queue.Queue(0)
+_serv_comm_ID_queue = Queue.Queue(0)
 
 def play_back_func():
+	# playback command, possibly from REQUEST_SPEAKER_UPDATE, implemented in play back thread
 	pass
 
 def serv_func():
@@ -53,6 +59,7 @@ def serv_func():
 			pass
 		_serv_response = json.load(_serv_resp_json.read())
 		_clientID = _serv_response['id']
+		_serv_comm_ID_queue.put(_clientID)
 	else:
 		pass
 	
@@ -61,6 +68,7 @@ def serv_func():
 		_serv_sock.request("GET","klamath.dnsdynamic.com:5050/speaker/request_update?clientID="+str(_clientID))
 		_upcoming_song_resp = _serv_sock.getresponse()
 		#Push _upcoming_song_resp.read() the Queue
+		_serv_playback_queue.put(_upcoming_song_resp.read())
 	except socket.timeout:
 		serv_func()
 	_serv_sock.close()
@@ -69,9 +77,11 @@ def serv_func():
 def communicate_func():
 	# Pop the specific request from the Queue, depending on that do the following
 	_comm_sock = httplib.HTTPConnection('klamath.dnsdynamic.com', 5050, timeout = timeout)
+	_clientID = _serv_comm_ID_queue.get() # Getting the clientID from the queue
 	# REQUEST_SONG
 	# the value of song ID is in the queue
-	_upcoming_resp = json.load("<the value in the queue>")
+	_upcoming_resp = json.load(_playback_conn_queue.get())
+	_playback_conn_queue.task_done()
 	_values = _upcoming_resp['values']
 	_songID = _values['id']
 	_comm_sock.request("GET","klamath.dnsdynamic.com:5050/request_song?clientID="+str(_clientID)+"&songID"+str(_songID))
@@ -81,7 +91,6 @@ def communicate_func():
 	# get the song ID that is ready to play from the queue, it will have to be located and then decoded and encoded
 	_params_ready = json.dumps({"id":_songID},encoding = "ASCII") #songID might be different
 	_comm_sock.request("POST","klamath.dnsdynamic.com:5050/speaker/ready?clientID="+str(_clientID),_params_ready)
-	# playback command, possibly from REQUEST_SPEAKER_UPDATE, implemented in play back thread
 
 	# Status update depeding on the playback thread
 	_params_update = json.dumps({"id":_songID,"status":"playing/pause","position":position(?)},encoding = "ASCII")

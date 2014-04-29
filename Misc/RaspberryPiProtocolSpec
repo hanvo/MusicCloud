@@ -20,7 +20,7 @@ Encoding:
 	
 HTTP Requests:
 	Our format is basically HTTP with a custom JSON request/response body to convey protocol information.
-	Use standard HTTP libraries to make requests, using <ServerName>/<MessageName> as the URL to request
+	Use standard HTTP libraries to make requests, using /<Endpoint>/<MessageName> as the URL to request
 		a message with a given name.
 
 Song ID:
@@ -34,7 +34,7 @@ Connection Behavior:
 	should be reused for continued communication.
 
 Connection Protocol:
-	We will use TCP/HTTP over port 42422
+	We will use TCP/HTTP over port 5050
 	Port is temporary, likely to switch to Bonjour for auto-discover of port and IP.
 
 General Protocol:
@@ -48,7 +48,9 @@ General Protocol:
 		2. Server sends UPCOMING_SONG command
 		3. Client responds by sending REQUEST_SONG to get file
 			3.A Client saves response body into file, whose name is associated with the SongID
-		4. Client send READY message with ID of song ready to play
+		4. Client finishes playing back the current song
+		5. Client sends STATUS_UPDATE message with information about the song that finished playing
+		4. Client sends READY message with ID of song ready to play
 		5. Client sends REQUEST_SPEAKER_UPDATE again and waits for command from server
 		6. Server sends PLAYBACK_COMMAND response and client begins playback on playback thread
 		7. (goto step 1)
@@ -57,7 +59,7 @@ General Protocol:
 		1. Once playback successfully starts
 		2. Once playback reached the end of the song
 		3. Once a major change in playback position occurs (Optional)
-		4. When playback status (Playing|Paused) changes
+		4. When playback status changes
 	
 
 Requests: (From Client to server)
@@ -117,13 +119,16 @@ Requests: (From Client to server)
 			 Content-Length: <JsonLength>\r\n
 			 \r\n
 			 {"id": "<SongID>",
-			  "status": "Playing|Paused",
+			  "status": "Playing|Stopped|Ready",
 			  "position": "<PlaybackPosition(MS)>"}"
 		Remarks:
-			Sent to the server periodically and whenever a status change occurs.
+			Sent to the server periodically to the server to indicate the current status of the speaker
 				Status changes include changes to playback position,
 				Playing->Paused, Paused->Playing transitions,
 				Changing the currently played song
+			If a song is successfully received from the server, then a "Ready" update should be sent
+			Likewise, once playback successfully starts, a "Playing" update should be sent
+			Finally, once the song finishes playback, a "Stopped" update should be sent
 
 	REQUEST_SONG:
 		Description:
@@ -136,15 +141,6 @@ Requests: (From Client to server)
 			The client is repsonsible for determing when to get the song from the server
 			It can use a variety of methods to identify when and which song to fetch
 
-	READY:
-		Description:
-			Indicate to the server that the given song is ready to play
-		Format:
-			"POST /speaker/ready?clientID=<ClientID> HTTP/1.1\r\n
-			(<Key>: <Value\r\n)*
-			 \r\n
-			 {"id": <SongID>}"
-		Remarks:
 
 
 Responses: (From Server to Client)
@@ -188,7 +184,7 @@ Responses: (From Server to Client)
 			 { "update_type": "playback_command",
 			   "values": {
 					"id": <SongID>,
-					"command": "<Play|Pause|Stop>"
+					"command": "<Play|Stop>"
 				} 
 			}"
 		Remarks:

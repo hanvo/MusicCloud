@@ -23,9 +23,8 @@ import java.net.InetSocketAddress;
 import java.lang.reflect.Method;
 import java.lang.reflect.Constructor;
 
-import java.util.logging.Logger;
-import java.util.logging.Handler;
-import java.util.logging.Level;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 
 import static io.netty.handler.codec.http.HttpResponseStatus.*;
 
@@ -41,11 +40,6 @@ public class ProtocolMessageHandler extends SimpleChannelInboundHandler<FullHttp
      * @param songManager {@link SongManager} to use when handling messages
      */
     public ProtocolMessageHandler(SessionManager clientManager, SongManager songManager) {
-        Logger logger = Logger.getLogger(this.getClass().getName());
-        for (Handler h : logger.getHandlers()) {
-            h.setLevel(Level.ALL);
-        }
-        
         sessionMgr = clientManager;
         songMgr = songManager;
     }
@@ -57,7 +51,7 @@ public class ProtocolMessageHandler extends SimpleChannelInboundHandler<FullHttp
      */
     @Override
     public void channelRead0(ChannelHandlerContext ctx, FullHttpRequest req) {
-        Logger.getLogger(this.getClass().getName()).fine("Request recieved");
+        logger.debug("Request recieved");
         
         dispatchRequest(req, ctx);
     }
@@ -84,7 +78,7 @@ public class ProtocolMessageHandler extends SimpleChannelInboundHandler<FullHttp
         
         String[] components = path.split("/");
         if (components.length != 3) {
-            Logger.getLogger(this.getClass().getName()).warning("Invalid request for method: \"" + path + "\"");
+            logger.warn("Invalid request for path: \"%s\"", path);
             RequestHandler.sendError(ctx.channel(), NOT_FOUND);
             return;
         }
@@ -120,7 +114,7 @@ public class ProtocolMessageHandler extends SimpleChannelInboundHandler<FullHttp
                 return;
             }
         } catch (ClassNotFoundException e) {
-            Logger.getLogger(this.getClass().getName()).log(Level.SEVERE, "Invalid request for handler: \"" + handlerName + "\"", e);
+            logger.error("Invalid request for handler: %s", handlerName, e);
             RequestHandler.sendError(ctx.channel(), NOT_FOUND);
             return;
         }
@@ -131,7 +125,7 @@ public class ProtocolMessageHandler extends SimpleChannelInboundHandler<FullHttp
             Constructor ctor = handlerClass.getDeclaredConstructor(SessionManager.class, SongManager.class);
             requestHandler = (RequestHandler)handlerClass.cast(ctor.newInstance(sessionMgr, songMgr));
         } catch (Exception e) {
-            Logger.getLogger(this.getClass().getName()).log(Level.SEVERE, "Invalid request for constructor: \"" + handlerName + "\"", e);
+            logger.error("Invalid request for constructor", e);
             RequestHandler.sendError(ctx.channel(), NOT_FOUND);
             return;    
         }
@@ -158,14 +152,14 @@ public class ProtocolMessageHandler extends SimpleChannelInboundHandler<FullHttp
                 method = handlerClass.getMethod(methodName, ChannelHandlerContext.class, FullHttpRequest.class, long.class, String.class, Message.class);
             } else {
                 
-                Logger.getLogger(this.getClass().getName()).warning("Invalid request method");
+                logger.warn("Invalid request method");
                 RequestHandler.sendError(ctx.channel(), NOT_ACCEPTABLE);
                 return;
             }
             
         } catch (NoSuchMethodException e) {
             
-            Logger.getLogger(ProtocolMessageHandler.class.getName()).log(Level.SEVERE, "Invalid request for method: \"" + methodName + "\"", e);
+            logger.error("Invalid request for method: %s", methodName);
             RequestHandler.sendError(ctx.channel(), HttpResponseStatus.NOT_FOUND);
             return;
         }
@@ -180,6 +174,7 @@ public class ProtocolMessageHandler extends SimpleChannelInboundHandler<FullHttp
                 return;
             }
         } else {
+            logger.warn("No session id given in request");
             sessionID = -1;
         }
         
@@ -196,7 +191,7 @@ public class ProtocolMessageHandler extends SimpleChannelInboundHandler<FullHttp
             try {
                 message = Message.constructMessage(messageName, request.content().toString(CharsetUtil.US_ASCII));
             } catch (Exception e) {
-                Logger.getLogger(ProtocolMessageHandler.class.getName()).log(Level.SEVERE, "Exeption occured while creating message", e);
+                logger.error("Exception occured while creating message", e);
                 RequestHandler.sendError(ctx.channel(), BAD_REQUEST);
                 return;
             }
@@ -204,7 +199,7 @@ public class ProtocolMessageHandler extends SimpleChannelInboundHandler<FullHttp
         
         try {
             
-            Logger.getLogger(ProtocolMessageHandler.class.getName()).info("Dispatching request to " + handlerName + "." + methodName);
+            logger.info("Dispatching request to %s.%s", handlerName, methodName);
             
             // Dispatch based on the request type
             if (request.getMethod().equals(HttpMethod.GET)) {   
@@ -214,10 +209,12 @@ public class ProtocolMessageHandler extends SimpleChannelInboundHandler<FullHttp
             }
             
         } catch (Exception e) {
-            Logger.getLogger(this.getClass().getName()).log(Level.SEVERE, "Exception thrown while dispatching", e);
+            logger.error("Exception thrown while dispatching", e);
         }
     }
     
     private final SessionManager sessionMgr;
     private final SongManager songMgr;
+    
+    private final static Logger logger = LogManager.getFormatterLogger((ProtocolMessageHandler.class.getName()));
 }

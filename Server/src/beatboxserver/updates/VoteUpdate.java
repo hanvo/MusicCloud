@@ -6,14 +6,14 @@
 
 package beatboxserver.updates;
 
-import java.util.Map;
+import java.util.List;
 
 /**
  *
  * @author rahmanj
  */
-public class VoteUpdate extends ClientUpdate<Map<String, Integer>>{
-    public VoteUpdate(Map<String, Integer> votes) {
+public class VoteUpdate extends SessionUpdate<List<VoteData>>{
+    public VoteUpdate(List<VoteData> votes) {
         super(UpdateType.votes, votes);
     }
 }

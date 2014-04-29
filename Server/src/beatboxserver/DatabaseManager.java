@@ -6,6 +6,11 @@
 
 package beatboxserver;
 
+import beatboxserver.Session.SessionType;
+import beatboxserver.Song.SongStatus;
+
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -13,6 +18,9 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.PreparedStatement;
+
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 
 /**
  *
@@ -26,8 +34,15 @@ public class DatabaseManager {
      * @throws SQLException 
      */
     public DatabaseManager(String songDatabasePath) throws SQLException {
-        connection = DriverManager.getConnection("jdbc:sqlite::memory:");
         
+        // Load the sqlite-JDBC driver
+        try {
+            Class.forName("org.sqlite.JDBC");
+        } catch (ClassNotFoundException e) {
+            throw new SQLException(e);
+        }
+        
+        connection = DriverManager.getConnection("jdbc:sqlite:");
         
         Connection db = DriverManager.getConnection("jdbc:sqlite:" + songDatabasePath);
         
@@ -35,7 +50,9 @@ public class DatabaseManager {
         createTables(connection);
         
         // Transfer the contents over
-        transferData(db, connection);
+        //transferData(db, connection);
+        
+        transactionLock = new ReentrantLock();
     }
     
     /**
@@ -58,6 +75,48 @@ public class DatabaseManager {
      */
     public Statement createStatement() throws SQLException {
         return connection.createStatement();
+    }
+    
+    /**
+     * Initiate a transaction operations
+     * Must call stopTransaction or deadlock will likely occur
+     * @throws SQLException 
+     */
+    public void startTransaction() throws SQLException {
+        transactionLock.lock();
+        connection.setAutoCommit(false);
+    }
+    
+    /**
+     * 
+     * @throws SQLException 
+     */
+    public void stopTransaction() throws SQLException {
+        if (transactionLock.isHeldByCurrentThread()) {
+            try {
+                connection.commit();
+                connection.setAutoCommit(true);
+            } catch (Exception e) {
+                transactionLock.unlock();
+                throw e;
+            }
+        } else {
+            throw new IllegalStateException();
+        }
+    }
+    
+    public void rollbackTransaction()  throws SQLException {
+        if (transactionLock.isHeldByCurrentThread()) {
+            try {
+                connection.rollback();
+                connection.setAutoCommit(true);
+            } catch (Exception e) {
+                transactionLock.unlock();
+                throw e;
+            }
+        } else {
+            throw new IllegalStateException();
+        }
     }
     
     
@@ -99,46 +158,59 @@ public class DatabaseManager {
         stmt.setQueryTimeout(10);
         
         // Clear out any old tables
-        stmt.executeUpdate("DROP TABLE session");
-        stmt.executeUpdate("DROP TABLE song");
-        stmt.executeUpdate("DROP TABLE client_session");
-        stmt.executeUpdate("DROP TABLE speaker_session");
-        stmt.executeUpdate("DROP TABLE votes");
-        stmt.executeUpdate("DROP TABLE likes");
+        stmt.executeUpdate("DROP TABLE IF EXISTS session");
+        stmt.executeUpdate("DROP TABLE IF EXISTS song");
+        stmt.executeUpdate("DROP TABLE IF EXISTS client_session");
+        stmt.executeUpdate("DROP TABLE IF EXISTS speaker_session");
+        stmt.executeUpdate("DROP TABLE IF EXISTS votes");
+        stmt.executeUpdate("DROP TABLE IF EXISTS likes");
         
         // Create sessions table
         stmt.executeUpdate("CREATE TABLE sessions (id INTEGER PRIMARY KEY AUTOINCREMENT,"
-                                                + "ip_address STRING,"
-                                                + "session_type INTEGER,"
-                                                + "time_started INTEGER)");
+                                                + "ip_address STRING NOT NULL, "
+                                                + "session_type INTEGER REFERENCES session_types(id) ON DELETE CASCADE NOT NULL, "
+                                                + "time_started INTEGER NOT NULL, "
+                                                + "CONSTRAINT unique_session UNIQUE(ip_address,session_type))");
         // Create client_sessions table
         stmt.executeUpdate("CREATE TABLE user_sessions (id INTEGER REFERENCES sessions(id) ON DELETE CASCADE)");
         
         // Create speaker_sessions table
-        stmt.executeUpdate("CREATE TABLE speaker_sessions (id INTEGER REFERENCES sessions(id) ON DELETE CASCADE,"
-                                                        + "current_song INTEGER REFERENCES songs(id),"
-                                                        + "current_status INTEGER,"
-                                                        + "playback_position INTEGER)");
+        stmt.executeUpdate("CREATE TABLE speaker_sessions (id INTEGER REFERENCES sessions(id) ON DELETE CASCADE, "
+                                                        + "current_song INTEGER REFERENCES songs(id), "
+                                                        + "current_status INTEGER NOT NULL DEFAULT '" + SongStatus.Inactive + "')");
         
         // Create songs table
-        stmt.executeUpdate("CREATE TABLE songs (id INTEGER PRIMARY KEY AUTOINCREMENT,"
-                                            + "name STRING,"
-                                            + "path STRING,"
-                                            + "artist STRING,"
-                                            + "album REAL,"
-                                            + "image_type STRING,"
-                                            + "image BLOB)");
+        stmt.executeUpdate("CREATE TABLE songs (id INTEGER PRIMARY KEY AUTOINCREMENT, "
+                                            + "name STRING NOT NULL, "
+                                            + "path STRING NOT NULL, "
+                                            + "artist STRING NOT NULL, "
+                                            + "album STRING NOT NULL, "
+                                            + "length REAL NOT NULL, "
+                                            + "image_type STRING, "
+                                            + "image BLOB, "
+                                            + "status INTEGER NOT NULL DEFAULT '" + SongStatus.Inactive + "')");
         
         // Create votes table
-        stmt.executeUpdate("CREATE TABLE votes (session_id INTEGER REFERENCES sessions(id) ON DELETE CASCADE,"
-                                            + "song_id INTEGER REFERENCES songs(id) ON DELETE CASCADE,"
-                                            + "PRIMARY KEY(session_id, song_id))");
+        stmt.executeUpdate("CREATE TABLE votes (session_id INTEGER REFERENCES sessions(id) ON DELETE CASCADE, "
+                                            + "song_id INTEGER REFERENCES songs(id) ON DELETE CASCADE, "
+                                            + "PRIMARY KEY(session_id))");
         
         // Create likes table
-        stmt.executeUpdate("CREATE TABLE likes (session_id INTEGER REFERENCES sessions(id) ON DELETE CASCADE,"
-                                             + "song_id INTEGER REFERENCES songs(id),"
-                                             + "PRIMARY KEY(session_id, song_id))");
+        stmt.executeUpdate("CREATE TABLE likes (session_id INTEGER REFERENCES sessions(id) ON DELETE CASCADE, "
+                                            + "song_id INTEGER REFERENCES songs(id), "
+                                            + "value BYTE NOT NULL, "
+                                            + "PRIMARY KEY(session_id, song_id))");
         
+        // Create session types table
+        stmt.executeUpdate("CREATE TABLE session_types (id INTEGER UNIQUE, type STRING NOT NULL)");
+        
+        // Insert the session types into the DB
+        int count;
+        count = stmt.executeUpdate("INSERT INTO session_types (id, type) VALUES ('" + SessionType.User.ordinal() + "', '" + SessionType.User.toString() + "')");
+        count *= stmt.executeUpdate("INSERT INTO session_types (id, type) VALUES ('" + SessionType.Speaker.ordinal() + "', '" + SessionType.Speaker.toString() + "')");
+        if (count != 1) {
+            throw new SQLException("Failed to insert session types");
+        }
     }
     
     /**
@@ -152,14 +224,27 @@ public class DatabaseManager {
             throw new IllegalArgumentException();
         }
         
-        // "(name STRING, path STRING, artist STRING, album STRING, length REAL, image_type STRING, image BLOB)"
-        PreparedStatement insertStmt = newDatabase.prepareStatement("INSERT INTO songs VALUES (?, ?, ?, ?, ?, ?, ?)", Statement.RETURN_GENERATED_KEYS);
+        logger.info("Loading data from file");
+        
+        // "(name STRING, path STRING, artist STRING, album STRING, length REAL, image_type STRING, image BLOB, status INTEGER)"
+        String query = "INSERT INTO songs (name, path, artist, album, length, image_type, image, status) VALUES (?, ?, ?, ?, ?, ?, ?, '" + SongStatus.Inactive.ordinal() + "')";
+        PreparedStatement insertStmt = newDatabase.prepareStatement(query, Statement.RETURN_GENERATED_KEYS);
         
         Statement getStatement = oldDatabase.createStatement();
         ResultSet results = getStatement.executeQuery("SELECT id, song, path, artist, album, lengthOfSong, art, artType FROM music");
         
         // Iterate through the result set to transfer the contents over
         while (results.next()) {
+            
+            logger.trace("Inserting song: %s, %s, %s, %s, %d, %s",
+                        results.getString("song"),
+                        results.getString("path"),
+                        results.getString("artist"),
+                        results.getString("album"),
+                        results.getDouble("lengthOfSong"),
+                        results.getString("artType")
+            );
+            
             insertStmt.setString(1, results.getString("song"));
             insertStmt.setString(2, results.getString("path"));
             insertStmt.setString(3, results.getString("artist"));
@@ -167,9 +252,16 @@ public class DatabaseManager {
             insertStmt.setDouble(5, results.getDouble("lengthOfSong"));
             insertStmt.setString(6, results.getString("artType"));
             insertStmt.setBlob(7, results.getBlob("art"));
-            insertStmt.executeUpdate();
+            insertStmt.setLong(8, SongStatus.Inactive.ordinal());
+            
+            if (insertStmt.executeUpdate() != 1) {
+                logger.warn("Failed to add song to the internal DB");
+            }
         }
     }
     
+    private ReentrantLock transactionLock;
     private Connection connection;
+    
+    private final static Logger logger = LogManager.getFormatterLogger(DatabaseManager.class.getName());
 }

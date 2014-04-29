@@ -19,17 +19,19 @@ public class LikeData {
      * @param songID
      * @param songLikes
      * @param songDislikes
-     * @param likeBalance 
      */
-    public LikeData(String songID, int songLikes, int songDislikes, double likeBalance) {
+    public LikeData(long songID, long songLikes, long songDislikes, double balance) {
+        if (songID < 0 || songLikes < 0 || songDislikes < 0 || balance < -1 || balance > 1) {
+            throw new IllegalArgumentException();
+        }
         id = songID;
-        likes = songLikes;
-        dislikes = songDislikes;
-        balance = likeBalance;
+        likes = 0;
+        dislikes = 0;
+        this.balance = balance;
     }
     
     @Expose
-    private String id;
+    private long id;
             
     @Expose
     private int likes;
@@ -39,4 +41,5 @@ public class LikeData {
     
     @Expose
     private double balance;
+    
 }

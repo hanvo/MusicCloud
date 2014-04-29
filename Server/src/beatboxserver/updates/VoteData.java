@@ -6,14 +6,22 @@
 
 package beatboxserver.updates;
 
-import beatboxserver.ActiveSong;
+import com.google.gson.annotations.Expose;
 
 /**
  *
  * @author rahmanj
  */
-public class SongUpdate extends SessionUpdate<ActiveSong> {
-    public SongUpdate(ActiveSong song) {
-        super(UpdateType.current_song, song);
+public class VoteData {
+    
+    public VoteData(long songID, long votes) {
+        id = songID;
+        this.votes = votes;
     }
+    
+    @Expose
+    private long id;
+    
+    @Expose
+    private long votes;
 }

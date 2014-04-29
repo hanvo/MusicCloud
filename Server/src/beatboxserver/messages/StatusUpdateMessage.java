@@ -14,7 +14,7 @@ import com.google.gson.annotations.Expose;
  */
 public class StatusUpdateMessage extends Message {
     
-    public enum Status {Playing, Paused};
+    public enum Status {Playing, Paused, Ready, Stopped};
     
     public StatusUpdateMessage() {
         super(MessageType.StatusUpdateMessage);

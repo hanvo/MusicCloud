@@ -25,6 +25,7 @@
     if (self = [super initWithBaseURL:url]) {
         self.requestSerializer = [AFJSONRequestSerializer serializer];
         self.responseSerializer = [AFJSONResponseSerializer serializer];
+        
     }
     return self;
 }
@@ -47,9 +48,6 @@
     }
     
     NSDictionary *params = @{@"Pin": pin};
-    
-    
-    
     [self POST:@"client/authenticate" parameters:params success:^(NSURLSessionDataTask *task, id responseObject) {
         NSInteger clientID = [[responseObject objectForKey:@"ClientID"] integerValue];
         _clientID = clientID;

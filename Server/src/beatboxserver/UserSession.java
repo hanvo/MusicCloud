@@ -18,25 +18,21 @@ public class UserSession extends Session {
     
     /**
      * 
-     * @param id 
+     * @param id
+     * @param ipAddress
      */
     public UserSession(long id, String ipAddress) {
         super(id, ipAddress, SessionType.User);
-        
-        likedSongs = new HashMap<>();
-        dislikedSongs = new HashMap<>();
-        votedSong = null;
     }
+    
     
     /**
      * 
-     * @param songID 
+     * @param songID
+     * @param songManager
      */
     public void likeSong(String songID, SongManager songManager) {
-        if (doesDislikeSong(songID)) {
-            dislikedSongs.remove(songID);
-        }
-        likedSongs.put(songID, Boolean.TRUE);
+        
     }
     
     /**
@@ -44,10 +40,7 @@ public class UserSession extends Session {
      * @param songID 
      */
     public void dislikeSong(String songID, SongManager songManager) {
-        if (doesLikeSong(songID)) {
-            likedSongs.remove(songID);
-        }
-        dislikedSongs.put(songID, Boolean.TRUE);
+        
     }
     
     /**
@@ -56,7 +49,7 @@ public class UserSession extends Session {
      * @return 
      */
     public boolean doesLikeSong(String songID) {
-        return likedSongs.containsKey(songID);
+        return false;
     }
     
     /**
@@ -65,7 +58,7 @@ public class UserSession extends Session {
      * @return 
      */
     public boolean doesDislikeSong(String songID) {
-        return dislikedSongs.containsKey(songID);
+        return false;
     }
     
     /**
@@ -74,11 +67,7 @@ public class UserSession extends Session {
      * @return 
      */
     public boolean votedOn(Song song) {
-        return song.getID().equals(votedSong);
+        return false;
     }
     
-    
-    private Map<String, Boolean> likedSongs;
-    private Map<String, Boolean> dislikedSongs;
-    private String votedSong;
 }

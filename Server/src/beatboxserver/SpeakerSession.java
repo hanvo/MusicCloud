@@ -17,7 +17,7 @@ public class SpeakerSession extends Session {
     }
     
     
-    ActiveSong.StatusType status;
+    ActiveSong.SongStatus status;
     
     /**
      * ID for the song the speaker is currently playing

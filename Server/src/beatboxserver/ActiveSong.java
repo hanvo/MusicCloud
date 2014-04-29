@@ -14,38 +14,59 @@ import com.google.gson.annotations.Expose;
  */
 public class ActiveSong extends Song {
     
-    public enum StatusType {Playing, Paused};
-    
-    public ActiveSong(String songName,
+    /**
+     * 
+     * @param songID
+     * @param songName
+     * @param songArtist
+     * @param songAlbum
+     * @param songPath
+     * @param songLength
+     * @param status
+     * @param songVotes
+     */
+    public ActiveSong(long songID,
+                      String songName,
                       String songArtist,
                       String songAlbum,
                       String songPath,
-                      int songLength,
-                      int playbackPosition) {
-        super(songName, songArtist, songAlbum, songPath, songLength);
-        playbackPosition = 0; // Start at playback position 0
-        status = StatusType.Paused;
+                      long songLength,
+                      long songVotes,
+                      SongStatus status) {
+        super(songID, songName, songArtist, songAlbum, songPath, songLength, songVotes);
+        this.status = status;
     }
     
     /**
      * 
-     * @param pos 
+     * @param songID
+     * @param songName
+     * @param songArtist
+     * @param songAlbum
+     * @param songPath
+     * @param songLength
+     * @param songVotes
      */
-    public void setPlaybackPosition(int pos) {
-        position = pos;
+    public ActiveSong(long songID,
+                      String songName,
+                      String songArtist,
+                      String songAlbum,
+                      String songPath,
+                      long songLength,
+                      long songVotes) {
+        super(songID, songName, songArtist, songAlbum, songPath, songLength, songVotes);
+        this.status = SongStatus.Stopped;
     }
+    
     
     /**
      * 
      * @param s 
      */
-    public void setPlaybackStatus(StatusType s) {
+    public void setPlaybackStatus(SongStatus s) {
         status = s;
     }
     
     @Expose
-    protected int position;
-    
-    @Expose
-    protected StatusType status;
+    protected SongStatus status;
 }

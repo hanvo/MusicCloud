@@ -6,23 +6,26 @@
 
 package beatboxserver;
 
-import beatboxserver.messages.AuthenticateMessage;
-import beatboxserver.messages.DeauthenticateMessage;
-import beatboxserver.messages.Message;
+
+import beatboxserver.messages.*;
+
+
+import java.util.NoSuchElementException;
 
 import io.netty.channel.ChannelHandlerContext;
+
+import io.netty.handler.codec.http.QueryStringDecoder;
 import io.netty.handler.codec.http.FullHttpRequest;
 import io.netty.handler.codec.http.HttpMethod;
 import io.netty.handler.codec.http.HttpResponseStatus;
 
-import java.util.logging.Handler;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 
 import static beatboxserver.Session.SessionType;
-import static beatboxserver.RequestHandler.sendError;
 import static beatboxserver.RequestHandler.sendResponse;
 import static io.netty.handler.codec.http.HttpResponseStatus.*;
+
 
 /**
  *
@@ -37,16 +40,18 @@ public class SpeakerHandler extends RequestHandler {
      */
     public SpeakerHandler(SessionManager clientManager, SongManager songManager) {
         super(clientManager, songManager);
-        
-        Logger logger = Logger.getLogger(this.getClass().getName());
-        for (Handler h : logger.getHandlers()) {
-            h.setLevel(Level.ALL);
-        }
     }
     
+    /**
+     * 
+     * @param ctx {@link ChannelHandlerContext} for this request
+     * @param req {@link FullHttpRequest} send by the client
+     * @param sessionID {@link long} Session ID parsed from the URI
+     * @param ipAddress {@link String} IP address of the remote client
+     * @param body 
+     */
     public void authenticate(ChannelHandlerContext ctx, FullHttpRequest req, long clientID, String ipAddress, Message body) {
-        if (validateMethod(req, HttpMethod.POST)) {
-            
+        if (validateMethod(ctx.channel(), req, HttpMethod.POST)) {
             
             AuthenticateMessage message;
             SpeakerSession session;
@@ -65,125 +70,149 @@ public class SpeakerHandler extends RequestHandler {
                 return;
             } catch (Exception e) {
                 
-                Logger.getLogger(SpeakerHandler.class.getName()).log(Level.WARNING, "Failure occured", e);
+                logger.warn("Failure occured", e);
                 sendError(ctx.channel(), INTERNAL_SERVER_ERROR);
                 return;
             }
             
             sendResponse(ctx.channel(), session, false);
-            
-            
-            sendResponse(ctx.channel(), session, false);
-        } else {
-            sendError(ctx.channel(), METHOD_NOT_ALLOWED);
         }
     }
     
-    
-    public void deauthenticate(ChannelHandlerContext ctx, FullHttpRequest req, long clientID, String ipAddress, Message body) {
-       if (validateMethod(req, HttpMethod.POST)) {
-           DeauthenticateMessage message;
-           SpeakerSession session;
-            
-           try {
-               message = (DeauthenticateMessage)body;
-           } catch (ClassCastException e) {
-               sendError(ctx.channel(), BAD_REQUEST);
-               return;
-           }
-           
-           try {
-               session = (SpeakerSession)sessionMgr.getSession(message.id);
-               sessionMgr.destroySession(session);
-           } catch (SecurityException e) {
-               sendError(ctx.channel(), FORBIDDEN);
-               return;
-           } catch (ClassCastException e) {
-               
+    /**
+     * 
+     * @param ctx {@link ChannelHandlerContext} for this request
+     * @param req {@link FullHttpRequest} send by the client
+     * @param sessionID {@link long} Session ID parsed from the URI
+     * @param ipAddress {@link String} IP address of the remote client
+     * @param body 
+     */
+    public void deauthenticate(ChannelHandlerContext ctx, FullHttpRequest req, long sessionID, String ipAddress, Message body) {
+       if (validateMethod(ctx.channel(), req, HttpMethod.POST)) {
+            DeauthenticateMessage message;
+            SpeakerSession session;
+
+            try {
+                message = (DeauthenticateMessage)body;
+            } catch (ClassCastException e) {
+                sendError(ctx.channel(), BAD_REQUEST);
+                return;
+            }
+
+            //  Validate session before deauthenticating
+            if (!validateSession(ctx.channel(), message.id, ipAddress)) {
+                return;
+            }
+
+            try {
+                sessionMgr.destroySession(message.id);
+            } catch (SecurityException e) {
+                sendError(ctx.channel(), FORBIDDEN);
+                return;
+            } catch (ClassCastException e) {
+
                sendError(ctx.channel(), BAD_REQUEST);
                return;
            } catch (Exception e) {
                 
-               Logger.getLogger(SpeakerHandler.class.getName()).log(Level.WARNING, "Failure occured", e);
+               logger.warn("Failed to destroy session", e);
                sendError(ctx.channel(), INTERNAL_SERVER_ERROR);
                return;
            }
            
            sendResponse(ctx.channel(), HttpResponseStatus.OK, false);
-       } else {
-           sendError(ctx.channel(), METHOD_NOT_ALLOWED);
        }
     }
     
-    
-    public void requestSpeakerUpdate(ChannelHandlerContext ctx, FullHttpRequest req, long clientID, String ipAddress) {
-        if (validateMethod(req, HttpMethod.GET)) {
-            sendError(ctx.channel(), NOT_IMPLEMENTED);
-        } else {
-            sendError(ctx.channel(), METHOD_NOT_ALLOWED);
+    /**
+     * 
+     * @param ctx {@link ChannelHandlerContext} for this request
+     * @param req {@link FullHttpRequest} send by the client
+     * @param sessionID {@link long} Session ID parsed from the URI
+     * @param ipAddress {@link String} IP address of the remote client
+     */
+    public void requestUpdate(ChannelHandlerContext ctx, FullHttpRequest req, long sessionID, String ipAddress) {
+        if (validateMethod(ctx.channel(), req, HttpMethod.GET) && validateSession(ctx.channel(), sessionID, ipAddress)) {
+            
+            try {
+                sessionMgr.registerRequest(sessionID, ctx.channel());
+            } catch (Exception e) {
+                logger.warn("Failed to register update request", e);
+                sendError(ctx.channel(), INTERNAL_SERVER_ERROR);
+            }
         }
     }
     
-    
-    public void statusUpdate(ChannelHandlerContext ctx, FullHttpRequest req, long clientID, String ipAddress, Message body) {
-        if (validateMethod(req, HttpMethod.POST)) {
+    /**
+     * 
+     * @param ctx {@link ChannelHandlerContext} for this request
+     * @param req {@link FullHttpRequest} send by the client
+     * @param sessionID {@link long} Session ID parsed from the URI
+     * @param ipAddress {@link String} IP address of the remote client
+     * @param body 
+     */
+    public void statusUpdate(ChannelHandlerContext ctx, FullHttpRequest req, long sessionID, String ipAddress, Message body) {
+        if (validateMethod(ctx.channel(), req, HttpMethod.POST) && validateSession(ctx.channel(), sessionID, ipAddress)) {
             
-            // Validate the session
+            StatusUpdateMessage message;
+            
             try {
-                if (!sessionMgr.validSession(clientID, ipAddress)) {
-                    sendError(ctx.channel(), FORBIDDEN);
-                    return;
-                }
-            } catch (Exception e) {
-                sendError(ctx.channel(), FORBIDDEN);
+                message = (StatusUpdateMessage)body;
+            } catch (ClassCastException e) {
+                
+                sendError(ctx.channel(), BAD_REQUEST);
                 return;
             }
             
-            sendError(ctx.channel(), NOT_IMPLEMENTED);
-        } else {
-            sendError(ctx.channel(), METHOD_NOT_ALLOWED);
-        }
-    }
-    
-    
-    public void requestSong(ChannelHandlerContext ctx, FullHttpRequest req, long clientID, String ipAddress) {
-        if (validateMethod(req, HttpMethod.GET)) {
-            
-            // Validate the session
             try {
-                if (!sessionMgr.validSession(clientID, ipAddress)) {
-                    sendError(ctx.channel(), FORBIDDEN);
-                    return;
-                }
+                songMgr.speakerStatusUpdate(sessionID, message);
             } catch (Exception e) {
-                sendError(ctx.channel(), FORBIDDEN);
+                logger.warn("Speaker status update failed", e);
+                sendError(ctx.channel(), INTERNAL_SERVER_ERROR);
                 return;
             }
             
-            sendError(ctx.channel(), NOT_IMPLEMENTED);
-        } else {
-            sendError(ctx.channel(), METHOD_NOT_ALLOWED);
+            sendResponse(ctx.channel(), OK, false);
         }
     }
     
-    
-    public void ready(ChannelHandlerContext ctx, FullHttpRequest req, long clientID, String ipAddress, Message body) {
-        if (validateMethod(req,HttpMethod.POST)) {
+    /**
+     * 
+     * @param ctx {@link ChannelHandlerContext} for this request
+     * @param req {@link FullHttpRequest} send by the client
+     * @param sessionID {@link long} Session ID parsed from the URI
+     * @param ipAddress {@link String} IP address of the remote client
+     */
+    public void requestSong(ChannelHandlerContext ctx, FullHttpRequest req, long sessionID, String ipAddress) {
+        if (validateMethod(ctx.channel(), req, HttpMethod.GET) && validateSession(ctx.channel(), sessionID, ipAddress)) {
             
-            // Validate the session
+            QueryStringDecoder decoder;
+            long songID;
             try {
-                if (!sessionMgr.validSession(clientID, ipAddress)) {
-                    sendError(ctx.channel(), FORBIDDEN);
-                    return;
-                }
+                decoder = new QueryStringDecoder(req.getUri());
+                songID = Long.parseLong(decoder.parameters().get("songID").get(0));
             } catch (Exception e) {
-                sendError(ctx.channel(), FORBIDDEN);
+                logger.warn("Invalid song ID", e);
+                sendError(ctx.channel(), BAD_REQUEST);
                 return;
             }
             
-            sendError(ctx.channel(), NOT_IMPLEMENTED);
-        } else {
-            sendError(ctx.channel(), METHOD_NOT_ALLOWED);
+            SongData data;
+            try {
+                data = songMgr.getSongData(songID);
+            } catch (NoSuchElementException e) {
+                logger.warn("Song not found", e);
+                sendError(ctx.channel(), NOT_FOUND);
+                return;
+            } catch (Exception e) {
+                sendError(ctx.channel(), INTERNAL_SERVER_ERROR);
+                return;
+            }
+            
+            sendResponse(ctx.channel(), data.getSongData(), data.getSongType(), false);
         }
     }
+    
+    
+    private final static Logger logger = LogManager.getFormatterLogger(SpeakerHandler.class.getName());
 }
