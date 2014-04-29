@@ -398,9 +398,13 @@ public class ClientHandler extends RequestHandler {
             try {
                 photo = songMgr.getSongPhoto(songID);
             } catch (NoSuchElementException e) {
+                
+                logger.warn("Failed to find photo", e);
                 sendError(ctx.channel(), NOT_FOUND);
                 return;
             } catch (Exception e) {
+                
+                logger.warn("Error retrieving photo", e);
                 sendError(ctx.channel(), INTERNAL_SERVER_ERROR);
                 return;
             }

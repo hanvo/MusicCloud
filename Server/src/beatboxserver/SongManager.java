@@ -319,7 +319,8 @@ public class SongManager {
         }
         
         SongPhoto photo;
-        InputStream blob;
+        
+        logger.trace("Requesting photo for song: %d", songID); // TODO TEMP DEBUG
         
         try (PreparedStatement stmt = databaseMgr.createPreparedStatement("SELECT image, image_type FROM songs WHERE id = ?")) {
             stmt.setLong(1, songID);
