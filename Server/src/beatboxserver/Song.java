@@ -16,6 +16,7 @@ import com.google.gson.annotations.Expose;
  */
 public class Song {
     
+    
     public enum SongStatus {Playing, Stopped, Inactive};
     
     /**
@@ -44,7 +45,7 @@ public class Song {
      * @param imageType 
      */
     public Song(long songID, String songName, String songArtist, String songAlbum, String songPath, long songLength, long songVotes, ByteBuf image, String imageType) {
-        songID = songID;
+        id = songID;
         name = songName;
         artist = songArtist;
         album = songAlbum;

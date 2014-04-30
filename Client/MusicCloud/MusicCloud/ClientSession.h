@@ -21,6 +21,8 @@
 - (void)clientDidReceiveVoteUpdate:(SongInfo *)song;
 - (void)clientDidReceiveLikeUpdate:(SongInfo *)song;
 
+- (void)clientDidReceiveAlbumArt:(UIImage *)image forSong:(SongInfo *)song;
+
 // array of SongInfo objects
 - (void)clientDidReceiveSongList:(NSArray *)list;
 
@@ -37,6 +39,8 @@
 @property (nonatomic) NSInteger clientID;
 
 @property (weak, nonatomic) id <ClientSessionDelegate> delegate;
+
+@property (nonatomic, readonly, getter = isAuthenticated) BOOL authenticated;
 
 + (instancetype)sharedSession;
 
@@ -55,5 +59,7 @@
 - (void)requestLikeUpdate;
 - (void)requestVoteUpdate;
 - (void)requestSongUpdate;
+
+- (void)requestAlbumArtForSong:(SongInfo *)song;
 
 @end

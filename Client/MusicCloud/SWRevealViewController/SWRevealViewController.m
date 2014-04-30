@@ -643,11 +643,11 @@ static NSString * const SWSegueRightIdentifier = @"sw_right";
     if ( self.storyboard && _rearViewController == nil )
     {
         //Try each segue separately so it doesn't break prematurely if either Rear or Right views are not used.
-        @try
+        /*@try
         {
             [self performSegueWithIdentifier:SWSegueRearIdentifier sender:nil];
         }
-        @catch(NSException *exception) {}
+        @catch(NSException *exception) {}*/
         
         @try
         {

@@ -11,9 +11,9 @@
 
 // if set, does not make HTTP requests.
 // all requests return successfully
-#define OFFLINE 1
+#define OFFLINE 0
 
-#define BASE_URL @"http://192.168.1.100:1234"
+#define BASE_URL @"http://128.211.222.68:5050"
 
 @interface ClientSession ()
 
@@ -24,8 +24,7 @@
 - (id)initWithBaseURL:(NSURL *)url {
     if (self = [super initWithBaseURL:url]) {
         self.requestSerializer = [AFJSONRequestSerializer serializer];
-        self.responseSerializer = [AFJSONResponseSerializer serializer];
-        
+        self.responseSerializer = [AFJSONResponseSerializer serializerWithReadingOptions:NSJSONReadingAllowFragments];
     }
     return self;
 }
@@ -40,18 +39,62 @@
     return sharedManager;
 }
 
+- (NSString *)createURLQuery:(NSString *)query {
+    return [NSString stringWithFormat:@"%@?clientID=%d", query, _clientID];
+}
+
+- (void)handleUpdateResponse:(id)response {
+    NSString *updateType = [response objectForKey:@"update_type"];
+    if ([updateType isEqualToString:@"song_list"]) {
+        NSArray *songList = [response objectForKey:@"values"];
+        
+        NSMutableArray *songs = [NSMutableArray arrayWithCapacity:songList.count];
+        for (NSDictionary *dict in songList) {
+            SongInfo *song = [[SongInfo alloc] init];
+            song.songID = [[dict objectForKey:@"id"] integerValue];
+            song.songName = [dict objectForKey:@"name"];
+            song.songArtist = [dict objectForKey:@"artist"];
+            song.songAlbum = [dict objectForKey:@"album"];
+            song.votes = [[dict objectForKey:@"votes"] integerValue];
+            [songs addObject:song];
+        }
+        
+        [_delegate clientDidReceiveSongList:songs];
+    } else if ([updateType isEqualToString:@"likes"]) {
+        NSArray *likeInfos = [response objectForKey:@"values"];
+        for (NSDictionary *likeInfo in likeInfos) {
+            NSInteger songID = [[likeInfo objectForKey:@"id"] integerValue];
+            NSInteger likes = [[likeInfo objectForKey:@"likes"] integerValue];
+            NSInteger dislikes = [[likeInfo objectForKey:@"dislikes"] integerValue];
+        }
+        
+        //[_delegate clientDidReceiveLikeUpdate:<#(SongInfo *)#>]
+    } else if ([updateType isEqualToString:@"votes"]) {
+        
+    } else if ([updateType isEqualToString:@"current_song"]) {
+        
+    } else {
+        NSLog(@"Error - unknown update type from server.");
+        NSLog(@"Response: %@", response);
+    }
+}
+
+#pragma mark - Client to server messages
+
 - (void)authenticateClient:(NSString *)pin {
     if (OFFLINE) {
         _clientID = 123456;
+        _authenticated = YES;
         [_delegate clientDidAuthenticate:YES];
         return;
     }
     
-    NSDictionary *params = @{@"Pin": pin};
+    NSDictionary *params = @{@"pin": @([pin integerValue])};
     [self POST:@"client/authenticate" parameters:params success:^(NSURLSessionDataTask *task, id responseObject) {
-        NSInteger clientID = [[responseObject objectForKey:@"ClientID"] integerValue];
+        NSInteger clientID = [[responseObject objectForKey:@"id"] integerValue];
         _clientID = clientID;
         
+        _authenticated = YES;
         [_delegate clientDidAuthenticate:YES];
     } failure:^(NSURLSessionDataTask *task, NSError *error) {
         NSLog(@"task: %@", task);
@@ -99,22 +142,10 @@
         return;
     }
     
+    NSString *query = [self createURLQuery:@"client/request_song_list"];
     NSDictionary *params = @{ @"clientID": [NSString stringWithFormat:@"%d", _clientID] };
-    [self GET:@"client/request_song_list" parameters:params success:^(NSURLSessionDataTask *task, id responseObject) {
-        NSArray *infoDicts = [responseObject objectForKey:@"songs"];
-        
-        NSMutableArray *songs = [NSMutableArray arrayWithCapacity:infoDicts.count];
-        for (NSDictionary *dict in infoDicts) {
-            SongInfo *song = [[SongInfo alloc] init];
-            song.songID = [[dict objectForKey:@"SongID"] integerValue];
-            song.songName = [dict objectForKey:@"SongName"];
-            song.songArtist = [dict objectForKey:@"SongArtist"];
-            song.songAlbum = [dict objectForKey:@"SongAlbum"];
-            song.votes = [[dict objectForKey:@"Votes"] integerValue];
-            [songs addObject:song];
-        }
-        
-        [_delegate clientDidReceiveSongList:songs];
+    [self GET:query parameters:params success:^(NSURLSessionDataTask *task, id responseObject) {
+        [self handleUpdateResponse:responseObject];
     } failure:^(NSURLSessionDataTask *task, NSError *error) {
         [_delegate clientDidFailTask:task error:error];
     }];
@@ -155,8 +186,9 @@
         return;
     }
     
+    NSString *query = [self createURLQuery:@"request_update"];
     NSDictionary *params = @{ @"ClientID": [NSString stringWithFormat:@"%d", _clientID] };
-    [self GET:@"request_update" parameters:params success:^(NSURLSessionDataTask *task, id responseObject) {
+    [self GET:query parameters:params success:^(NSURLSessionDataTask *task, id responseObject) {
         NSLog(@"response obj %@", responseObject);
     } failure:^(NSURLSessionDataTask *task, NSError *error) {
         [_delegate clientDidFailTask:task error:error];
@@ -169,8 +201,9 @@
         return;
     }
     
+    NSString *query = [self createURLQuery:@"request_like_update"];
     NSDictionary *params = @{ @"ClientID": [NSString stringWithFormat:@"%d", _clientID] };
-    [self GET:@"request_like_update" parameters:params success:^(NSURLSessionDataTask *task, id responseObject) {
+    [self GET:query parameters:params success:^(NSURLSessionDataTask *task, id responseObject) {
         
     } failure:^(NSURLSessionDataTask *task, NSError *error) {
         [_delegate clientDidFailTask:task error:error];
@@ -183,8 +216,9 @@
         return;
     }
     
+    NSString *query = [self createURLQuery:@"request_vote_update"];
     NSDictionary *params = @{ @"ClientID": [NSString stringWithFormat:@"%d", _clientID] };
-    [self GET:@"request_vote_update" parameters:params success:^(NSURLSessionDataTask *task, id responseObject) {
+    [self GET:query parameters:params success:^(NSURLSessionDataTask *task, id responseObject) {
         
     } failure:^(NSURLSessionDataTask *task, NSError *error) {
         [_delegate clientDidFailTask:task error:error];
@@ -220,8 +254,9 @@
         return;
     }
     
+    NSString *query = [self createURLQuery:@"request_song_update"];
     NSDictionary *params = @{ @"ClientID": [NSString stringWithFormat:@"%d", _clientID] };
-    [self GET:@"request_song_update" parameters:params success:^(NSURLSessionDataTask *task, id responseObject) {
+    [self GET:query parameters:params success:^(NSURLSessionDataTask *task, id responseObject) {
         //NSString *updateType = [responseObject objectForKey:@"update_type"];
         NSDictionary *values = [responseObject objectForKey:@"values"];
         
@@ -243,6 +278,31 @@
         [_delegate clientDidReceiveSongUpdate:song];
     } failure:^(NSURLSessionDataTask *task, NSError *error) {
         [_delegate clientDidFailTask:task error:error];
+    }];
+}
+
+- (void)requestAlbumArtForSong:(SongInfo *)song {
+    if (OFFLINE) {
+        return;
+    }
+    
+    NSString *songIDParam = [NSString stringWithFormat:@"&songID=%d", song.songID];
+    NSString *query = [[self createURLQuery:@"client/request_photo"] stringByAppendingString:songIDParam];
+    
+    // save default serializer
+    AFHTTPResponseSerializer <AFURLResponseSerialization> *defaultSerializer = self.responseSerializer;
+    // set image serializer
+    self.responseSerializer = [AFImageResponseSerializer serializer];
+    [self GET:query parameters:nil success:^(NSURLSessionDataTask *task, id responseObject) {
+        UIImage *image = (UIImage *)responseObject;
+        [_delegate clientDidReceiveAlbumArt:image forSong:song];
+        
+        // restore default serializer
+        self.responseSerializer = defaultSerializer;
+    } failure:^(NSURLSessionDataTask *task, NSError *error) {
+        [_delegate clientDidFailTask:task error:error];
+        // restore default serializer
+        self.responseSerializer = defaultSerializer;
     }];
 }
 

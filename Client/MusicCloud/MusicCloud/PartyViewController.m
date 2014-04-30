@@ -48,10 +48,10 @@
     [_progressView setTotalTime:0];
     
     [_session requestSongList];
-    [_session requestSongUpdate];
-    [_session requestLikeUpdate];
+    //[_session requestSongUpdate];
+    //[_session requestLikeUpdate];
     
-    [self performSelector:@selector(test) withObject:nil afterDelay:3];
+    //[self performSelector:@selector(test) withObject:nil afterDelay:3];
 }
 
 - (void)didReceiveMemoryWarning
@@ -110,6 +110,9 @@
     cell.artistLabel.text = info.songArtist;
     cell.voteLabel.text = [NSString stringWithFormat:@"%d", info.votes];
     
+    NSLog(@"image %@", info.albumArt);
+    cell.albumImageView.image = info.albumArt;
+    
     return cell;
 }
 
@@ -119,12 +122,17 @@
     _songList = [NSMutableArray arrayWithArray:list];
     [_songList sortUsingComparator:^NSComparisonResult(id obj1, id obj2) {
         SongInfo *s1 = obj1, *s2 = obj2;
-        if (s1.votes == s2.votes) {
+        if (s1.votes == s2.votes)
             return [s1.songName compare:s2.songName];
-        } else
+        else
             return (s1.votes < s2.votes);
     }];
+    
     [self.tableView reloadData];
+    
+    for (SongInfo *song in _songList) {
+        [_session requestAlbumArtForSong:song];
+    }
 }
 
 - (void)clientDidReceiveLikeUpdate:(SongInfo *)song {
@@ -164,10 +172,22 @@
     
 }
 
+- (void)clientDidReceiveAlbumArt:(UIImage *)image forSong:(SongInfo *)song {
+    song.albumArt = image;
+    NSIndexPath *indexPath = [NSIndexPath indexPathForRow:[_songList indexOfObject:song] inSection:0];
+    NSLog(@"ip %@", indexPath);
+    [self.tableView reloadRowsAtIndexPaths:@[indexPath] withRowAnimation:UITableViewRowAnimationAutomatic];
+}
+
 - (void)clientDidReceiveFailure:(NSString *)message {
     NSString *msg = [NSString stringWithFormat:@"Error communicating with DJ: %@", message];
     UIAlertView *alert = [[UIAlertView alloc] initWithTitle:@"MusicCloud" message:msg delegate:nil cancelButtonTitle:nil otherButtonTitles:@"OK", nil];
     [alert show];
+}
+
+- (void)clientDidFailTask:(NSURLSessionDataTask *)task error:(NSError *)err {
+    NSLog(@"Failed task: %@", task);
+    NSLog(@"Error: %@", err);
 }
 
 #pragma mark - IBAction

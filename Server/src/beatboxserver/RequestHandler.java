@@ -268,7 +268,7 @@ public abstract class RequestHandler {
     }
     
     /**
-     * Creates an {@link FullHttpResponse} object with the given ByteBuf as the content
+     * Create an {@link FullHttpResponse} object with the given ByteBuf as the content
      * @param status {@link HttpResponseStatus} for the response
      * @param content {@link ByteBuffer} containing the desired response content
      * @param contentType {@link String} describing the MIME type of the response body
@@ -294,20 +294,23 @@ public abstract class RequestHandler {
     }
     
     /**
-     * 
-     * @param channel
-     * @param sessionID
-     * @param ipAddress
+     * Validate a client session based on supplied information and the database
+     * @param channel {@link Channel} for the request
+     * @param sessionID {@link long} session ID supplied in the request
+     * @param ipAddress {@link String} IP address 
      * @return 
      */
     protected boolean validateSession(Channel channel,long sessionID, String ipAddress) {
         // Validate the session
         try {
             if (!sessionMgr.validSession(sessionID, ipAddress)) {
+                
+                logger.warn("Rejected session validation, invalid session");
                 sendError(channel, FORBIDDEN);
                 return false;
             }
         } catch (Exception e) {
+            
             logger.warn("Exception while validating session", e);
             sendError(channel, FORBIDDEN);
             return false;
@@ -327,12 +330,16 @@ public abstract class RequestHandler {
     protected boolean validateMethod(Channel channel, FullHttpRequest req, HttpMethod method) {
         if (channel != null && req != null && method != null) {
             if (!req.getMethod().equals(method)) {
+                
+                logger.warn("Invalid request method");
                 sendError(channel, METHOD_NOT_ALLOWED);
                 return false;
             } else {
                 return true;
             }
         } else {
+            
+            logger.warn("Invalid request method");
             sendError(channel, METHOD_NOT_ALLOWED);
             return false;
         }

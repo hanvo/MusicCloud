@@ -26,6 +26,9 @@ import io.netty.handler.codec.http.HttpResponseStatus;
  */
 public class SessionUpdateQueue {
     
+    /**
+     * Create new {@link SessionUpdateQueue}
+     */
     public SessionUpdateQueue() {
         /*executor = Executors.newFixedThreadPool(1);*/
         channelQueue = new ArrayDeque<>();
@@ -71,7 +74,7 @@ public class SessionUpdateQueue {
     
     /**
      * Queue a {@ClientUpdate} to be matched with an incoming request
-     * @param update 
+     * @param update {@link SessionUpdate} to send to the {@link Session}
      */
     public void queueUpdate(SessionUpdate update) {
         FullHttpResponse response;

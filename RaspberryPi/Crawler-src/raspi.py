@@ -29,6 +29,9 @@ import json
 import socket
 import sys
 import Queue
+import pygame
+import os
+import fnmatch
 
 timeout = 100
 _Rlock = threading.RLock()
@@ -41,6 +44,29 @@ _serv_comm_ID_queue = Queue.Queue(0)
 
 def play_back_func():
 	# playback command, possibly from REQUEST_SPEAKER_UPDATE, implemented in play back thread
+	pygame.mixer.init()
+	_response = json.load(_serv_playback_queue.get())
+	_serv_playback_queue.task_done()
+	_update_type = _response['update_type']
+	if _update_type == "playback_command":
+		_values = _response['values']
+		_songID = _values['id']
+		_command = _values['command']
+		if _command == 'Play':
+			pygame.mixer.music.load(_songID)
+			pygame.mixer.music.play()
+			while pygame.mixer.music.get_busy():
+				pygame.time.Clock().tick(10)
+		if _command == 'Stop':
+			pygame.mixer.music.stop()
+	if _update_type == "upcoming_song":
+		_flag_ut = 0
+		_values = _response['values']
+		_songID = _values['id']
+
+		for file in os.listdir('.'):
+			if fnmatch.fnmatch(file,_songID):
+				_flag_ut = 1
 	pass
 
 def serv_func():
@@ -67,7 +93,7 @@ def serv_func():
 		while True:
 		_serv_sock.request("GET","klamath.dnsdynamic.com:5050/speaker/request_update?clientID="+str(_clientID))
 		_upcoming_song_resp = _serv_sock.getresponse()
-		#Push _upcoming_song_resp.read() the Queue
+		#Push _upcoming_song_resp.read() the Queue it could also be the play_command
 		_serv_playback_queue.put(_upcoming_song_resp.read())
 	except socket.timeout:
 		serv_func()
@@ -87,13 +113,9 @@ def communicate_func():
 	_comm_sock.request("GET","klamath.dnsdynamic.com:5050/request_song?clientID="+str(_clientID)+"&songID"+str(_songID))
 	_song_data_json = _comm_sock.getresponse().read()
 	_song_data = json.load(_song_data_json)
-	# Ready
-	# get the song ID that is ready to play from the queue, it will have to be located and then decoded and encoded
-	_params_ready = json.dumps({"id":_songID},encoding = "ASCII") #songID might be different
-	_comm_sock.request("POST","klamath.dnsdynamic.com:5050/speaker/ready?clientID="+str(_clientID),_params_ready)
 
 	# Status update depeding on the playback thread
-	_params_update = json.dumps({"id":_songID,"status":"playing/pause","position":position(?)},encoding = "ASCII")
+	_params_update = json.dumps({"id":_songID,"status":"playing","position":position(?)},encoding = "ASCII")
 	_headers_update = {"Content-Type":"application/json"}
 	_comm_sock.request("POST","klamath.dnsdynamic.com:5050/speaker/status_update?clientID="+str(_clientID),_params_update,_headers_update)
 	

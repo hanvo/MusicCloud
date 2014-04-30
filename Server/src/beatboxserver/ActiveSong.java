@@ -15,7 +15,7 @@ import com.google.gson.annotations.Expose;
 public class ActiveSong extends Song {
     
     /**
-     * 
+     * Construct a new instance of the active song
      * @param songID
      * @param songName
      * @param songArtist
@@ -38,7 +38,7 @@ public class ActiveSong extends Song {
     }
     
     /**
-     * 
+     * Construct a new instance of the active song
      * @param songID
      * @param songName
      * @param songArtist
@@ -60,8 +60,8 @@ public class ActiveSong extends Song {
     
     
     /**
-     * 
-     * @param s 
+     * Set the current playback status of the active song
+     * @param s {@link SongStatus} for the {@link ActiveSong}
      */
     public void setPlaybackStatus(SongStatus s) {
         status = s;

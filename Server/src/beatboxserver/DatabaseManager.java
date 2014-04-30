@@ -9,7 +9,6 @@ package beatboxserver;
 import beatboxserver.Session.SessionType;
 import beatboxserver.Song.SongStatus;
 
-import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 import java.sql.Connection;
@@ -29,8 +28,8 @@ import org.apache.logging.log4j.LogManager;
 public class DatabaseManager {
     
     /**
-     * 
-     * @param songDatabasePath
+     * Construct a new {@link DatabaseManager}
+     * @param songDatabasePath {@link String} path to the song database file
      * @throws SQLException 
      */
     public DatabaseManager(String songDatabasePath) throws SQLException {
@@ -50,14 +49,14 @@ public class DatabaseManager {
         createTables(connection);
         
         // Transfer the contents over
-        //transferData(db, connection);
+        transferData(db, connection);
         
         transactionLock = new ReentrantLock();
     }
     
     /**
-     * 
-     * @param query
+     * Create a new {@link PreparedStatment}
+     * @param query {@link String} query for the {@link PreparedStatement}
      * @return
      * @throws SQLException 
      */
@@ -69,7 +68,7 @@ public class DatabaseManager {
     }
     
     /**
-     * 
+     * Create a new {@link Statement}
      * @return
      * @throws SQLException 
      */
@@ -80,6 +79,7 @@ public class DatabaseManager {
     /**
      * Initiate a transaction operations
      * Must call stopTransaction or deadlock will likely occur
+     * Nesting of calls is expressly prohibited
      * @throws SQLException 
      */
     public void startTransaction() throws SQLException {
@@ -88,7 +88,7 @@ public class DatabaseManager {
     }
     
     /**
-     * 
+     * Stop and commit a previously completed transaction
      * @throws SQLException 
      */
     public void stopTransaction() throws SQLException {
@@ -105,6 +105,10 @@ public class DatabaseManager {
         }
     }
     
+    /**
+     * Rollback a previously started transaction
+     * @throws SQLException 
+     */
     public void rollbackTransaction()  throws SQLException {
         if (transactionLock.isHeldByCurrentThread()) {
             try {
@@ -122,25 +126,22 @@ public class DatabaseManager {
     
     /**
      * Utility method for printing SQL exceptions for debugging
-     * @param ex 
+     * @param exception {@link SQLException} describing the error
      */
-    public static void printSQLException(SQLException ex) {
+    public static void printSQLException(SQLException exception) {
 
-        for (Throwable e : ex) {
+        for (Throwable e : exception) {
             if (e instanceof SQLException) {
 
                 e.printStackTrace(System.err);
-                System.err.println("SQLState: " +
-                    ((SQLException)e).getSQLState());
+                logger.warn("SQLState: %s\nError Code: %d\nMessage: %s\n",
+                        ((SQLException)e).getSQLState(),
+                        ((SQLException)e).getErrorCode(),
+                        e.getMessage());
 
-                System.err.println("Error Code: " +
-                    ((SQLException)e).getErrorCode());
-
-                System.err.println("Message: " + e.getMessage());
-
-                Throwable t = ex.getCause();
+                Throwable t = exception.getCause();
                 while(t != null) {
-                    System.out.println("Cause: " + t);
+                    logger.warn("Cause: " + t);
                     t = t.getCause();
                 }
             }
@@ -227,7 +228,7 @@ public class DatabaseManager {
         logger.info("Loading data from file");
         
         // "(name STRING, path STRING, artist STRING, album STRING, length REAL, image_type STRING, image BLOB, status INTEGER)"
-        String query = "INSERT INTO songs (name, path, artist, album, length, image_type, image, status) VALUES (?, ?, ?, ?, ?, ?, ?, '" + SongStatus.Inactive.ordinal() + "')";
+        String query = "INSERT INTO songs (name, path, artist, album, length, image_type, image, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
         PreparedStatement insertStmt = newDatabase.prepareStatement(query, Statement.RETURN_GENERATED_KEYS);
         
         Statement getStatement = oldDatabase.createStatement();
@@ -236,7 +237,7 @@ public class DatabaseManager {
         // Iterate through the result set to transfer the contents over
         while (results.next()) {
             
-            logger.trace("Inserting song: %s, %s, %s, %s, %d, %s",
+            logger.info("Inserting song: %s, %s, %s, %s, %f, %s",
                         results.getString("song"),
                         results.getString("path"),
                         results.getString("artist"),
@@ -251,7 +252,7 @@ public class DatabaseManager {
             insertStmt.setString(4, results.getString("album"));
             insertStmt.setDouble(5, results.getDouble("lengthOfSong"));
             insertStmt.setString(6, results.getString("artType"));
-            insertStmt.setBlob(7, results.getBlob("art"));
+            insertStmt.setBytes(7, results.getBytes("art"));
             insertStmt.setLong(8, SongStatus.Inactive.ordinal());
             
             if (insertStmt.executeUpdate() != 1) {
@@ -260,8 +261,8 @@ public class DatabaseManager {
         }
     }
     
-    private ReentrantLock transactionLock;
-    private Connection connection;
+    private final ReentrantLock transactionLock;
+    private final Connection connection;
     
     private final static Logger logger = LogManager.getFormatterLogger(DatabaseManager.class.getName());
 }

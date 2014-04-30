@@ -73,9 +73,18 @@ public class SessionManager {
 
                 int unixTimestamp = (int)(System.currentTimeMillis() / 1000L);
                 String query = "INSERT INTO sessions (ip_address, session_type, time_started) VALUES ( '" + ipAddress + "', '" + type.ordinal() + "', " + unixTimestamp + ")";
-                if (stmt.executeUpdate(query) != 1) {
-                    stmt.close();
-                    throw new IllegalStateException();
+                try {
+                    if (stmt.executeUpdate(query) != 1) {
+                        stmt.close();
+                        throw new IllegalStateException();
+                    }
+                } catch (SQLException e) {
+                    if (e.getMessage().equals("columns ip_address, session_type are not unique")) {
+                        logger.warn("Ignoring duplicate login");
+                        
+                    } else {
+                        throw e;
+                    }
                 }
 
                 // Get the newly created ID of the session
@@ -220,9 +229,10 @@ public class SessionManager {
     
     /**
      * Check if the given session is valid
-     * @param sessionID
-     * @param ipAddress
+     * @param sessionID {@link long} session ID to validate
+     * @param ipAddress {@link String} IP address
      * @return 
+     * @throws IllegalArgumentException
      */
     public boolean validSession(long sessionID, String ipAddress) {
         if (sessionID < 0 || ipAddress == null) {
@@ -246,11 +256,15 @@ public class SessionManager {
                 }
 
                 if (size != 1) {
-                    logger.warn("Invalid number of clientID given");
+                    logger.warn("Invalid number of client IDs found");
                     return false;
                 }
+                
+                // TODO check timestamp
+                
             }
         } catch (SQLException e) {
+            
             logger.warn("Failed to authenticate session", e);
             return false;
         }

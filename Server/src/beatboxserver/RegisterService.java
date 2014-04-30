@@ -30,6 +30,10 @@ public class RegisterService {
      */
     public final static int servicePort = 5050;
     
+    /**
+     * Create a new {@link RegisterService} instance
+     * @throws IOException 
+     */
     public RegisterService() throws IOException {
         dns = JmDNS.create();
         serviceInfo = null;
@@ -57,7 +61,7 @@ public class RegisterService {
     }
     
     /**
-     * 
+     * Deregister this serivce from Bonjour
      */
     public void DeregisterService() {
         if (serviceInfo != null) {

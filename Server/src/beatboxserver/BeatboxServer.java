@@ -25,17 +25,17 @@ import org.apache.logging.log4j.LogManager;
 public class BeatboxServer {
     
     /**
-     * 
-     * @param clientManager
-     * @param songManager 
+     * Construct a new {@link BeatboxServer}
+     * @param sessionManager {@link SessionManager} for the server
+     * @param songManager {@link SongManager} for the server
      */
-    public BeatboxServer(SessionManager clientManager, SongManager songManager) {
-        this.clientManager = clientManager;
+    public BeatboxServer(SessionManager sessionManager, SongManager songManager) {
+        this.sessionManager = sessionManager;
         this.songManager = songManager;
     }
     
     /**
-     * 
+     * Run the server loop
      * @throws InterruptedException
      * @throws IOException 
      */
@@ -72,7 +72,7 @@ public class BeatboxServer {
             ServerBootstrap b = new ServerBootstrap();
             b.group(bossGroup, workerGroup)
                     .channel(NioServerSocketChannel.class)
-                    .childHandler(new BeatboxChannelInitializer(clientManager, songManager));
+                    .childHandler(new BeatboxChannelInitializer(sessionManager, songManager));
             
             ChannelFuture future = b.bind(RegisterService.servicePort /* TODO TEMP */);
             future.sync();
@@ -80,8 +80,10 @@ public class BeatboxServer {
             // Request playback to start, TODO Need more implementation on server side
             songManager.playNextSong();
             
+            // Block on channel closure
             future.channel().closeFuture().sync();
         } catch (Exception e) {
+            
             logger.fatal("Exception while running server", e);
         } finally {
             logger.info("Shutting down server...");
@@ -104,10 +106,6 @@ public class BeatboxServer {
         
         // Perform application specific initialization here
         
-        // TODO Application specific initialization
-        
-        // Read songs from crawler DB
-        
         // Read config files or command line stuff
         
         // Create various objects and managers for clients, etc
@@ -123,6 +121,7 @@ public class BeatboxServer {
             songManager = new SongManager(databaseManager, sessionManager);
             
         } catch (Exception e) {
+            
             logger.fatal("Failed to initialize server", e);
             System.exit(1);
             return; // Make compiler happy about uninitialized sessionManager and songManager objects
@@ -133,12 +132,13 @@ public class BeatboxServer {
         try {
             server.run();
         } catch (Exception e) {
+            
             logger.error("Exception thrown in run()", e);
             System.exit(1);
         }
     }
     
-    private SessionManager clientManager;
+    private SessionManager sessionManager;
     private SongManager songManager;
     
     private static final Logger logger = LogManager.getFormatterLogger(BeatboxServer.class.getName());

@@ -110,10 +110,13 @@ public class ProtocolMessageHandler extends SimpleChannelInboundHandler<FullHttp
         try {
             handlerClass = Class.forName(handlerName);
             if (!RequestHandler.class.isAssignableFrom(handlerClass)) {
+                
+                logger.error("Invalid handler class");
                 RequestHandler.sendError(ctx.channel(), NOT_FOUND);
                 return;
             }
         } catch (ClassNotFoundException e) {
+            
             logger.error("Invalid request for handler: %s", handlerName, e);
             RequestHandler.sendError(ctx.channel(), NOT_FOUND);
             return;
@@ -125,6 +128,7 @@ public class ProtocolMessageHandler extends SimpleChannelInboundHandler<FullHttp
             Constructor ctor = handlerClass.getDeclaredConstructor(SessionManager.class, SongManager.class);
             requestHandler = (RequestHandler)handlerClass.cast(ctor.newInstance(sessionMgr, songMgr));
         } catch (Exception e) {
+            
             logger.error("Invalid request for constructor", e);
             RequestHandler.sendError(ctx.channel(), NOT_FOUND);
             return;    
@@ -170,6 +174,7 @@ public class ProtocolMessageHandler extends SimpleChannelInboundHandler<FullHttp
                 sessionID = Long.parseLong(decoder.parameters().get("clientID").get(0));
             } catch (NumberFormatException e) {
                 
+                logger.warn("Invalid clientID");
                 RequestHandler.sendError(ctx.channel(), BAD_REQUEST);
                 return;
             }
@@ -182,6 +187,8 @@ public class ProtocolMessageHandler extends SimpleChannelInboundHandler<FullHttp
         try {
             ipAddress = ((InetSocketAddress)ctx.channel().remoteAddress()).getAddress().getHostAddress();
         } catch (Exception e) {
+            
+            logger.warn("Invalid IP address");
             RequestHandler.sendError(ctx.channel(), INTERNAL_SERVER_ERROR);
             return;
         }
@@ -189,8 +196,11 @@ public class ProtocolMessageHandler extends SimpleChannelInboundHandler<FullHttp
         // Parse out JSON encoded contents if needed
         if (request.getMethod().equals(HttpMethod.POST)) {
             try {
+                logger.trace("JSON Message: %s", request.content().toString(CharsetUtil.US_ASCII));
                 message = Message.constructMessage(messageName, request.content().toString(CharsetUtil.US_ASCII));
+                logger.trace("Message class: %s", message.getClass().getName());
             } catch (Exception e) {
+                
                 logger.error("Exception occured while creating message", e);
                 RequestHandler.sendError(ctx.channel(), BAD_REQUEST);
                 return;

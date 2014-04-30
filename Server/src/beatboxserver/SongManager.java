@@ -28,7 +28,6 @@ import java.sql.Statement;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Blob;
 
 import java.util.List;
 import java.util.ArrayList;
@@ -70,12 +69,13 @@ public class SongManager {
     //<editor-fold defaultstate="collapsed" desc="Client Actions">
     
     /**
-     * 
-     * @param songID
-     * @param sessionID
-     * @throws SQLException 
+     * Vote for a given song
+     * @param songID {@link long} {@link Song} ID
+     * @param sessionID {@link long} {@link Session} ID
+     * @throws SQLException
+     * @throws IllegalArgumentException
      */
-    public void vote(long songID, long sessionID) throws SQLException {
+    public void vote(long songID, long sessionID) throws SQLException, IllegalArgumentException {
         if (songID < 0 || sessionID < 0) {
             throw new IllegalArgumentException();
         }
@@ -93,12 +93,13 @@ public class SongManager {
     }
     
     /**
-     * 
-     * @param songID
-     * @param sessionID
-     * @throws SQLException 
+     * Like a song
+     * @param songID {@link long} {@link Song} ID
+     * @param sessionID {@link long} {@link Session} ID
+     * @throws SQLException
+     * @throws IllegalArgumentException
      */
-    public void like(long songID, long sessionID) throws SQLException {
+    public void like(long songID, long sessionID) throws SQLException, IllegalArgumentException {
         if (songID < 0 || sessionID < 0) {
             throw new IllegalArgumentException();
         }
@@ -116,12 +117,13 @@ public class SongManager {
     }
     
     /**
-     * 
-     * @param songID
-     * @param sessionID
-     * @throws SQLException 
+     * Dislike a song
+     * @param songID {@link long} {@link Song} ID
+     * @param sessionID {@link long} {@link Session} ID
+     * @throws SQLException
+     * @throws IllegalArgumentException
      */
-    public void dislike(long songID, long sessionID) throws SQLException {
+    public void dislike(long songID, long sessionID) throws SQLException, IllegalArgumentException {
         if (songID < 0 || sessionID < 0) {
             throw new IllegalArgumentException();
         }
@@ -145,11 +147,12 @@ public class SongManager {
     //<editor-fold defaultstate="collapsed" desc="Client Get Methods">
     
     /**
-     *
+     * Get {@link LikeData} for the {@link ActiveSong}
      * @return
      * @throws SQLException
+     * @throws NoSuchElementException
      */
-    public LikeData getStats() throws SQLException {
+    public LikeData getStats() throws SQLException, NoSuchElementException {
         
         long songID = -1;
         long likes, dislikes;
@@ -189,7 +192,7 @@ public class SongManager {
     }
     
     /**
-     *
+     * Get the set of songs
      * @return
      * @throws SQLException
      */
@@ -231,10 +234,13 @@ public class SongManager {
     
     
     /**
-     *
+     * Gets the current {@link ActiveSong}
      * @return
+     * @throws SQLException
+     * @throws IllegalStateException
+     * @throws NoSuchElementException
      */
-    public ActiveSong getActiveSong() throws SQLException {
+    public ActiveSong getActiveSong() throws SQLException, IllegalStateException, NoSuchElementException {
         
         ActiveSong active;
         
@@ -269,10 +275,13 @@ public class SongManager {
     }
     
     /**
-     * Get the next song from the database to be played based on votes
-     * @return 
+     * Get the next {@link Song} from the database to be played based on votes
+     * @return
+     * @throws SQLException
+     * @throws NoSuchElementException
+     * @throws IllegalStateException
      */
-    private Song getNextSong() throws SQLException {
+    private Song getNextSong() throws SQLException, NoSuchElementException, IllegalStateException {
         Song song;
         
         String query = "SELECT id, name, path, artist, album, length, counts.vote_count AS votes FROM songs "
@@ -306,26 +315,30 @@ public class SongManager {
     }
     
     /**
-     * Retrieve the photo associated with the given song
+     * Retrieve the photo associated with the given {@link Song}
      * @param songID {@link long} containing the ID for the requested song photo
      * @return
      * @throws SQLException
+     * @throws IOException
+     * @throws NoSuchElementException
      */
-    public SongPhoto getSongPhoto(long songID) throws SQLException {
+    public SongPhoto getSongPhoto(long songID) throws SQLException, IOException, NoSuchElementException {
         if (songID < 0) {
             throw new IllegalArgumentException();
         }
         
         SongPhoto photo;
-        Blob blob;
         
-        try (PreparedStatement stmt = databaseMgr.createPreparedStatement("SELECT image, image_type FROM songs WHERE id = '?'")) {
+        logger.trace("Requesting photo for song: %d", songID); // TODO TEMP DEBUG
+        
+        try (PreparedStatement stmt = databaseMgr.createPreparedStatement("SELECT image, image_type FROM songs WHERE id = ?")) {
             stmt.setLong(1, songID);
             ResultSet rs = stmt.executeQuery();
             if (rs.next()) {
                 
-                blob = rs.getBlob("image");
-                ByteBuf buf = Unpooled.copiedBuffer(blob.getBytes(1, (int)blob.length()));
+                byte[] data = rs.getBytes("image");
+
+                ByteBuf buf = Unpooled.copiedBuffer(data);
                 photo = new SongPhoto(buf, rs.getString("image_type"));
             } else {
                 throw new NoSuchElementException();
@@ -445,7 +458,7 @@ public class SongManager {
         }
         
         String path;
-        try (PreparedStatement stmt = databaseMgr.createPreparedStatement("SELECT path FROM songs WHERE id = '?'")) {
+        try (PreparedStatement stmt = databaseMgr.createPreparedStatement("SELECT path FROM songs WHERE id = ?")) {
             stmt.setLong(1, songID);
             ResultSet rs = stmt.executeQuery();
             if (rs.next()) {

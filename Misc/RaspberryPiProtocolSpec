@@ -203,7 +203,7 @@ Responses: (From Server to Client)
 			 Content-Type: application/json\r\n
 			 Content-Length: <JsonLength>\r\n
 			 \r\n
-			 {"update_type": "upcoming_song":
+			 {"update_type": "upcoming_song",
 			  "values": {
 					"id": <SongID>,
 					"name": "<SongName>",
