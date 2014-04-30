@@ -23,7 +23,7 @@ import org.apache.logging.log4j.LogManager;
 public class BeatboxChannelInitializer extends ChannelInitializer<SocketChannel> {
     
     /**
-     * Construct a new instance of {@link BeatboxChannelInitializer}
+     * Construct a new {@link BeatboxChannelInitializer}
      * @param clientManager {@link SessionManager} for the server's clients
      * @param songManager {@link SongManager} for the song selection
      */
@@ -34,7 +34,7 @@ public class BeatboxChannelInitializer extends ChannelInitializer<SocketChannel>
     
     /**
      * Initialize a newly established channel for further use
-     * @param ch {@link SocketChannel}  to be initialized
+     * @param ch {@link SocketChannel} to be initialized
      */
     @Override
     protected void initChannel(SocketChannel ch) {

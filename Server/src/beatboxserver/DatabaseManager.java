@@ -9,10 +9,7 @@ package beatboxserver;
 import beatboxserver.Session.SessionType;
 import beatboxserver.Song.SongStatus;
 
-import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
-
-import java.io.ByteArrayInputStream;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -20,7 +17,6 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.PreparedStatement;
-import java.sql.Blob;
 
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.LogManager;
@@ -32,8 +28,8 @@ import org.apache.logging.log4j.LogManager;
 public class DatabaseManager {
     
     /**
-     * 
-     * @param songDatabasePath
+     * Construct a new {@link DatabaseManager}
+     * @param songDatabasePath {@link String} path to the song database file
      * @throws SQLException 
      */
     public DatabaseManager(String songDatabasePath) throws SQLException {
@@ -59,8 +55,8 @@ public class DatabaseManager {
     }
     
     /**
-     * 
-     * @param query
+     * Create a new {@link PreparedStatment}
+     * @param query {@link String} query for the {@link PreparedStatement}
      * @return
      * @throws SQLException 
      */
@@ -72,7 +68,7 @@ public class DatabaseManager {
     }
     
     /**
-     * 
+     * Create a new {@link Statement}
      * @return
      * @throws SQLException 
      */
@@ -83,6 +79,7 @@ public class DatabaseManager {
     /**
      * Initiate a transaction operations
      * Must call stopTransaction or deadlock will likely occur
+     * Nesting of calls is expressly prohibited
      * @throws SQLException 
      */
     public void startTransaction() throws SQLException {
@@ -91,7 +88,7 @@ public class DatabaseManager {
     }
     
     /**
-     * 
+     * Stop and commit a previously completed transaction
      * @throws SQLException 
      */
     public void stopTransaction() throws SQLException {
@@ -108,6 +105,10 @@ public class DatabaseManager {
         }
     }
     
+    /**
+     * Rollback a previously started transaction
+     * @throws SQLException 
+     */
     public void rollbackTransaction()  throws SQLException {
         if (transactionLock.isHeldByCurrentThread()) {
             try {
@@ -125,25 +126,22 @@ public class DatabaseManager {
     
     /**
      * Utility method for printing SQL exceptions for debugging
-     * @param ex 
+     * @param exception {@link SQLException} describing the error
      */
-    public static void printSQLException(SQLException ex) {
+    public static void printSQLException(SQLException exception) {
 
-        for (Throwable e : ex) {
+        for (Throwable e : exception) {
             if (e instanceof SQLException) {
 
                 e.printStackTrace(System.err);
-                System.err.println("SQLState: " +
-                    ((SQLException)e).getSQLState());
+                logger.warn("SQLState: %s\nError Code: %d\nMessage: %s\n",
+                        ((SQLException)e).getSQLState(),
+                        ((SQLException)e).getErrorCode(),
+                        e.getMessage());
 
-                System.err.println("Error Code: " +
-                    ((SQLException)e).getErrorCode());
-
-                System.err.println("Message: " + e.getMessage());
-
-                Throwable t = ex.getCause();
+                Throwable t = exception.getCause();
                 while(t != null) {
-                    System.out.println("Cause: " + t);
+                    logger.warn("Cause: " + t);
                     t = t.getCause();
                 }
             }
@@ -263,8 +261,8 @@ public class DatabaseManager {
         }
     }
     
-    private ReentrantLock transactionLock;
-    private Connection connection;
+    private final ReentrantLock transactionLock;
+    private final Connection connection;
     
     private final static Logger logger = LogManager.getFormatterLogger(DatabaseManager.class.getName());
 }

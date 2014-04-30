@@ -27,6 +27,6 @@ public class SongData {
         return songData;
     }
     
-    private String songType;
-    private ByteBuf songData;
+    private final String songType;
+    private final ByteBuf songData;
 }

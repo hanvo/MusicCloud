@@ -229,9 +229,10 @@ public class SessionManager {
     
     /**
      * Check if the given session is valid
-     * @param sessionID
-     * @param ipAddress
+     * @param sessionID {@link long} session ID to validate
+     * @param ipAddress {@link String} IP address
      * @return 
+     * @throws IllegalArgumentException
      */
     public boolean validSession(long sessionID, String ipAddress) {
         if (sessionID < 0 || ipAddress == null) {
@@ -258,8 +259,12 @@ public class SessionManager {
                     logger.warn("Invalid number of client IDs found");
                     return false;
                 }
+                
+                // TODO check timestamp
+                
             }
         } catch (SQLException e) {
+            
             logger.warn("Failed to authenticate session", e);
             return false;
         }

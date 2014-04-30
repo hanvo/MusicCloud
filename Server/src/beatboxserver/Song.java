@@ -16,6 +16,7 @@ import com.google.gson.annotations.Expose;
  */
 public class Song {
     
+    
     public enum SongStatus {Playing, Stopped, Inactive};
     
     /**
