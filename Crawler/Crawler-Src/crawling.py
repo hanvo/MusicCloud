@@ -7,9 +7,8 @@
 # -Display of errors files with no album art
 # -Limit to Only .mp3 
 #
-#Still Need:
-#   GUI where it will have a Start Crawl Button
-#   Explorer to select folder
+# -GUI where it will have a Start Crawl Button
+# -Explorer to select folder
 #
 #   
 
@@ -24,10 +23,10 @@ from mutagen import File
 import eyed3
 
 def main():
-        crawl()
+    crawl()
     
 def crawl(dir):
-    print 'selected dir: ', dir
+    #print 'selected dir: ', dir
 
     #Pre-Crawl prep for database init
     location = 'song_list.db'
@@ -50,10 +49,10 @@ def crawl(dir):
     songCount = 0
     for root, dirnames, filenames in os.walk(dir):
         x = root
-        print "Root: ", root
-        print "Song List:"
-        print '\n'.join(filenames)
-        print '\n'       
+        print "Root: ", root , "\n"
+        #print "Song List:"
+        #print '\n'.join(filenames)
+        #print '\n'       
 
 
         for x in range(len(filenames)):
@@ -63,7 +62,8 @@ def crawl(dir):
             if not path.endswith(".mp3"): # Skip non-mp3 files
                 continue
 
-            print "Checking file: ", path
+            #print "Checking file: ", path
+            print y
             #print "\n" 
 
             data = File(path)
@@ -71,7 +71,7 @@ def crawl(dir):
                 if isinstance(data.tags['APIC:'], list): # Check if we have a list of photos
 
                     print "Found ", length(data.tags['APIC:']), " APIC images" # Debug statement
-                    print "\n"
+                    #print "\n"
 
                     for apic in data.tags['APIC:']:
                         artwork = apic.data
@@ -102,7 +102,7 @@ def crawl(dir):
             c.execute('insert into music values (?,?,?,?,?,?,?,?,?)', (songCount,y,path,audioLength,artist,album,artwork,artType,artCoverID,))
             songCount = songCount + 1
                 
-    print "\n"
+    #print "\n"
     #for row in c.execute('SELECT id,song,path,lengthOfSong,artist,album,artType,artCoverID FROM music '):
     #  print row
 
@@ -118,7 +118,7 @@ def crawl(dir):
     # Flush to the disk
     conn.close()
 
-    print 'Finish'
+    print '\n ------Finish------'
         
 
 if __name__ == "__main__":
