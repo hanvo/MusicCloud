@@ -26,7 +26,8 @@ import eyed3
 def main():
         crawl()
     
-def crawl():
+def crawl(dir):
+    print 'selected dir: ', dir
 
     #Pre-Crawl prep for database init
     location = 'song_list.db'
@@ -47,7 +48,7 @@ def crawl():
     x = "root"
     y = "song name"
     songCount = 0
-    for root, dirnames, filenames in os.walk(r'C:\Users\QuakeZ\Desktop\Music Folder'):
+    for root, dirnames, filenames in os.walk(dir):
         x = root
         print "Root: ", root
         print "Song List:"
@@ -102,8 +103,8 @@ def crawl():
             songCount = songCount + 1
                 
     print "\n"
-    for row in c.execute('SELECT id,song,path,lengthOfSong,artist,album,artType,artCoverID FROM music '):
-       print row
+    #for row in c.execute('SELECT id,song,path,lengthOfSong,artist,album,artType,artCoverID FROM music '):
+    #  print row
 
 
     #c.execute('SELECT art FROM music')
@@ -116,6 +117,8 @@ def crawl():
 
     # Flush to the disk
     conn.close()
+
+    print 'Finish'
         
 
 if __name__ == "__main__":
