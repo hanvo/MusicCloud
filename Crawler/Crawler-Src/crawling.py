@@ -4,16 +4,11 @@
 # -Inserting and storing in a local Database (Song_list.db)
 # -Database: ID, Title, Absolute file path(Storing is maybe wrong. Double Slash),
 #                   LengthofSong(Seconds),Artist, album, albumArt, albumArtType(3 - album cover)
+# -Display of errors files with no album art
+# -Limit to Only .mp3 
 #
 #Still Need:
-# -Have a properties file storing:
-#       -Where you want to crawl
-#       -outPut Name of Database
-# -Limit to Only .mp3 (Right now Assumes that all files within folder are .mp3.
-#
-# Awesome Stuff I Want to get done
 #   GUI where it will have a Start Crawl Button
-#   Display of errors files with no album art
 #   Explorer to select folder
 #
 #   
@@ -25,12 +20,11 @@ import os
 import sys
 import sqlite3
 from mutagen.mp3 import MP3
+from mutagen import File
 import eyed3
-import warnings
 
 def main():
         crawl()
-
     
 def crawl():
 
@@ -69,7 +63,7 @@ def crawl():
                 continue
 
             print "Checking file: ", path
-            print "\n" 
+            #print "\n" 
 
             data = File(path)
             if 'APIC:' in data.tags: # Check if we even have an APIC frame available
@@ -89,8 +83,8 @@ def crawl():
                     artType = data.tags['APIC:'].mime
                     artCoverID = data.tags['APIC:'].type
             else:
-                print "No Album Art work - ", y
-                print "\n"
+                print "*** No Album Art work - ", y ,"***"
+                #print "\n"
                 artwork = 'null'
                 artType = 'null'
                 artCoverID = 'null'
@@ -99,10 +93,10 @@ def crawl():
             artist = audioFile.tag.artist
             album = audioFile.tag.album
             audio = MP3(path) #for audio lenth
-            
+            audioLength = audio.info.length   
 
             #print "Inserting values: \"" + str(songCount) + "\" \"" + str(y) + "\" \"" + str(path) + "\" \"" + str(audioLength) + "\" \"" + str(artist) + "\" \"" + str(album) + "\" \"" + str(artType) + "\""# Debug statement
-            print "\n"
+            #print "\n"
     
             c.execute('insert into music values (?,?,?,?,?,?,?,?,?)', (songCount,y,path,audioLength,artist,album,artwork,artType,artCoverID,))
             songCount = songCount + 1
