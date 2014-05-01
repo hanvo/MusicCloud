@@ -37,37 +37,12 @@ timeout = 100
 _Rlock = threading.RLock()
 flag_serv_func = 0
 _clientID = -1
+SONG_END = pygame.USEREVENT + 1
 _serv_playback_queue = Queue.Queue(0)
 _playback_conn_queue = Queue.Queue(0)
 _conn_playback_queue = Queue.Queue(0)
 _serv_comm_ID_queue = Queue.Queue(0)
 
-def play_back_func():
-	# playback command, possibly from REQUEST_SPEAKER_UPDATE, implemented in play back thread
-	pygame.mixer.init()
-	_response = json.load(_serv_playback_queue.get())
-	_serv_playback_queue.task_done()
-	_update_type = _response['update_type']
-	if _update_type == "playback_command":
-		_values = _response['values']
-		_songID = _values['id']
-		_command = _values['command']
-		if _command == 'Play':
-			pygame.mixer.music.load(_songID)
-			pygame.mixer.music.play()
-			while pygame.mixer.music.get_busy():
-				pygame.time.Clock().tick(10)
-		if _command == 'Stop':
-			pygame.mixer.music.stop()
-	if _update_type == "upcoming_song":
-		_flag_ut = 0
-		_values = _response['values']
-		_songID = _values['id']
-
-		for file in os.listdir('.'):
-			if fnmatch.fnmatch(file,_songID):
-				_flag_ut = 1
-	pass
 
 def serv_func():
 	_serv_sock = httplib.HTTPConnection('klamath.dnsdynamic.com', 5050, timeout = timeout)
@@ -99,6 +74,39 @@ def serv_func():
 		serv_func()
 	_serv_sock.close()
 
+
+def play_back_func():
+	# playback command, possibly from REQUEST_SPEAKER_UPDATE, implemented in play back thread
+	pygame.mixer.init()
+	_response = json.load(_serv_playback_queue.get())
+	_serv_playback_queue.task_done()
+	_message = {"id":"","status":"","position":""}
+	_update_type = _response['update_type']
+	if _update_type == "playback_command":
+		_values = _response['values']
+		_songID = _values['id']
+		_command = _values['command']
+		if _command == 'Play':
+			pygame.mixer.music.set_endevent(SONG_END)
+			pygame.mixer.music.load(_songID)
+			pygame.mixer.music.play()
+			while pygame.mixer.music.get_busy():
+				pygame.time.Clock().tick(10)
+			_message['id'] = str(_songID)
+			_message['status'] = 'Playing'
+			_message['position'] = str(pygame.mixer.music.get_pos())
+			
+		if _command == 'Stop':
+			pygame.mixer.music.stop()
+	if _update_type == "upcoming_song":
+		_flag_ut = 0
+		_values = _response['values']
+		_songID = _values['id']
+
+		for file in os.listdir('.'):
+			if fnmatch.fnmatch(file,_songID):
+				_flag_ut = 1
+	pass
 
 def communicate_func():
 	# Pop the specific request from the Queue, depending on that do the following
