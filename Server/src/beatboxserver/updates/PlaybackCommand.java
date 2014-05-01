@@ -21,9 +21,9 @@ public class PlaybackCommand {
     public enum Command {Play, Stop};
     
     /**
-     * 
-     * @param command
-     * @param songID 
+     * Construct a new {@link PlaybackCommand}
+     * @param command {@link Command} for the {@link SpeakerSession}
+     * @param songID ID of the song
      */
     public PlaybackCommand(Command command, long songID) {
         this.command = command;
@@ -32,8 +32,8 @@ public class PlaybackCommand {
     
     
     @Expose
-    private Command command;
+    private final Command command;
     
     @Expose
-    private long id;
+    private final long id;
 }

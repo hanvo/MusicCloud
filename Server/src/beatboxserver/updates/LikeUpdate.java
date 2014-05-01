@@ -6,7 +6,6 @@
 
 package beatboxserver.updates;
 
-import java.util.Map;
 
 /**
  *

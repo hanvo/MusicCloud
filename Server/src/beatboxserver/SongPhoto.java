@@ -14,6 +14,11 @@ import io.netty.buffer.ByteBuf;
  */
 public class SongPhoto {
     
+    /**
+     * Construct a new {@link SongPhoto} instance
+     * @param data {@link ByteBuf} containing image data
+     * @param type {@link String} MIME image type
+     */
     public SongPhoto(ByteBuf data, String type) {
         imageData = data;
         imageType = type;
@@ -27,6 +32,6 @@ public class SongPhoto {
         return imageData;
     }
     
-    private String imageType;
-    private ByteBuf imageData;
+    private final String imageType;
+    private final ByteBuf imageData;
 }
