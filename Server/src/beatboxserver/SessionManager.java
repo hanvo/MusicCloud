@@ -33,12 +33,12 @@ import org.apache.logging.log4j.LogManager;
  *
  * @author rahmanj
  */
-public class SessionManager {
+public final class SessionManager {
     
     /**
-     * 
-     * @param databaseManager
-     * @param authenticationManager 
+     * Create new {@link SessionManager} instance
+     * @param databaseManager {@link DatabaseManager} for the {@link SessionManager} to use
+     * @param authenticationManager {@link AuthenticatationManager} for the {@link SessionManager} to use
      */
     public SessionManager(DatabaseManager databaseManager, AuthenticationManager authenticationManager) {
         databaseMgr = databaseManager;
@@ -184,7 +184,6 @@ public class SessionManager {
      * 
      * @param update
      * @param sessionID
-     * @throws SQLException 
      */
     public void sendUpdate(SessionUpdate update, long sessionID) {
         if (update == null) {

@@ -44,7 +44,7 @@ import org.apache.logging.log4j.LogManager;
  *
  * @author rahmanj
  */
-public class SongManager {
+public final class SongManager {
     
     /**
      * Construct a new instance of the {@link SongManager}
@@ -141,9 +141,21 @@ public class SongManager {
             }
         }
         
-        // Update the clients with the new like information
-        sessionMgr.broadcastUpdate(new LikeUpdate(getStats()), SessionType.User.ordinal());
+        synchronized (this) {
+            // Update the clients with the new like information
+            LikeData stats = getStats();
+            sessionMgr.broadcastUpdate(new LikeUpdate(stats), SessionType.User.ordinal());
         
+            long sessions = sessionMgr.getSessionCount();
+            
+            // Check if enough people hate the current song
+            if ((double)(stats.getDislikes() - stats.getLikes()) / sessions > 0.3) {
+                nextSong = getNextSong(); // Setting nextSong to non-null indicates we've made a choice
+                
+                // TODO send message
+            }
+            
+        }
         // TODO Include logic for removing the current song if dislikes reach certain level
     }
     
@@ -334,7 +346,7 @@ public class SongManager {
         
         SongPhoto photo;
         
-        logger.trace("Requesting photo for song: %d", songID); // TODO TEMP DEBUG
+        logger.trace("Requesting photo for song: %d", songID);
         
         try (PreparedStatement stmt = databaseMgr.createPreparedStatement("SELECT image, image_type FROM songs WHERE id = ?")) {
             stmt.setLong(1, songID);
@@ -409,22 +421,18 @@ public class SongManager {
                         stmt.executeQuery();
                     }
                     
-                    // The speaker should ask us for the next song, but politely remind it who's boss around here
-                    if (nextSong != null) {
-                        sessionMgr.sendUpdate(new PlaybackCommandUpdate(new PlaybackCommand(PlaybackCommand.Command.Play, nextSong.getID())), sessionID);
-                        
-                        // Update active song with nextSong
-                    } else {
-                        logger.warn("Received STOP message, but no next song selected");
-                    }
-                    
-                    break;
-                case Ready:
-                    
                     if (nextSong != null) {
                         // Pick a new song
                         nextSong = getNextSong();
                     }
+                    
+                    // The speaker should ask us for the next song, but politely remind it who's boss around here
+                    sessionMgr.sendUpdate(new UpcomingSongUpdate(nextSong), sessionID);
+                    //sessionMgr.sendUpdate(new PlaybackCommandUpdate(new PlaybackCommand(PlaybackCommand.Command.Play, nextSong.getID())), sessionID);
+                    
+                    
+                    break;
+                case Ready:
                     
                     // Send the playback command if the song ID matches the active song
                     if (update.id == nextSong.getID()) {

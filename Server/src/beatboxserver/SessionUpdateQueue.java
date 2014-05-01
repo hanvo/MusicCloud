@@ -18,6 +18,8 @@ import io.netty.channel.Channel;
 
 import io.netty.handler.codec.http.FullHttpResponse;
 import io.netty.handler.codec.http.HttpResponseStatus;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 
 /**
@@ -30,7 +32,6 @@ public class SessionUpdateQueue {
      * Create new {@link SessionUpdateQueue}
      */
     public SessionUpdateQueue() {
-        /*executor = Executors.newFixedThreadPool(1);*/
         channelQueue = new ArrayDeque<>();
         updateTypeQueue = new ArrayDeque<>();
         updates = new HashMap<>();
@@ -62,9 +63,12 @@ public class SessionUpdateQueue {
                 json = update.toJson();
                 response = RequestHandler.createResponse(HttpResponseStatus.OK, json);
                 
+                logger.trace("Sending update to session");
                 RequestHandler.sendResponse(ch, response, false);
             } else {
+                
                 // Enqueue the request
+                logger.trace("Queuing request from session");
                 channelQueue.add(ch);
             }
             
@@ -88,10 +92,12 @@ public class SessionUpdateQueue {
                 json = update.toJson();
                 response = RequestHandler.createResponse(HttpResponseStatus.OK, json);
                 
+                logger.trace("Sending update to session");
                 RequestHandler.sendResponse(chan, response, false);
             } else {
                 
                 // Overwrite the old update with the same type
+                logger.trace("Coalescing update");
                 updates.put(update.getUpdateType(), update);
             }
         }
@@ -114,4 +120,6 @@ public class SessionUpdateQueue {
     private final Queue<Channel> channelQueue;
     private final Map<UpdateType, SessionUpdate> updates;
     private final Queue<UpdateType> updateTypeQueue;
+    
+    private final static Logger logger = LogManager.getFormatterLogger((ProtocolMessageHandler.class.getName()));
 }

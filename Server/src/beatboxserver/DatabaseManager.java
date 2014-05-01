@@ -25,7 +25,7 @@ import org.apache.logging.log4j.LogManager;
  *
  * @author rahmanj
  */
-public class DatabaseManager {
+public final class DatabaseManager {
     
     /**
      * Construct a new {@link DatabaseManager}

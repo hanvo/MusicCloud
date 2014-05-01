@@ -31,6 +31,22 @@ public class LikeData {
         this.balance = balance;
     }
     
+    /**
+     * Get the number of likes for the given song
+     * @return 
+     */
+    public int getLikes() {
+        return likes;
+    }
+    
+    public int getDislikes() {
+        return dislikes;
+    }
+    
+    public double getBalance() {
+        return balance;
+    }
+    
     @Expose
     private long id;
             
