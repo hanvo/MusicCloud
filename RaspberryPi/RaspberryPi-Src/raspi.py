@@ -73,11 +73,11 @@ def serv_func():
 	except socket.timeout:
 		serv_func()
 	_serv_sock.close()
-
+	# NEED TO IMPLEMENT DEAUTHENTICATE
 
 def play_back_func():
 	# playback command, possibly from REQUEST_SPEAKER_UPDATE, implemented in play back thread
-	pygame.mixer.init()
+	pygame.mixer.init() #might have to make global if going to recursively call
 	_response = json.load(_serv_playback_queue.get())
 	_serv_playback_queue.task_done()
 	_message = {"id":"","status":"","position":""}
@@ -111,33 +111,50 @@ def play_back_func():
 
 		for file in os.listdir('.'):
 			if fnmatch.fnmatch(file,_songID):
-				pass
+				_flag_ut = 1
 			else:
-				_message['ID'] = str(_songID)
-				_message['status'] = 'need_song'
-				_message['position'] = str(0);
-				_playback_conn_queue.put(_message)
+				pass
+			
+		if _flag_ut == 0:
+			_message['id'] = str(_songID)
+			_message['status'] = 'need_song'
+			_message['position'] = str(0);
+			_playback_conn_queue.put(_message)
 	pass
 
 def communicate_func():
 	# Pop the specific request from the Queue, depending on that do the following
+	_request_set = _playback_conn_queue.get()
+	_playback_conn_queue.task_done()
 	_comm_sock = httplib.HTTPConnection('klamath.dnsdynamic.com', 5050, timeout = timeout)
 	_clientID = _serv_comm_ID_queue.get() # Getting the clientID from the queue
-	# REQUEST_SONG
-	# the value of song ID is in the queue
-	_upcoming_resp = json.load(_playback_conn_queue.get())
-	_playback_conn_queue.task_done()
-	_values = _upcoming_resp['values']
-	_songID = _values['id']
-	_comm_sock.request("GET","klamath.dnsdynamic.com:5050/request_song?clientID="+str(_clientID)+"&songID"+str(_songID))
-	_song_data_json = _comm_sock.getresponse().read()
-	_song_data = json.load(_song_data_json)
+	_serv_comm_ID_queue.task_done()
 
-	# Status update depeding on the playback thread
-	_params_update = json.dumps({"id":_songID,"status":"playing","position":position(?)},encoding = "ASCII")
-	_headers_update = {"Content-Type":"application/json"}
-	_comm_sock.request("POST","klamath.dnsdynamic.com:5050/speaker/status_update?clientID="+str(_clientID),_params_update,_headers_update)
+	if _request_set['status']=='need_song':
+		_songID = _request_set['id']
+		_comm_sock.request("GET","klamath.dnsdynamic.com:5050/request_song?clientID="+str(_clientID)+"&songID"+str(_songID))
+		_song_data_json = _comm_sock.getresponse().read()
+		_song_data = json.load(_song_data_json)
+		output_file = open(str(_songID),'w')
+		output_file.write(_song_data)
+		output_file.close()
+	# NEED TO IMPLEMENT READY
+
+	if _request_set['status']=='Playing':
+		_params_update = json.dumps(_request_set,encoding = "ASCII")
+		_headers_update = {"Content-Type":"application/json"}
+		_comm_sock.request("POST","klamath.dnsdynamic.com:5050/speaker/status_update?clientID="+str(_clientID),_params_update,_headers_update)
 	
+	if _request_set['status']=='Stopped':
+		_params_update = json.dumps(_request_set,encoding = "ASCII")
+		_headers_update = {"Content-Type":"application/json"}
+		_comm_sock.request("POST","klamath.dnsdynamic.com:5050/speaker/status_update?clientID="+str(_clientID),_params_update,_headers_update)	
+
+	if _request_set['status']=='Ready':
+		_params_update = json.dumps(_request_set,encoding = "ASCII")
+		_headers_update = {"Content-Type":"application/json"}
+		_comm_sock.request("POST","klamath.dnsdynamic.com:5050/speaker/status_update?clientID="+str(_clientID),_params_update,_headers_update)
+
 if __name__ == "__main__":
 	#thread1 = Thread(target = play_back_func, args =() )
 	thread2 = Thread(target = serv_func, args=() )
