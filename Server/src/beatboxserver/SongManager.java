@@ -354,10 +354,12 @@ public class SongManager {
     
     /**
      * 
-     * @param sessionID
-     * @param update 
+     * @param sessionID {@link long} {@link Session} ID for the speaker update
+     * @param update {@link StatusUpdateMessage}
+     * @throws SQLException
+     * @throws IllegalArgumentException
      */
-    public void speakerStatusUpdate(long sessionID, StatusUpdateMessage update) throws SQLException {
+    public void speakerStatusUpdate(long sessionID, StatusUpdateMessage update) throws SQLException, IllegalArgumentException {
         if (sessionID < 0 || update == null) {
             throw new IllegalArgumentException();
         }
@@ -446,13 +448,14 @@ public class SongManager {
     //<editor-fold defaultstate="collapsed" desc="Speaker Get Methods">
     
     /**
-     * 
-     * @param songID
+     * Get the {@link SongData} for the {@link Song} identified by the ID
+     * @param songID {@link long} Song ID to request {@link SongData} for
      * @return
      * @throws SQLException
-     * @throws IOException 
+     * @throws IOException
+     * @throws IllegalArguementException
      */
-    public SongData getSongData(long songID) throws SQLException, IOException {
+    public SongData getSongData(long songID) throws SQLException, IOException, IllegalArgumentException {
         if (songID < 0) {
             throw new IllegalArgumentException();
         }
@@ -497,9 +500,9 @@ public class SongManager {
     
     
     /**
-     *
-     * @param likes
-     * @param dislikes
+     * Compute the balance between likes and dislikes
+     * @param likes Number of likes for the song
+     * @param dislikes Number of dislikes for the song
      * @return
      */
     private double computeLikeBalance(long likes, long dislikes) {
@@ -519,7 +522,6 @@ public class SongManager {
      */
     private void skipToNext() throws SQLException {
         
-        // TODO Finish this logic
         ActiveSong song = null;
         song = getActiveSong();
         

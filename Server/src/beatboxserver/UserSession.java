@@ -6,9 +6,6 @@
 
 package beatboxserver;
 
-import io.netty.channel.Channel;
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  *
@@ -26,48 +23,6 @@ public class UserSession extends Session {
     }
     
     
-    /**
-     * 
-     * @param songID
-     * @param songManager
-     */
-    public void likeSong(String songID, SongManager songManager) {
-        
-    }
-    
-    /**
-     * 
-     * @param songID 
-     */
-    public void dislikeSong(String songID, SongManager songManager) {
-        
-    }
-    
-    /**
-     * 
-     * @param songID
-     * @return 
-     */
-    public boolean doesLikeSong(String songID) {
-        return false;
-    }
-    
-    /**
-     * 
-     * @param songID
-     * @return 
-     */
-    public boolean doesDislikeSong(String songID) {
-        return false;
-    }
-    
-    /**
-     * 
-     * @param song
-     * @return 
-     */
-    public boolean votedOn(Song song) {
-        return false;
-    }
+
     
 }

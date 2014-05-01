@@ -14,14 +14,19 @@ import com.google.gson.annotations.Expose;
  */
 public class VoteData {
     
+    /**
+     * Construct a new {@link VoteData} object
+     * @param songID ID for the song referred to
+     * @param votes Number of votes for this song
+     */
     public VoteData(long songID, long votes) {
         id = songID;
         this.votes = votes;
     }
     
     @Expose
-    private long id;
+    private final long id;
     
     @Expose
-    private long votes;
+    private final long votes;
 }

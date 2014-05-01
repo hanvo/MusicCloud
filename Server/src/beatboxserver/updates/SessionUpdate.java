@@ -27,6 +27,7 @@ public abstract class SessionUpdate<T> {
     
     /**
      * Construct a new instance of ClientUpdate
+     * @param type {@link UpdateType} describing this {@link ClientUpdate}
      * @param value Value to be included in update, may be a class instance or array
      */
     public SessionUpdate(UpdateType type, T value) {
