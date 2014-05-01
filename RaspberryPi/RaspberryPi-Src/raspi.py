@@ -95,7 +95,13 @@ def play_back_func():
 			_message['id'] = str(_songID)
 			_message['status'] = 'Playing'
 			_message['position'] = str(pygame.mixer.music.get_pos())
-			
+			_playback_conn_queue.put(_message)
+			#There will be an issue here with the loop, find a way to solve it
+			for event in pygame.event.get():
+				if event.type == SONG_END:
+					_message['status'] = 'Stopped'
+					_message['position'] = str(pygame.mixer.music.get_pos())
+					_playback_conn_queue.put(_message)
 		if _command == 'Stop':
 			pygame.mixer.music.stop()
 	if _update_type == "upcoming_song":
@@ -105,7 +111,12 @@ def play_back_func():
 
 		for file in os.listdir('.'):
 			if fnmatch.fnmatch(file,_songID):
-				_flag_ut = 1
+				pass
+			else:
+				_message['ID'] = str(_songID)
+				_message['status'] = 'need_song'
+				_message['position'] = str(0);
+				_playback_conn_queue.put(_message)
 	pass
 
 def communicate_func():
