@@ -61,9 +61,14 @@ public class SongManager {
     
     /**
      * Order playback to start for the next song
+     * @throws SQLException
      */
-    public void playNextSong() {
-        // TODO need to add this logic
+    public void playNextSong() throws SQLException {
+        nextSong = getNextSong();
+        
+        // Send message to start playback
+        sessionMgr.broadcastUpdate(new PlaybackCommandUpdate(
+            new PlaybackCommand(PlaybackCommand.Command.Play, nextSong.getID())), SessionType.Speaker.ordinal());
     }
     
     //<editor-fold defaultstate="collapsed" desc="Client Actions">
@@ -367,11 +372,25 @@ public class SongManager {
         synchronized(this) {
             switch (update.status) {
                 case Playing:
-                    // TODO
                     // Mark the current song as Playing
-                    if (update.id == activeSong.getID()) {
-                        // TODO Update the database with the next status for this song
-                    } else {
+                    if (update.id == nextSong.getID()) {
+                        
+                        // Update the database with information about the next song
+                        updateNextSong(activeSong, nextSong);
+                        
+                        // Update object state based on the transition
+                        activeSong = new ActiveSong(nextSong.getID(),
+                                                    nextSong.getName(),
+                                                    nextSong.getArtist(),
+                                                    nextSong.getAlbum(),
+                                                    nextSong.getPath(),
+                                                    nextSong.getLength(),
+                                                    nextSong.getVotes());
+                        nextSong = null;
+                        
+                        // Tell the phone clients that something happened
+                        sessionMgr.broadcastUpdate(new SongUpdate(activeSong), SessionType.User.ordinal());
+                    } else if (update.id != activeSong.getID()){
                         
                         // Inform the speaker it's confused
                         sessionMgr.sendUpdate(new PlaybackCommandUpdate(
@@ -410,29 +429,14 @@ public class SongManager {
                     // Send the playback command if the song ID matches the active song
                     if (update.id == nextSong.getID()) {
                         
-                        // Update the database with information about the next song
-                        updateNextSong();
-                        
                         // Send message to start playback
                         sessionMgr.sendUpdate(new PlaybackCommandUpdate(
-                                new PlaybackCommand(PlaybackCommand.Command.Play, activeSong.getID())),
+                                new PlaybackCommand(PlaybackCommand.Command.Play, nextSong.getID())),
                                 sessionID);
                         
                         // TODO, this is a problem for multiple speakers, need a quorum, and then tell the others to get in line
                         // Hmmm, may try using Paxos later as an experiement
-
-                        // Update object state based on the transition
-                        activeSong = new ActiveSong(nextSong.getID(),
-                                                    nextSong.getName(),
-                                                    nextSong.getArtist(),
-                                                    nextSong.getAlbum(),
-                                                    nextSong.getPath(),
-                                                    nextSong.getLength(),
-                                                    nextSong.getVotes());
-                        nextSong = null;
-                        
-                        // Tell the phone clients that something happened
-                        sessionMgr.broadcastUpdate(new SongUpdate(activeSong), SessionType.User.ordinal());
+                       
                     } else {
                         
                         // Inform the speaker it's confused
@@ -551,17 +555,19 @@ public class SongManager {
     }
     
     /**
-     * Updates the current song in database using a transaction
-     * @throws SQLException
+     * Update the database with new state based on changing the song
+     * @param currentSong {@link ActiveSong} currently being played being ended
+     * @param nextSong {@link Song} that is about to be played
+     * @throws SQLException 
      */
-    private void updateNextSong() throws SQLException {
+    private void updateNextSong(ActiveSong currentSong, Song nextSong) throws SQLException {
         try {
             databaseMgr.startTransaction();
             
             // Wipe likes for the previous song from the DB
             String query = "DELETE FROM likes where song_id = ?";
             try (PreparedStatement stmt = databaseMgr.createPreparedStatement(query)) {
-                stmt.setLong(1, activeSong.getID());
+                stmt.setLong(1, currentSong.getID());
                 stmt.executeUpdate();
             }
             
@@ -575,7 +581,7 @@ public class SongManager {
             // Mark the active song as inactive now that a new song is starting
             query = "UPDATE songs SET status = " + SongStatus.Inactive.ordinal() + " WHERE song_id = ?";
             try (PreparedStatement stmt = databaseMgr.createPreparedStatement(query)) {
-                stmt.setLong(1, activeSong.getID());
+                stmt.setLong(1, currentSong.getID());
                 stmt.executeUpdate();
             }
             
