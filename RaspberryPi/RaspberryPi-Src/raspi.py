@@ -130,6 +130,7 @@ def play_back_func():
 				_message['id'] = str(_songID)
 				_message['status'] = 'Playing'
 				_message['position'] = str(pygame.mixer.music.get_pos())
+				print "The message in Play is \n"+str(_message)
 				_playback_conn_queue.put(_message)
 				#There will be an issue here with the loop, find a way to solve it
 				#for event in pygame.event.get():
