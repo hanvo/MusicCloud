@@ -72,7 +72,25 @@
     } else if ([updateType isEqualToString:@"votes"]) {
         
     } else if ([updateType isEqualToString:@"current_song"]) {
+        NSDictionary *values = [response objectForKey:@"values"];
         
+        SongInfo *song = [[SongInfo alloc] init];
+        song.songID = [[values objectForKey:@"id"] integerValue];
+        song.songName = [values objectForKey:@"name"];
+        song.songArtist = [values objectForKey:@"artist"];
+        song.songAlbum = [values objectForKey:@"album"];
+        song.songLength = [[values objectForKey:@"length"] integerValue];
+        NSString *status = [values objectForKey:@"status"];
+        if ([status isEqualToString:@"Playing"])
+            song.status = SS_PLAYING;
+        else if ([status isEqualToString:@"Paused"])
+            song.status = SS_PAUSED;
+        else
+            NSLog(@"Unknown song status: %@", status);
+        song.position = [[values objectForKey:@"position"] integerValue];
+        
+        [_delegate clientDidReceiveSongUpdate:song];
+
     } else {
         NSLog(@"Error - unknown update type from server.");
         NSLog(@"Response: %@", response);
@@ -143,8 +161,7 @@
     }
     
     NSString *query = [self createURLQuery:@"client/request_song_list"];
-    NSDictionary *params = @{ @"clientID": [NSString stringWithFormat:@"%d", _clientID] };
-    [self GET:query parameters:params success:^(NSURLSessionDataTask *task, id responseObject) {
+    [self GET:query parameters:nil success:^(NSURLSessionDataTask *task, id responseObject) {
         [self handleUpdateResponse:responseObject];
     } failure:^(NSURLSessionDataTask *task, NSError *error) {
         [_delegate clientDidFailTask:task error:error];
@@ -202,8 +219,7 @@
     }
     
     NSString *query = [self createURLQuery:@"request_like_update"];
-    NSDictionary *params = @{ @"ClientID": [NSString stringWithFormat:@"%d", _clientID] };
-    [self GET:query parameters:params success:^(NSURLSessionDataTask *task, id responseObject) {
+    [self GET:query parameters:nil success:^(NSURLSessionDataTask *task, id responseObject) {
         
     } failure:^(NSURLSessionDataTask *task, NSError *error) {
         [_delegate clientDidFailTask:task error:error];
@@ -217,8 +233,7 @@
     }
     
     NSString *query = [self createURLQuery:@"request_vote_update"];
-    NSDictionary *params = @{ @"ClientID": [NSString stringWithFormat:@"%d", _clientID] };
-    [self GET:query parameters:params success:^(NSURLSessionDataTask *task, id responseObject) {
+    [self GET:query parameters:nil success:^(NSURLSessionDataTask *task, id responseObject) {
         
     } failure:^(NSURLSessionDataTask *task, NSError *error) {
         [_delegate clientDidFailTask:task error:error];
@@ -255,27 +270,9 @@
     }
     
     NSString *query = [self createURLQuery:@"request_song_update"];
-    NSDictionary *params = @{ @"ClientID": [NSString stringWithFormat:@"%d", _clientID] };
-    [self GET:query parameters:params success:^(NSURLSessionDataTask *task, id responseObject) {
-        //NSString *updateType = [responseObject objectForKey:@"update_type"];
-        NSDictionary *values = [responseObject objectForKey:@"values"];
-        
-        SongInfo *song = [[SongInfo alloc] init];
-        song.songID = [[values objectForKey:@"id"] integerValue];
-        song.songName = [values objectForKey:@"name"];
-        song.songArtist = [values objectForKey:@"artist"];
-        song.songAlbum = [values objectForKey:@"album"];
-        song.songLength = [[values objectForKey:@"length"] integerValue];
-        NSString *status = [values objectForKey:@"status"];
-        if ([status isEqualToString:@"Playing"])
-            song.status = SS_PLAYING;
-        else if ([status isEqualToString:@"Paused"])
-            song.status = SS_PAUSED;
-        else
-            NSLog(@"Unknown song status: %@", status);
-        song.position = [[values objectForKey:@"position"] integerValue];
-        
-        [_delegate clientDidReceiveSongUpdate:song];
+    NSLog(@"query %@", query);
+    [self GET:query parameters:nil success:^(NSURLSessionDataTask *task, id responseObject) {
+        [self handleUpdateResponse:responseObject];
     } failure:^(NSURLSessionDataTask *task, NSError *error) {
         [_delegate clientDidFailTask:task error:error];
     }];

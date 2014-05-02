@@ -48,10 +48,18 @@
     [_progressView setTotalTime:0];
     
     [_session requestSongList];
-    //[_session requestSongUpdate];
+    [_session requestSongUpdate];
     //[_session requestLikeUpdate];
     
     //[self performSelector:@selector(test) withObject:nil afterDelay:3];
+}
+
+- (void)viewWillDisappear:(BOOL)animated {
+    [super viewWillDisappear:animated];
+    
+    if (self.isMovingFromParentViewController) {
+        [_session deauthenticateClient];
+    }
 }
 
 - (void)didReceiveMemoryWarning
@@ -110,7 +118,6 @@
     cell.artistLabel.text = info.songArtist;
     cell.voteLabel.text = [NSString stringWithFormat:@"%d", info.votes];
     
-    NSLog(@"image %@", info.albumArt);
     cell.albumImageView.image = info.albumArt;
     
     return cell;
@@ -175,7 +182,6 @@
 - (void)clientDidReceiveAlbumArt:(UIImage *)image forSong:(SongInfo *)song {
     song.albumArt = image;
     NSIndexPath *indexPath = [NSIndexPath indexPathForRow:[_songList indexOfObject:song] inSection:0];
-    NSLog(@"ip %@", indexPath);
     [self.tableView reloadRowsAtIndexPaths:@[indexPath] withRowAnimation:UITableViewRowAnimationAutomatic];
 }
 
