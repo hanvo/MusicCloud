@@ -172,6 +172,7 @@ def play_back_func():
 
 def communicate_func():
 	while True:
+		print "DEBUG: Entered WHILE "
 		# Pop the specific request from the Queue, depending on that do the following
 		_request_set = _playback_conn_queue.get()
 		_playback_conn_queue.task_done()
@@ -202,8 +203,6 @@ def communicate_func():
 				if _playingstate == 0:
 					_request_set['status'] = 'Ready'
 					print "The Message in playing state is \n"+str(_request_set)
-			else:
-				sys.exit()
 
 		# NEED TO IMPLEMENT READY, playback position for READY(?)
 
