@@ -29,6 +29,8 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.NoSuchElementException;
@@ -57,18 +59,26 @@ public final class SongManager {
         
         nextSong = null;
         activeSong = null;
+        
+        songTimer = new Timer();
+        songTimerTask = null;
     }
     
     /**
-     * Order playback to start for the next song
+     * Order playback to start for the next song once the previous song finishes
      * @throws SQLException
      */
     public void playNextSong() throws SQLException {
-        nextSong = getNextSong();
+
         
-        // Send message to start playback
-        sessionMgr.broadcastUpdate(new PlaybackCommandUpdate(
-            new PlaybackCommand(PlaybackCommand.Command.Play, nextSong.getID())), SessionType.Speaker.ordinal());
+        if (nextSong == null) {
+            nextSong = getNextSong();
+            
+            logger.info("Playing next song");
+            
+            // Send message to start playback
+            sessionMgr.broadcastUpdate(new UpcomingSongUpdate(nextSong), SessionType.Speaker.ordinal());
+        }
     }
     
     //<editor-fold defaultstate="collapsed" desc="Client Actions">
@@ -251,13 +261,29 @@ public final class SongManager {
     
     
     /**
+     * 
+     * @return
+     * @throws SQLException
+     * @throws IllegalStateException
+     * @throws NoSuchElementException 
+     */
+    public ActiveSong getActiveSong() throws SQLException, IllegalStateException, NoSuchElementException {
+        synchronized (this) {
+            if (activeSong != null) {
+                activeSong = getActiveSongFromDB();
+            }
+            return activeSong;
+        }
+    }
+    
+    /**
      * Gets the current {@link ActiveSong}
      * @return
      * @throws SQLException
      * @throws IllegalStateException
      * @throws NoSuchElementException
      */
-    public ActiveSong getActiveSong() throws SQLException, IllegalStateException, NoSuchElementException {
+    private ActiveSong getActiveSongFromDB() throws SQLException, IllegalStateException, NoSuchElementException {
         
         ActiveSong active;
         
@@ -390,6 +416,30 @@ public final class SongManager {
                         // Update the database with information about the next song
                         updateNextSong(activeSong, nextSong);
                         
+                        if (songTimerTask != null) {
+                            songTimerTask.cancel();
+                        }
+                        
+                        final SongManager manager = this;
+                        
+                        // Create a task to switch to the next song once this song finishes playing
+                        songTimerTask = new TimerTask() {
+                            @Override
+                            public void run() {
+                                synchronized(manager) {
+                                    try {
+                                        manager.playNextSong();
+                                    } catch (Exception e) {
+                                        // TODO, handle this later
+                                    }
+                                }
+                            }
+                        };
+                        
+                        // Schedule to run approx 5 seconds before the end of the song
+                        songTimer.schedule(songTimerTask, (nextSong.getLength() - 5) * 1000);
+                        
+                        
                         // Update object state based on the transition
                         activeSong = new ActiveSong(nextSong.getID(),
                                                     nextSong.getName(),
@@ -427,7 +477,7 @@ public final class SongManager {
                     }
                     
                     // The speaker should ask us for the next song, but politely remind it who's boss around here
-                    sessionMgr.sendUpdate(new UpcomingSongUpdate(nextSong), sessionID);
+                    //sessionMgr.sendUpdate(new UpcomingSongUpdate(nextSong), sessionID);
                     //sessionMgr.sendUpdate(new PlaybackCommandUpdate(new PlaybackCommand(PlaybackCommand.Command.Play, nextSong.getID())), sessionID);
                     
                     
@@ -535,13 +585,18 @@ public final class SongManager {
     private void skipToNext() throws SQLException {
         
         ActiveSong song = null;
-        song = getActiveSong();
+        song = getActiveSongFromDB();
         
         //LikeData data
         synchronized (this) {
             
-            if (nextSong == null || nextSong.getID() == activeSong.getID()) {
+            if (nextSong == null) {
                 nextSong = getNextSong();
+            }
+            
+            // Cancel
+            if (songTimerTask != null) {
+                songTimerTask.cancel();
             }
             
             // Inform the speakers of our choice for the next song
@@ -572,11 +627,22 @@ public final class SongManager {
         try {
             databaseMgr.startTransaction();
             
+            String query;
+            
             // Wipe likes for the previous song from the DB
-            String query = "DELETE FROM likes where song_id = ?";
-            try (PreparedStatement stmt = databaseMgr.createPreparedStatement(query)) {
-                stmt.setLong(1, currentSong.getID());
-                stmt.executeUpdate();
+            if (nextSong != null) {
+                query = "DELETE FROM likes where song_id = ?";
+                try (PreparedStatement stmt = databaseMgr.createPreparedStatement(query)) {
+                    stmt.setLong(1, currentSong.getID());
+                    stmt.executeUpdate();
+                }
+                
+                // Mark the active song as inactive now that a new song is starting
+                query = "UPDATE songs SET status = " + SongStatus.Inactive.ordinal() + " WHERE song_id = ?";
+                try (PreparedStatement stmt = databaseMgr.createPreparedStatement(query)) {
+                    stmt.setLong(1, currentSong.getID());
+                    stmt.executeUpdate();
+                }
             }
             
             // Wipe votes for the new song from the DB
@@ -586,12 +652,7 @@ public final class SongManager {
                 stmt.executeUpdate();
             }
             
-            // Mark the active song as inactive now that a new song is starting
-            query = "UPDATE songs SET status = " + SongStatus.Inactive.ordinal() + " WHERE song_id = ?";
-            try (PreparedStatement stmt = databaseMgr.createPreparedStatement(query)) {
-                stmt.setLong(1, currentSong.getID());
-                stmt.executeUpdate();
-            }
+            
             
             // Mark the next song as active
             query = "UPDATE songs SET status = " + SongStatus.Playing.ordinal() + " WHERE song_id = ?";
@@ -615,6 +676,8 @@ public final class SongManager {
     private Song nextSong;
     private ActiveSong activeSong;
     
+    private final Timer songTimer;
+    private TimerTask songTimerTask;
     
     private final DatabaseManager databaseMgr;
     private final SessionManager sessionMgr;

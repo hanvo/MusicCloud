@@ -7,8 +7,6 @@
 package beatboxserver.updates;
 
 
-import com.google.gson.annotations.Expose;
-
 /**
  *
  * @author rahmanj
@@ -30,10 +28,7 @@ public class PlaybackCommand {
         id = songID;
     }
     
-    
-    @Expose
     private final Command command;
     
-    @Expose
     private final long id;
 }

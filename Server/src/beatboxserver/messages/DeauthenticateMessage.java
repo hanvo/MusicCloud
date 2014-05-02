@@ -6,8 +6,6 @@
 
 package beatboxserver.messages;
 
-import com.google.gson.annotations.Expose;
-
 /**
  *
  * @author rahmanj
@@ -18,6 +16,5 @@ public class DeauthenticateMessage extends Message {
         super(MessageType.DeauthenticateMessage);
     }
     
-    @Expose
     public long id;
 }

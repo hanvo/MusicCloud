@@ -6,7 +6,7 @@
 
 package beatboxserver;
 
-import com.google.gson.annotations.Expose;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 /**
  *
@@ -67,6 +67,5 @@ public class ActiveSong extends Song {
         status = s;
     }
     
-    @Expose
     protected SongStatus status;
 }

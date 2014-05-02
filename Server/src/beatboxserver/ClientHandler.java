@@ -80,7 +80,13 @@ public class ClientHandler extends RequestHandler {
                 return;
             }
             
-            sendResponse(ctx.channel(), session, false);
+            try {
+                sendResponse(ctx.channel(), session, false);
+            } catch (Exception e) {
+                
+                logger.warn("Failed create response", e);
+                sendError(ctx.channel(), INTERNAL_SERVER_ERROR);
+            }
         }
     }
     
@@ -296,7 +302,13 @@ public class ClientHandler extends RequestHandler {
                 return;
             }
             
-            sendResponse(ctx.channel(), new LikeUpdate(stats), false);
+            try {
+                sendResponse(ctx.channel(), new LikeUpdate(stats), false);
+            } catch (Exception e) {
+                
+                logger.warn("Failed create response", e);
+                sendError(ctx.channel(), INTERNAL_SERVER_ERROR);
+            }
         }
     }
     
@@ -320,7 +332,13 @@ public class ClientHandler extends RequestHandler {
                 return;
             }
             
-            sendResponse(ctx.channel(), new VoteUpdate(votes), false);
+            try {
+                sendResponse(ctx.channel(), new VoteUpdate(votes), false);
+            } catch (Exception e) {
+                
+                logger.warn("Failed create response", e);
+                sendError(ctx.channel(), INTERNAL_SERVER_ERROR);
+            }
         }
     }
     
@@ -351,7 +369,13 @@ public class ClientHandler extends RequestHandler {
                 return;
             }
             
-            sendResponse(ctx.channel(), new SongUpdate(activeSong), false);
+            try {
+                sendResponse(ctx.channel(), new SongUpdate(activeSong), false);
+            } catch (Exception e) {
+                
+                logger.warn("Failed create response", e);
+                sendError(ctx.channel(), INTERNAL_SERVER_ERROR);
+            }
         }
     }
     
@@ -375,7 +399,13 @@ public class ClientHandler extends RequestHandler {
                 return;
             }
             
-            sendResponse(ctx.channel(), new SongListUpdate(songList), false);
+            try {
+                sendResponse(ctx.channel(), new SongListUpdate(songList), false);
+            } catch (Exception e) {
+                
+                logger.warn("Failed create response", e);
+                sendError(ctx.channel(), INTERNAL_SERVER_ERROR);
+            }
         }
     }
     

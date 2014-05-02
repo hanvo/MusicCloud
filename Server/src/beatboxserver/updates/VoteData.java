@@ -6,7 +6,6 @@
 
 package beatboxserver.updates;
 
-import com.google.gson.annotations.Expose;
 
 /**
  *
@@ -24,9 +23,7 @@ public class VoteData {
         this.votes = votes;
     }
     
-    @Expose
     private final long id;
     
-    @Expose
     private final long votes;
 }

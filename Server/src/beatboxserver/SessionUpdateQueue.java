@@ -18,6 +18,7 @@ import io.netty.channel.Channel;
 
 import io.netty.handler.codec.http.FullHttpResponse;
 import io.netty.handler.codec.http.HttpResponseStatus;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -54,26 +55,32 @@ public class SessionUpdateQueue {
         synchronized(this) {
             
             // Check if there are updates to send
-            if (updates.size() > 0) {
+            if (updateTypeQueue.size() > 0) {
                 updateType = updateTypeQueue.poll();
                 
-                update = updates.get(updateType);
-                updates.remove(updateType);
-                
-                json = update.toJson();
-                response = RequestHandler.createResponse(HttpResponseStatus.OK, json);
-                
-                logger.trace("Sending update to session");
-                RequestHandler.sendResponse(ch, response, false);
+                if (updates.containsKey(updateType)) {
+                    update = updates.get(updateType);
+                    updates.remove(updateType);
+
+                    json = update.toJson();
+                    response = RequestHandler.createResponse(HttpResponseStatus.OK, json);
+
+                    logger.trace("Sending update to session");
+                    logger.trace("Update: %s", json);
+                    RequestHandler.sendResponse(ch, response, false);
+                } else {
+                    
+                    // Enqueue the request
+                    logger.trace("Queuing request from session");
+                    channelQueue.add(ch);
+                }
             } else {
                 
                 // Enqueue the request
                 logger.trace("Queuing request from session");
                 channelQueue.add(ch);
             }
-            
-        }
-        
+        }     
     }
     
     /**
@@ -94,11 +101,17 @@ public class SessionUpdateQueue {
                 
                 logger.trace("Sending update to session");
                 RequestHandler.sendResponse(chan, response, false);
-            } else {
+            } else if (updates.containsKey(update.getUpdateType())){
                 
                 // Overwrite the old update with the same type
                 logger.trace("Coalescing update");
                 updates.put(update.getUpdateType(), update);
+            } else {
+                
+                // Add new update
+                logger.trace("Adding new update");
+                updates.put(update.getUpdateType(), update);
+                updateTypeQueue.add(update.getUpdateType());
             }
         }
     }

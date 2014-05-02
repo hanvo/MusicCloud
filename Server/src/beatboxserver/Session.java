@@ -9,7 +9,10 @@ package beatboxserver;
 import beatboxserver.updates.SessionUpdate;
 import io.netty.channel.Channel;
 
-import com.google.gson.annotations.Expose;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 
 /**
  * 
@@ -60,6 +63,8 @@ public abstract class Session {
         if (update == null) {
             throw new IllegalArgumentException();
         }
+        
+        logger.trace("Queuing update");
         updateQueue.queueUpdate(update);
     }
     
@@ -72,11 +77,16 @@ public abstract class Session {
         updateQueue.queueRequest(ch);
     }
     
-    @Expose
     private final long id;
     
+    @JsonIgnore
     private final String ipAddresss;
     
+    @JsonIgnore
     private final SessionType clientType;
+    
+    @JsonIgnore
     private final SessionUpdateQueue updateQueue;
+    
+    private static final Logger logger = LogManager.getFormatterLogger(Session.class.getName());
 }

@@ -75,10 +75,9 @@ public class BeatboxServer {
                     .childHandler(new BeatboxChannelInitializer(sessionManager, songManager));
             
             ChannelFuture future = b.bind(RegisterService.servicePort /* TODO TEMP */);
-            future.sync();
+
             
-            // Request playback to start, TODO Need more implementation on server side
-            songManager.playNextSong();
+            future.sync();
             
             // Block on channel closure
             future.channel().closeFuture().sync();

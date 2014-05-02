@@ -6,7 +6,6 @@
 
 package beatboxserver.updates;
 
-import com.google.gson.annotations.Expose;
 
 /**
  *
@@ -47,16 +46,11 @@ public class LikeData {
         return balance;
     }
     
-    @Expose
     private long id;
             
-    @Expose
     private int likes;
     
-    @Expose
     private int dislikes;
     
-    @Expose
     private double balance;
-    
 }

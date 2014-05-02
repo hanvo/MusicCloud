@@ -120,6 +120,8 @@ public final class SessionManager {
         }
         
         synchronized(this) {
+            
+            logger.trace("Adding session %d to the map", sessionID);
             sessionMap.put(sessionID, session);
         }
         
@@ -193,6 +195,8 @@ public final class SessionManager {
         synchronized(this) {
             if (sessionMap.containsKey(sessionID)) {
                 sessionMap.get(sessionID).sendUpdate(update);
+            } else {
+                logger.warn("Tried sending update to non-existant session");
             }
         }
     }

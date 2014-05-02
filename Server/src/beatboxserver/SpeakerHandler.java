@@ -7,6 +7,7 @@
 package beatboxserver;
 
 import beatboxserver.messages.*;
+import beatboxserver.updates.*;
 
 import java.util.NoSuchElementException;
 
@@ -77,7 +78,27 @@ public class SpeakerHandler extends RequestHandler {
                 return;
             }
             
-            sendResponse(ctx.channel(), session, false);
+            
+            
+            // Broadcast update to speaker session
+            synchronized (songMgr) {
+                try {
+                    songMgr.playNextSong();
+                } catch (Exception e) {
+                    
+                    logger.warn("Failed to start playback", e);
+                    sendError(ctx.channel(), INTERNAL_SERVER_ERROR);
+                    return;
+                }
+            }
+            
+            try {
+                sendResponse(ctx.channel(), session, false);
+            } catch (Exception e) {
+                
+                logger.warn("Failed create response", e);
+                sendError(ctx.channel(), INTERNAL_SERVER_ERROR);
+            }
         }
     }
     
