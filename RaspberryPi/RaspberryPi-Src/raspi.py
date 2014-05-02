@@ -128,7 +128,9 @@ def play_back_func():
 				#while pygame.mixer.music.get_busy():
 				#	pygame.time.Clock().tick(10)
 				_message['id'] = str(_songID)
+				print "DEBUG: BEFORE PLAYING"
 				_message['status'] = 'Playing'
+				print "DEBUG: AFTER PLAYING"
 				_message['position'] = str(pygame.mixer.music.get_pos())
 				print "The message in Play is \n"+str(_message)
 				_playback_conn_queue.put(_message)
@@ -173,16 +175,21 @@ def play_back_func():
 def communicate_func():
 	while True:
 		print "DEBUG: Entered WHILE "
+		global _clientID
 		# Pop the specific request from the Queue, depending on that do the following
 		_request_set = _playback_conn_queue.get()
 		_playback_conn_queue.task_done()
 		print "The Request in communicate_func is \n"+str(_request_set)
 		print "\n"
 		print _request_set['status']
+		
 		_comm_sock = httplib.HTTPConnection('klamath.dnsdynamic.com', 5050, timeout = timeout)
 		
-		_clientID = _serv_comm_ID_queue.get() # Getting the clientID from the queue
-		_serv_comm_ID_queue.task_done()
+
+		if _clientID == -1
+			_clientID = _serv_comm_ID_queue.get() # Getting the clientID from the queue
+			_serv_comm_ID_queue.task_done()
+		
 		print "_clientID in communicate_func = "+str(_clientID)
 
 		if _request_set['status']=='need_song':
