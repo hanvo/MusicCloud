@@ -71,14 +71,14 @@ public final class SongManager {
     public void playNextSong() throws SQLException {
 
         
-        if (nextSong == null) {
+        //if (nextSong == null) {
             nextSong = getNextSong();
             
             logger.info("Playing next song");
             
             // Send message to start playback
             sessionMgr.broadcastUpdate(new UpcomingSongUpdate(nextSong), SessionType.Speaker.ordinal());
-        }
+        //}
     }
     
     //<editor-fold defaultstate="collapsed" desc="Client Actions">

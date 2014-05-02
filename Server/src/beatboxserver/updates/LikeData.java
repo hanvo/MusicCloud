@@ -30,6 +30,10 @@ public class LikeData {
         this.balance = balance;
     }
     
+    public long getID() {
+        return id;
+    }
+    
     /**
      * Get the number of likes for the given song
      * @return 

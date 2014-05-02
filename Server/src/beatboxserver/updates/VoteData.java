@@ -23,6 +23,14 @@ public class VoteData {
         this.votes = votes;
     }
     
+    public long getID() {
+        return id;
+    }
+    
+    public long getVotes() {
+        return votes;
+    }
+    
     private final long id;
     
     private final long votes;

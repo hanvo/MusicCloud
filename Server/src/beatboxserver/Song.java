@@ -114,7 +114,7 @@ public class Song {
      * 
      * @return 
      */
-    public ByteBuf getImageBuffer() {
+    public ByteBuf getImageData() {
         return imageData;
     }
     

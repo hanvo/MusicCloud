@@ -28,6 +28,14 @@ public class PlaybackCommand {
         id = songID;
     }
     
+    public Command getCommand() {
+        return command;
+    }
+    
+    public long getID() {
+        return id;
+    }
+    
     private final Command command;
     
     private final long id;
