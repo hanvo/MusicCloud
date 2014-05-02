@@ -65,20 +65,20 @@ public final class SongManager {
     }
     
     /**
-     * Order playback to start for the next song once the previous song finishes
+     * Schedule playback to start for the next song once the previous song finishes
      * @throws SQLException
      */
-    public void playNextSong() throws SQLException {
+    public void scheduleNextSong() throws SQLException {
 
         
-        //if (nextSong == null) {
+        if (nextSong == null) {
             nextSong = getNextSong();
             
             logger.info("Playing next song");
             
             // Send message to start playback
             sessionMgr.broadcastUpdate(new UpcomingSongUpdate(nextSong), SessionType.Speaker.ordinal());
-        //}
+        }
     }
     
     //<editor-fold defaultstate="collapsed" desc="Client Actions">
@@ -151,22 +151,27 @@ public final class SongManager {
             }
         }
         
+        // Update the clients with the new like information
+        LikeData stats = getStats();
+        sessionMgr.broadcastUpdate(new LikeUpdate(stats), SessionType.User.ordinal());
+        
         synchronized (this) {
-            // Update the clients with the new like information
-            LikeData stats = getStats();
-            sessionMgr.broadcastUpdate(new LikeUpdate(stats), SessionType.User.ordinal());
         
             long sessions = sessionMgr.getSessionCount();
             
-            // Check if enough people hate the current song
-            if ((double)(stats.getDislikes() - stats.getLikes()) / sessions > 0.3) {
-                nextSong = getNextSong(); // Setting nextSong to non-null indicates we've made a choice
+            // Only bother checking if nextSong is null (Indicates no song selected yet)
+            if (nextSong == null) {
                 
-                // TODO send message
+                logger.trace("Evaluating song status");
+                
+                // Check if enough people hate the current song
+                if ((double)(stats.getDislikes() - stats.getLikes()) / sessions > 0.3) {
+                    
+                    logger.info("Attemping to skip current song");
+                    this.skipToNext();
+                }
             }
-            
         }
-        // TODO Include logic for removing the current song if dislikes reach certain level
     }
     
 //</editor-fold>
@@ -407,103 +412,84 @@ public final class SongManager {
             throw new IllegalArgumentException();
         }
         
-        synchronized(this) {
-            switch (update.status) {
-                case Playing:
+        switch (update.status) {
+            case Playing:
+                logger.trace("Playing update received");
+                    
+                synchronized (this) {
                     // Mark the current song as Playing
                     if (update.id == nextSong.getID()) {
-                        
-                        // Update the database with information about the next song
-                        updateNextSong(activeSong, nextSong);
-                        
-                        if (songTimerTask != null) {
-                            songTimerTask.cancel();
-                        }
-                        
-                        final SongManager manager = this;
-                        
-                        // Create a task to switch to the next song once this song finishes playing
-                        songTimerTask = new TimerTask() {
-                            @Override
-                            public void run() {
-                                synchronized(manager) {
-                                    try {
-                                        manager.playNextSong();
-                                    } catch (Exception e) {
-                                        // TODO, handle this later
-                                    }
-                                }
-                            }
-                        };
-                        
-                        // Schedule to run approx 5 seconds before the end of the song
-                        songTimer.schedule(songTimerTask, (nextSong.getLength() - 5) * 1000);
-                        
-                        
-                        // Update object state based on the transition
-                        activeSong = new ActiveSong(nextSong.getID(),
-                                                    nextSong.getName(),
-                                                    nextSong.getArtist(),
-                                                    nextSong.getAlbum(),
-                                                    nextSong.getPath(),
-                                                    nextSong.getLength(),
-                                                    nextSong.getVotes());
-                        nextSong = null;
-                        
+
+                        updatePlayback();
+
                         // Tell the phone clients that something happened
                         sessionMgr.broadcastUpdate(new SongUpdate(activeSong), SessionType.User.ordinal());
                     } else if (update.id != activeSong.getID()){
-                        
+
+                        logger.trace("Incorrect song being played, attempting correction");
+
+                        // Send upcoming song update
+                        sessionMgr.sendUpdate(new UpcomingSongUpdate(activeSong), sessionID);
+
                         // Inform the speaker it's confused
-                        sessionMgr.sendUpdate(new PlaybackCommandUpdate(
-                                new PlaybackCommand(PlaybackCommand.Command.Play, activeSong.getID())),
+                        sessionMgr.sendUpdate(
+                                new PlaybackCommandUpdate(new PlaybackCommand(PlaybackCommand.Command.Stop, update.id)),
                                 sessionID);
                     }
-                    
-                    break;
-                case Stopped: // Previous song finished playing
-                    
-                    // TODO, what are we doing with speaker updates in the DB??
-                    // Mark the current song as Stopped in the DB
+                }
+                break;
+            case Stopped: // Previous song finished playing
+
+                logger.trace("Stopped update received");
+
+                // TODO, what are we doing with speaker updates in the DB??
+
+                // Mark the current song as Stopped in the DB
+                synchronized(this) {
                     String query = "UPDATE songs SET status = " + SongStatus.Stopped.ordinal() + " WHERE id = ?";
                     try (PreparedStatement stmt = databaseMgr.createPreparedStatement(query)) {
                         stmt.setLong(1, activeSong.getID());
                         stmt.executeQuery();
                     }
-                    
-                    if (nextSong != null) {
-                        // Pick a new song
+
+                    if (nextSong == null) {
+
+                        logger.trace("Next song selected after STOP");
+
+                        // Pick a new song if we haven't already done so
                         nextSong = getNextSong();
-                    }
-                    
-                    // The speaker should ask us for the next song, but politely remind it who's boss around here
-                    //sessionMgr.sendUpdate(new UpcomingSongUpdate(nextSong), sessionID);
-                    //sessionMgr.sendUpdate(new PlaybackCommandUpdate(new PlaybackCommand(PlaybackCommand.Command.Play, nextSong.getID())), sessionID);
-                    
-                    
-                    break;
-                case Ready:
-                    
-                    // Send the playback command if the song ID matches the active song
-                    if (update.id == nextSong.getID()) {
-                        
-                        // Send message to start playback
-                        sessionMgr.sendUpdate(new PlaybackCommandUpdate(
-                                new PlaybackCommand(PlaybackCommand.Command.Play, nextSong.getID())),
-                                sessionID);
-                        
-                        // TODO, this is a problem for multiple speakers, need a quorum, and then tell the others to get in line
-                        // Hmmm, may try using Paxos later as an experiement
-                       
-                    } else {
-                        
-                        // Inform the speaker it's confused
+
+                        // Tell the speaker about the newly selected next song
                         sessionMgr.sendUpdate(new UpcomingSongUpdate(nextSong), sessionID);
                     }
-                    break;
+                }
+
+                break;
+            case Ready:
+
+                logger.trace("Ready update receieved");
+
+                // Send the playback command if the song ID matches the active song
+                if (update.id == nextSong.getID()) {
+
+                    // Send message to start playback
+                    sessionMgr.sendUpdate(new PlaybackCommandUpdate(
+                            new PlaybackCommand(PlaybackCommand.Command.Play, nextSong.getID())),
+                            sessionID);
+
+                    // TODO, this is a problem for multiple speakers, need a quorum, and then tell the others to get in line
+                    // Hmmm, may try using Paxos later as an experiement
+
+                } else {
+
+                    // Inform the speaker it's confused
+                    sessionMgr.sendUpdate(new UpcomingSongUpdate(nextSong), sessionID);
+                }
+                break;
             }
-        }
     }
+
+    
 
 //</editor-fold>
     
@@ -515,7 +501,7 @@ public final class SongManager {
      * @return
      * @throws SQLException
      * @throws IOException
-     * @throws IllegalArguementException
+     * @throws IllegalArgumentException
      */
     public SongData getSongData(long songID) throws SQLException, IOException, IllegalArgumentException {
         if (songID < 0) {
@@ -527,14 +513,14 @@ public final class SongManager {
             stmt.setLong(1, songID);
             ResultSet rs = stmt.executeQuery();
             if (rs.next()) {
-                path = rs.getString("name");
+                path = rs.getString("path");
             } else {
                 throw new NoSuchElementException();
             }
         }
         
         // Read mp3 file from disk into RAM and send off to the client
-        // This could *probably* be optimized quite a bit
+        // This could *probably* be optimized a lot
         File file = new File(path);
         int length = (int)file.length();
         FileInputStream fs = new FileInputStream(file);
@@ -579,42 +565,84 @@ public final class SongManager {
     }
     
     /**
-     * Stops playback of the current song, and demands playback of the next song
+     * Update state after a song begins playback
+     * @throws SQLException 
+     */
+    private void updatePlayback() throws SQLException {
+        // Update the database with information about the next song
+        updateNextSong(activeSong, nextSong);
+        
+        if (songTimerTask != null) {
+            songTimerTask.cancel();
+        }
+        
+        final SongManager manager = this;
+        
+        // Create a task to switch to the next song once this song finishes playing
+        songTimerTask = new TimerTask() {
+            @Override
+            public void run() {
+                synchronized(manager) {
+                    try {
+                        manager.scheduleNextSong();
+                    } catch (Exception e) {
+                        // TODO, handle this later
+                    }
+                }
+            }
+        };
+        
+        // Schedule to run approx 5 seconds before the end of the song
+        logger.trace("Scheduling timer task for %d seconds", nextSong.getLength() - 5);
+        songTimer.schedule(songTimerTask, (nextSong.getLength() - 5) * 1000);
+        
+        
+        // Update object state based on the transition
+        activeSong = new ActiveSong(nextSong.getID(),
+                nextSong.getName(),
+                nextSong.getArtist(),
+                nextSong.getAlbum(),
+                nextSong.getPath(),
+                nextSong.getLength(),
+                nextSong.getVotes());
+        nextSong = null;
+    }
+    
+    /**
+     * Stops playback of the current song, and schedules playback of the next song
      * @return
      */
     private void skipToNext() throws SQLException {
         
-        ActiveSong song = null;
-        song = getActiveSongFromDB();
-        
-        //LikeData data
-        synchronized (this) {
-            
-            if (nextSong == null) {
-                nextSong = getNextSong();
-            }
-            
-            // Cancel
-            if (songTimerTask != null) {
-                songTimerTask.cancel();
-            }
-            
-            // Inform the speakers of our choice for the next song
-            UpcomingSongUpdate update = new UpcomingSongUpdate(nextSong);
-            
-            // Broadcast to the client
-            sessionMgr.broadcastUpdate(update, SessionType.Speaker.ordinal());
-            
-            // Send message asking the speakers to stop playing the current song
-            PlaybackCommandUpdate message = new PlaybackCommandUpdate(new PlaybackCommand(PlaybackCommand.Command.Stop, activeSong.getID()));
-            
-            // Then broadcast a message the speaker and clients about the new song
-            sessionMgr.broadcastUpdate(message, SessionType.Speaker.ordinal());
-            
-            // Speakers will respond by stopping playback of the current song
-            // then requesting the song data for the next song,
-            // and finally sending ready before starting playback
+
+        if (nextSong != null) {
+            throw new IllegalStateException();
         }
+
+        // Cancel
+        if (songTimerTask != null) {
+
+            // Stop next attempt to schedule a new song
+            logger.trace("Cancelling timer");
+            songTimerTask.cancel();
+            songTimerTask = null;
+        }
+
+        // Inform the speakers of our choice for the next song
+        UpcomingSongUpdate update = new UpcomingSongUpdate(nextSong);
+
+        // Broadcast to the client
+        sessionMgr.broadcastUpdate(update, SessionType.Speaker.ordinal());
+
+        // Send message asking the speakers to stop playing the current song
+        PlaybackCommandUpdate message = new PlaybackCommandUpdate(new PlaybackCommand(PlaybackCommand.Command.Stop, activeSong.getID()));
+
+        // Then broadcast a message the speaker and clients about the new song
+        sessionMgr.broadcastUpdate(message, SessionType.Speaker.ordinal());
+
+        // Speakers will respond by requesting song data for the next song
+        // Then stopping playback
+        // and finally sending ready before starting playback
     }
     
     /**
@@ -630,34 +658,12 @@ public final class SongManager {
             String query;
             
             // Wipe likes for the previous song from the DB
+            if (currentSong != null) {
+                removeCurrentSongFromDB(currentSong);
+            }
+            
             if (nextSong != null) {
-                query = "DELETE FROM likes where song_id = ?";
-                try (PreparedStatement stmt = databaseMgr.createPreparedStatement(query)) {
-                    stmt.setLong(1, currentSong.getID());
-                    stmt.executeUpdate();
-                }
-                
-                // Mark the active song as inactive now that a new song is starting
-                query = "UPDATE songs SET status = " + SongStatus.Inactive.ordinal() + " WHERE song_id = ?";
-                try (PreparedStatement stmt = databaseMgr.createPreparedStatement(query)) {
-                    stmt.setLong(1, currentSong.getID());
-                    stmt.executeUpdate();
-                }
-            }
-            
-            // Wipe votes for the new song from the DB
-            query = "DELETE FROM votes WHERE song_id = ?";
-            try (PreparedStatement stmt = databaseMgr.createPreparedStatement(query)) {
-                stmt.setLong(1, nextSong.getID());
-                stmt.executeUpdate();
-            }
-            
-            
-            
-            // Mark the next song as active
-            query = "UPDATE songs SET status = " + SongStatus.Playing.ordinal() + " WHERE song_id = ?";
-            try (PreparedStatement stmt = databaseMgr.createPreparedStatement(query)) {
-                stmt.setLong(1, nextSong.getID());
+                addCurrentSongToDB(nextSong);
             }
             
         } catch (Exception e) {
@@ -670,7 +676,51 @@ public final class SongManager {
         // Commit our changes
         databaseMgr.stopTransaction();
     }
-//</editor-fold>
+
+    /**
+     * 
+     * @param nextSong
+     * @throws SQLException 
+     */
+    private void addCurrentSongToDB(Song nextSong) throws SQLException {
+        String query;
+        
+        // Wipe votes for the new song from the DB
+        query = "DELETE FROM votes WHERE song_id = ?";
+        try (final PreparedStatement stmt = databaseMgr.createPreparedStatement(query)) {
+            stmt.setLong(1, nextSong.getID());
+            stmt.executeUpdate();
+        }
+        // Mark the next song as active
+        query = "UPDATE songs SET status = " + SongStatus.Playing.ordinal() + " WHERE song_id = ?";
+        try (final PreparedStatement stmt = databaseMgr.createPreparedStatement(query)) {
+            stmt.setLong(1, nextSong.getID());
+        }
+    }
+
+    /**
+     * 
+     * @param currentSong
+     * @throws SQLException 
+     */
+    private void removeCurrentSongFromDB(ActiveSong currentSong) throws SQLException {
+        String query;
+        
+        query = "DELETE FROM likes where song_id = ?";
+        try (PreparedStatement stmt = databaseMgr.createPreparedStatement(query)) {
+            stmt.setLong(1, currentSong.getID());
+            stmt.executeUpdate();
+        }
+        // Mark the active song as inactive now that a new song is starting
+        query = "UPDATE songs SET status = " + SongStatus.Inactive.ordinal() + " WHERE song_id = ?";
+        try (PreparedStatement stmt = databaseMgr.createPreparedStatement(query)) {
+            stmt.setLong(1, currentSong.getID());
+            stmt.executeUpdate();
+        }
+    }
+    
+    //</editor-fold>
+    
     
     //<editor-fold defaultstate="collapsed" desc="Fields">
     private Song nextSong;

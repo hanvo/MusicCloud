@@ -97,7 +97,6 @@ public class SessionUpdateQueue {
                 chan = channelQueue.poll();
                 
                 json = update.toJson();
-                logger.trace("Sending JSON %s", json); // TODO TEMP DEBUG
                 response = RequestHandler.createResponse(HttpResponseStatus.OK, json);
                 
                 logger.trace("Sending update to session");

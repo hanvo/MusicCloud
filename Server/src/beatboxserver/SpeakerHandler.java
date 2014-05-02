@@ -83,7 +83,7 @@ public class SpeakerHandler extends RequestHandler {
             // Broadcast update to speaker session
             synchronized (songMgr) {
                 try {
-                    songMgr.playNextSong();
+                    songMgr.scheduleNextSong();
                 } catch (Exception e) {
                     
                     logger.warn("Failed to start playback", e);
