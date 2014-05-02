@@ -186,7 +186,7 @@ def communicate_func():
 		_comm_sock = httplib.HTTPConnection('klamath.dnsdynamic.com', 5050, timeout = timeout)
 		
 
-		if _clientID == -1
+		if _clientID == -1:
 			_clientID = _serv_comm_ID_queue.get() # Getting the clientID from the queue
 			_serv_comm_ID_queue.task_done()
 		
