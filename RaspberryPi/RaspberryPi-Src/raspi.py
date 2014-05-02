@@ -29,15 +29,15 @@ import json
 import socket
 import sys
 import Queue
-import pygame
+#import pygame
 import os
 import fnmatch
 
-timeout = 100
+timeout = 10
 _Rlock = threading.RLock()
 flag_serv_func = 0
 _clientID = -1
-SONG_END = pygame.USEREVENT + 1
+#SONG_END = pygame.USEREVENT + 1
 _serv_playback_queue = Queue.Queue(0)
 _playback_conn_queue = Queue.Queue(0)
 _conn_playback_queue = Queue.Queue(0)
@@ -47,8 +47,10 @@ _serv_comm_ID_queue = Queue.Queue(0)
 def serv_func():
 	_serv_sock = httplib.HTTPConnection('klamath.dnsdynamic.com', 5050, timeout = timeout)
 	socket.setdefaulttimeout(timeout)
+	global flag_serv_func
+	global _clientID
 	if flag_serv_func == 0:
-		flag_serv_func = flag_serv_func + 1
+		flag_serv_func = 1
 		params = json.dumps({"pin":1234},encoding = "ASCII")
 		headers = {"Content-Type": "application/json"}
 		print "Authenticating"
@@ -61,8 +63,9 @@ def serv_func():
 			pass
 		print "Authenticated response"
 		print _serv_resp_json.status, _serv_resp_json.reason
-
-		_serv_response = json.load(_serv_resp_json.read())
+		print "_serv_resp_json is \n"+str(_serv_resp_json)
+		_serv_resp_message = _serv_resp_json.read()
+		_serv_response = json.loads(_serv_resp_message)
 		_clientID = _serv_response['id']
 		print "Client ID is ="+str(_clientID)
 		_serv_comm_ID_queue.put(_clientID)
@@ -72,6 +75,7 @@ def serv_func():
 	try:
 		while True:
 			print "Sending request_update"
+			print "Client ID is ="+str(_clientID)
 			_serv_sock.request("GET","klamath.dnsdynamic.com:5050/speaker/request_update?clientID="+str(_clientID))
 			_upcoming_song_resp = _serv_sock.getresponse()
 			print "Request Update Response"
@@ -93,104 +97,113 @@ def serv_func():
 
 def play_back_func():
 	
-	pygame.mixer.init() #might have to make global if going to recursively call
+	while True:
+		#pygame.mixer.init() #might have to make global if going to recursively call
 
-	_response = json.load(_serv_playback_queue.get())
-	_serv_playback_queue.task_done()
-	print "the Response in play_back_func is \n"+str(_response)
+		_response = json.loads(_serv_playback_queue.get())
+		_serv_playback_queue.task_done()
+		print "the Response in play_back_func is \n"+str(_response)
 
-	_message = {"id":"","status":"","position":""}
-	_update_type = _response['update_type']
+		_message = {"id":"","status":"","position":""}
+		_update_type = _response['update_type']
 
-	if _update_type == "playback_command":
-		_values = _response['values']
-		_songID = _values['id']
-		_command = _values['command']
+		if _update_type == "playback_command":
+			_values = _response['values']
+			_songID = _values['id']
+			_command = _values['command']
 
-		if _command == 'Play':
-			pygame.mixer.music.set_endevent(SONG_END)
-			pygame.mixer.music.load(_songID)
-			pygame.mixer.music.play()
-			while pygame.mixer.music.get_busy():
-				pygame.time.Clock().tick(10)
-			_message['id'] = str(_songID)
-			_message['status'] = 'Playing'
-			_message['position'] = str(pygame.mixer.music.get_pos())
-			_playback_conn_queue.put(_message)
-			#There will be an issue here with the loop, find a way to solve it
-			for event in pygame.event.get():
-				if event.type == SONG_END:
-					_message['status'] = 'Stopped'
-					_message['position'] = str(pygame.mixer.music.get_pos())
-					_playback_conn_queue.put(_message)
+			if _command == 'Play':
+				#pygame.mixer.music.set_endevent(SONG_END)
+				#pygame.mixer.music.load(_songID)
+				#pygame.mixer.music.play()
+				#while pygame.mixer.music.get_busy():
+				#	pygame.time.Clock().tick(10)
+				_message['id'] = str(_songID)
+				_message['status'] = 'Playing'
+				_message['position'] = str(pygame.mixer.music.get_pos())
+				_playback_conn_queue.put(_message)
+				#There will be an issue here with the loop, find a way to solve it
+				#for event in pygame.event.get():
+				#	if event.type == SONG_END:
+				#		_message['status'] = 'Stopped'
+				#		_message['position'] = str(pygame.mixer.music.get_pos())
+				#		_playback_conn_queue.put(_message)
+				#		send a ready message
 
-		if _command == 'Stop':
-			pygame.mixer.music.stop()
-
-	if _update_type == "upcoming_song":
-		_flag_ut = 0
-		_values = _response['values']
-		_songID = _values['id']
-
-		for file in os.listdir('.'):
-			if fnmatch.fnmatch(file,_songID):
-				_flag_ut = 1
-			else:
-				pass
+			if _command == 'Stop':
+				#pygame.mixer.music.stop()
+				_message['id'] = str(_songID)
+				_message['status'] = 'Stopped'
+				_message['position'] = str(pygame.mixer.music.get_pos())
+				_playback_conn_queue.put(_message)
+				_message['status'] = 'Ready'
+				_playback_conn_queue.put(_message)
 			
-		if _flag_ut == 0:
-			_message['id'] = str(_songID)
-			_message['status'] = 'need_song'
-			_message['position'] = str(0);
-			_playback_conn_queue.put(_message)
+
+		if _update_type == "upcoming_song":
+			_flag_ut = 0
+			_values = _response['values']
+			_songID = _values['id']
+
+			for file in os.listdir('.'):
+				if fnmatch.fnmatch(file,_songID):
+					_flag_ut = 1
+				else:
+					pass
+			
+			if _flag_ut == 0:
+				_message['id'] = str(_songID)
+				_message['status'] = 'need_song'
+				_message['position'] = str(0);
+				_playback_conn_queue.put(_message)
 
 
 def communicate_func():
-	# Pop the specific request from the Queue, depending on that do the following
-	_request_set = _playback_conn_queue.get()
-	_playback_conn_queue.task_done()
-	print "The Request in communicate_func is \n"+str(request_set)
+	while True:
+		# Pop the specific request from the Queue, depending on that do the following
+		_request_set = _playback_conn_queue.get()
+		_playback_conn_queue.task_done()
+		print "The Request in communicate_func is \n"+str(request_set)
 
-	_comm_sock = httplib.HTTPConnection('klamath.dnsdynamic.com', 5050, timeout = timeout)
-	
-	_clientID = _serv_comm_ID_queue.get() # Getting the clientID from the queue
-	_serv_comm_ID_queue.task_done()
-	print "_clientID in communicate_func = "+str(_clientID)
-
-	if _request_set['status']=='need_song':
-		_songID = _request_set['id']
-		_comm_sock.request("GET","klamath.dnsdynamic.com:5050/request_song?clientID="+str(_clientID)+"&songID"+str(_songID))
-		_song_data_resp = _comm_sock.getresponse()
+		_comm_sock = httplib.HTTPConnection('klamath.dnsdynamic.com', 5050, timeout = timeout)
 		
-		print "Song Data Response"
-		print _song_data_resp.status, _song_data_resp.reason
+		_clientID = _serv_comm_ID_queue.get() # Getting the clientID from the queue
+		_serv_comm_ID_queue.task_done()
+		print "_clientID in communicate_func = "+str(_clientID)
 
-		if _song_data_resp.status == 200:
-			_request_set['status'] = 'Ready'
-			_song_data_json = _song_data_resp.read()
-			_song_data = json.load(_song_data_json)
-			output_file = open(str(_songID),'w')
-			output_file.write(_song_data)
-			output_file.close()
-		else:
-			sys.exit(-1)
+		if _request_set['status']=='need_song':
+			_songID = _request_set['id']
+			_comm_sock.request("GET","klamath.dnsdynamic.com:5050/request_song?clientID="+str(_clientID)+"&songID"+str(_songID))
+			_song_data_resp = _comm_sock.getresponse()
+			
+			print "Song Data Response"
+			print _song_data_resp.status, _song_data_resp.reason
 
-	# NEED TO IMPLEMENT READY, playback position for READY(?)
+			if _song_data_resp.status == 200:
+				_song_data_json = _song_data_resp.read()
+				_song_data = json.loads(_song_data_json)
+				output_file = open(str(_songID),'w')
+				output_file.write(_song_data)
+				output_file.close()
+			else:
+				sys.exit(-1)
 
-	if _request_set['status']=='Playing':
-		_params_update = json.dumps(_request_set,encoding = "ASCII")
-		_headers_update = {"Content-Type":"application/json"}
-		_comm_sock.request("POST","klamath.dnsdynamic.com:5050/speaker/status_update?clientID="+str(_clientID),_params_update,_headers_update)
-	
-	if _request_set['status']=='Stopped':
-		_params_update = json.dumps(_request_set,encoding = "ASCII")
-		_headers_update = {"Content-Type":"application/json"}
-		_comm_sock.request("POST","klamath.dnsdynamic.com:5050/speaker/status_update?clientID="+str(_clientID),_params_update,_headers_update)	
+		# NEED TO IMPLEMENT READY, playback position for READY(?)
 
-	if _request_set['status']=='Ready':
-		_params_update = json.dumps(_request_set,encoding = "ASCII")
-		_headers_update = {"Content-Type":"application/json"}
-		_comm_sock.request("POST","klamath.dnsdynamic.com:5050/speaker/status_update?clientID="+str(_clientID),_params_update,_headers_update)
+		if _request_set['status']=='Playing':
+			_params_update = json.dumps(_request_set,encoding = "ASCII")
+			_headers_update = {"Content-Type":"application/json"}
+			_comm_sock.request("POST","klamath.dnsdynamic.com:5050/speaker/status_update?clientID="+str(_clientID),_params_update,_headers_update)
+		
+		if _request_set['status']=='Stopped':
+			_params_update = json.dumps(_request_set,encoding = "ASCII")
+			_headers_update = {"Content-Type":"application/json"}
+			_comm_sock.request("POST","klamath.dnsdynamic.com:5050/speaker/status_update?clientID="+str(_clientID),_params_update,_headers_update)	
+
+		if _request_set['status']=='Ready':
+			_params_update = json.dumps(_request_set,encoding = "ASCII")
+			_headers_update = {"Content-Type":"application/json"}
+			_comm_sock.request("POST","klamath.dnsdynamic.com:5050/speaker/status_update?clientID="+str(_clientID),_params_update,_headers_update)
 
 
 if __name__ == "__main__":
