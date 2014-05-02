@@ -104,7 +104,7 @@ def serv_func():
 def play_back_func():
 	
 	while True:
-		#pygame.mixer.init() #might have to make global if going to recursively call
+		pygame.mixer.init() #might have to make global if going to recursively call
 		global _playingstate
 		_response = json.loads(_serv_playback_queue.get())
 		_serv_playback_queue.task_done()
@@ -140,7 +140,7 @@ def play_back_func():
 				#		send a ready message
 
 			if _command == 'Stop':
-				#pygame.mixer.music.stop()
+				pygame.mixer.music.stop()
 				_message['id'] = str(_songID)
 				_message['status'] = 'Stopped'
 				_message['position'] = str(pygame.mixer.music.get_pos())
