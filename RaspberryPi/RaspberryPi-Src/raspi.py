@@ -155,7 +155,7 @@ def play_back_func():
 			_songID = _values['id']
 
 			for file in os.listdir('.'):
-				if fnmatch.fnmatch(file,_songID):
+				if fnmatch.fnmatch(file,str(_songID)):
 					_flag_ut = 1
 				else:
 					pass
@@ -164,18 +164,18 @@ def play_back_func():
 				_message['id'] = str(_songID)
 				_message['status'] = 'need_song'
 				_message['position'] = str(0);
+				print "The Message is \n"+str(_message)
+				print "\n"
 				_playback_conn_queue.put(_message)
-				if _playingstate == 0:
-					_message['status'] = 'Ready'
-					_playback_conn_queue.put(_message)
 
 def communicate_func():
 	while True:
 		# Pop the specific request from the Queue, depending on that do the following
 		_request_set = _playback_conn_queue.get()
 		_playback_conn_queue.task_done()
-		print "The Request in communicate_func is \n"+str(request_set)
-
+		print "The Request in communicate_func is \n"+str(_request_set)
+		print "\n"
+		print _request_set['status']
 		_comm_sock = httplib.HTTPConnection('klamath.dnsdynamic.com', 5050, timeout = timeout)
 		
 		_clientID = _serv_comm_ID_queue.get() # Getting the clientID from the queue
@@ -183,35 +183,42 @@ def communicate_func():
 		print "_clientID in communicate_func = "+str(_clientID)
 
 		if _request_set['status']=='need_song':
+			print "IN NEED SONG"
 			_songID = _request_set['id']
-			_comm_sock.request("GET","klamath.dnsdynamic.com:5050/request_song?clientID="+str(_clientID)+"&songID"+str(_songID))
+			print _songID
+			_comm_sock.request("GET","klamath.dnsdynamic.com:5050/speaker/request_song?clientID="+str(_clientID)+"&songID="+str(_songID))
 			_song_data_resp = _comm_sock.getresponse()
 			
 			print "Song Data Response"
 			print _song_data_resp.status, _song_data_resp.reason
 
 			if _song_data_resp.status == 200:
-				_song_data_json = _song_data_resp.read()
-				_song_data = json.loads(_song_data_json)
+				_song_data= _song_data_resp.read()
 				output_file = open(str(_songID),'w')
 				output_file.write(_song_data)
 				output_file.close()
+				if _playingstate == 0:
+					_request_set['status'] = 'Ready'
+					print "The Message in playing state is \n"+str(_request_set)
 			else:
 				sys.exit()
 
 		# NEED TO IMPLEMENT READY, playback position for READY(?)
 
 		if _request_set['status']=='Playing':
+			print "IN PLAYING"
 			_params_update = json.dumps(_request_set,encoding = "ASCII")
 			_headers_update = {"Content-Type":"application/json"}
 			_comm_sock.request("POST","klamath.dnsdynamic.com:5050/speaker/status_update?clientID="+str(_clientID),_params_update,_headers_update)
 		
 		if _request_set['status']=='Stopped':
+			print "IN STOPPED"
 			_params_update = json.dumps(_request_set,encoding = "ASCII")
 			_headers_update = {"Content-Type":"application/json"}
 			_comm_sock.request("POST","klamath.dnsdynamic.com:5050/speaker/status_update?clientID="+str(_clientID),_params_update,_headers_update)	
 
 		if _request_set['status']=='Ready':
+			print "IN READY"
 			_params_update = json.dumps(_request_set,encoding = "ASCII")
 			_headers_update = {"Content-Type":"application/json"}
 			_comm_sock.request("POST","klamath.dnsdynamic.com:5050/speaker/status_update?clientID="+str(_clientID),_params_update,_headers_update)
