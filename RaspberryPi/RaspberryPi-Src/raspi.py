@@ -120,12 +120,13 @@ def play_back_func():
 			_command = _values['command']
 
 			if _command == 'Play':
+				print "IM PLAYING"
 				_playingstate = 1
-				#pygame.mixer.music.set_endevent(SONG_END)
-				#pygame.mixer.music.load(_songID)
-				#pygame.mixer.music.play()
-				#while pygame.mixer.music.get_busy():
-				#	pygame.time.Clock().tick(10)
+				pygame.mixer.music.set_endevent(SONG_END)
+				pygame.mixer.music.load(_songID)
+				pygame.mixer.music.play()
+				while pygame.mixer.music.get_busy():
+					pygame.time.Clock().tick(10)
 				_message['id'] = str(_songID)
 				_message['status'] = 'Playing'
 				_message['position'] = str(pygame.mixer.music.get_pos())
