@@ -33,12 +33,12 @@ import org.apache.logging.log4j.LogManager;
  *
  * @author rahmanj
  */
-public class SessionManager {
+public final class SessionManager {
     
     /**
-     * 
-     * @param databaseManager
-     * @param authenticationManager 
+     * Create new {@link SessionManager} instance
+     * @param databaseManager {@link DatabaseManager} for the {@link SessionManager} to use
+     * @param authenticationManager {@link AuthenticatationManager} for the {@link SessionManager} to use
      */
     public SessionManager(DatabaseManager databaseManager, AuthenticationManager authenticationManager) {
         databaseMgr = databaseManager;
@@ -120,6 +120,8 @@ public class SessionManager {
         }
         
         synchronized(this) {
+            
+            logger.trace("Adding session %d to the map", sessionID);
             sessionMap.put(sessionID, session);
         }
         
@@ -184,7 +186,6 @@ public class SessionManager {
      * 
      * @param update
      * @param sessionID
-     * @throws SQLException 
      */
     public void sendUpdate(SessionUpdate update, long sessionID) {
         if (update == null) {
@@ -194,6 +195,8 @@ public class SessionManager {
         synchronized(this) {
             if (sessionMap.containsKey(sessionID)) {
                 sessionMap.get(sessionID).sendUpdate(update);
+            } else {
+                logger.warn("Tried sending update to non-existant session");
             }
         }
     }
@@ -229,9 +232,10 @@ public class SessionManager {
     
     /**
      * Check if the given session is valid
-     * @param sessionID
-     * @param ipAddress
+     * @param sessionID {@link long} session ID to validate
+     * @param ipAddress {@link String} IP address
      * @return 
+     * @throws IllegalArgumentException
      */
     public boolean validSession(long sessionID, String ipAddress) {
         if (sessionID < 0 || ipAddress == null) {
@@ -258,8 +262,12 @@ public class SessionManager {
                     logger.warn("Invalid number of client IDs found");
                     return false;
                 }
+                
+                // TODO check timestamp
+                
             }
         } catch (SQLException e) {
+            
             logger.warn("Failed to authenticate session", e);
             return false;
         }

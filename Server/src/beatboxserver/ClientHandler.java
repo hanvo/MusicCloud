@@ -34,22 +34,22 @@ import static io.netty.handler.codec.http.HttpResponseStatus.*;
 public class ClientHandler extends RequestHandler {
     
     /**
-     * 
-     * @param clientManager
-     * @param songManager 
+     * Construct a new {@link ClientHandler}
+     * @param sessionManager {@link SessionManager} for the handler
+     * @param songManager {@link SongManager} for this handler
      */
-    public ClientHandler(SessionManager clientManager, SongManager songManager) {
-        super(clientManager, songManager);
+    public ClientHandler(SessionManager sessionManager, SongManager songManager) {
+        super(sessionManager, songManager);
     }
     
     
     /**
-     * 
+     * Authenticate an incoming connection
      * @param ctx {@link ChannelHandlerContext} for this request
      * @param req {@link FullHttpRequest} send by the client
      * @param sessionID {@link long} Session ID parsed from the URI
      * @param ipAddress {@link String} IP address of the remote client
-     * @param body 
+     * @param body {@link Message} from the incoming request body
      */
     public void authenticate(ChannelHandlerContext ctx, FullHttpRequest req, long sessionID, String ipAddress, Message body) {
         if (validateMethod(ctx.channel(), req, HttpMethod.POST)) {
@@ -60,16 +60,16 @@ public class ClientHandler extends RequestHandler {
             try {
                 message = (AuthenticateMessage)body;
             } catch (ClassCastException e) {
+                
+                logger.warn("Error with message type", e);
                 sendError(ctx.channel(), BAD_REQUEST);
                 return;
             }
             
             try {
-                if (message.pin == null) {
-                    logger.trace("Null PIN");
-                }
                 session = (UserSession)sessionMgr.createSession(message.pin, ipAddress, SessionType.User);
             } catch (SecurityException e) {
+                
                 logger.warn("Security exception", e);
                 sendError(ctx.channel(), FORBIDDEN);
                 return;
@@ -80,17 +80,23 @@ public class ClientHandler extends RequestHandler {
                 return;
             }
             
-            sendResponse(ctx.channel(), session, false);
+            try {
+                sendResponse(ctx.channel(), session, false);
+            } catch (Exception e) {
+                
+                logger.warn("Failed create response", e);
+                sendError(ctx.channel(), INTERNAL_SERVER_ERROR);
+            }
         }
     }
     
     /**
-     * 
+     * Deauthenticate a given session
      * @param ctx {@link ChannelHandlerContext} for this request
      * @param req {@link FullHttpRequest} send by the client
      * @param sessionID {@link long} Session ID parsed from the URI
      * @param ipAddress {@link String} IP address of the remote client
-     * @param body 
+     * @param body body {@link Message} from the incoming request body
      */
     public void deauthenticate(ChannelHandlerContext ctx, FullHttpRequest req, long sessionID, String ipAddress, Message body) {
         if (validateMethod(ctx.channel(), req, HttpMethod.POST)) {
@@ -99,6 +105,8 @@ public class ClientHandler extends RequestHandler {
             try {
                 message = (DeauthenticateMessage)body;
             } catch (ClassCastException e) {
+                
+                logger.warn("Error with message type", e);
                 sendError(ctx.channel(), BAD_REQUEST);
                 return;
             }
@@ -112,10 +120,12 @@ public class ClientHandler extends RequestHandler {
                 sessionMgr.destroySession(message.id);
             } catch (SecurityException e) {
                 
+                logger.warn("Failed to remove session", e);
                 sendError(ctx.channel(), FORBIDDEN);
                 return;
             } catch (ClassCastException e) {
                 
+                logger.warn("Bad request from client", e);
                 sendError(ctx.channel(), BAD_REQUEST);
                 return;
             } catch (Exception e) {
@@ -137,29 +147,20 @@ public class ClientHandler extends RequestHandler {
      * @param req {@link FullHttpRequest} send by the client
      * @param sessionID {@link long} Session ID parsed from the URI
      * @param ipAddress {@link String} IP address of the remote client
-     * @param body
+     * @param body body {@link Message} from the incoming request body
      * @throws SQLException
      */
     public void vote(ChannelHandlerContext ctx, FullHttpRequest req, long sessionID, String ipAddress, Message body) throws SQLException {
         if (validateMethod(ctx.channel(), req, HttpMethod.POST) && validateSession(ctx.channel(), sessionID, ipAddress)) {
             
-            // Validate the session
-            try {
-                if (!sessionMgr.validSession(sessionID, ipAddress)) {
-                    sendError(ctx.channel(), FORBIDDEN);
-                    return;
-                }
-            } catch (Exception e) {
-                logger.warn("Failed to validate session", e);
-                sendError(ctx.channel(), FORBIDDEN);
-                return;
-            }
             
             // Do, your patriotic duty, and vote
             VoteMessage message;
             try {
                 message = (VoteMessage)body;
-            } catch (ClassCastException e) {
+            } catch (Exception e) {
+                
+                logger.warn("Failed to submit ballot", e);
                 sendError(ctx.channel(), BAD_REQUEST);
                 return;
             }
@@ -167,6 +168,7 @@ public class ClientHandler extends RequestHandler {
             try {
                 songMgr.vote(message.id, sessionID);
             } catch (SQLException e) {
+                
                 logger.warn("Failed to record vote for the song", e);
                 sendError(ctx.channel(), INTERNAL_SERVER_ERROR);
                 return;
@@ -182,7 +184,7 @@ public class ClientHandler extends RequestHandler {
      * @param req {@link FullHttpRequest} send by the client
      * @param sessionID {@link long} Session ID parsed from the URI
      * @param ipAddress {@link String} IP address of the remote client
-     * @param body
+     * @param body body {@link Message} from the incoming request body
      */
     public void like(ChannelHandlerContext ctx, FullHttpRequest req, long sessionID, String ipAddress, Message body) {
         if (validateMethod(ctx.channel(), req, HttpMethod.POST) && validateSession(ctx.channel(), sessionID, ipAddress)) {
@@ -191,6 +193,7 @@ public class ClientHandler extends RequestHandler {
             try {
                 message = (LikeMessage)body;
             } catch (ClassCastException e) {
+                
                 logger.warn("Bad request", e);
                 sendError(ctx.channel(), BAD_REQUEST);
                 return;
@@ -199,6 +202,7 @@ public class ClientHandler extends RequestHandler {
             try {
                 songMgr.like(message.id, sessionID);
             } catch (Exception e) {
+                
                 logger.warn("Failed to like song", e);
                 sendError(ctx.channel(), INTERNAL_SERVER_ERROR);
                 return;
@@ -214,7 +218,7 @@ public class ClientHandler extends RequestHandler {
      * @param req {@link FullHttpRequest} send by the client
      * @param sessionID {@link long} Session ID parsed from the URI
      * @param ipAddress {@link String} IP address of the remote client
-     * @param body
+     * @param body body {@link Message} from the incoming request body
      */
     public void dislike(ChannelHandlerContext ctx, FullHttpRequest req, long sessionID, String ipAddress, Message body) {
         if (validateMethod(ctx.channel(), req, HttpMethod.POST) && validateSession(ctx.channel(), sessionID, ipAddress)) {
@@ -223,6 +227,7 @@ public class ClientHandler extends RequestHandler {
             try {
                 message = (DislikeMessage)body;
             } catch (ClassCastException e) {
+                
                 logger.warn("Bad request", e);
                 sendError(ctx.channel(), BAD_REQUEST);
                 return;
@@ -231,6 +236,7 @@ public class ClientHandler extends RequestHandler {
             try {
                 songMgr.dislike(message.id, sessionID);
             } catch (Exception e) {
+                
                 logger.warn("Failed to like song", e);
                 sendError(ctx.channel(), INTERNAL_SERVER_ERROR);
                 return;
@@ -244,7 +250,7 @@ public class ClientHandler extends RequestHandler {
     //<editor-fold defaultstate="collapsed" desc="Client Requests">
     
     /**
-     * 
+     * Request a subscription for an update
      * @param ctx {@link ChannelHandlerContext} for this request
      * @param req {@link FullHttpRequest} send by the client
      * @param sessionID {@link long} Session ID parsed from the URI
@@ -256,6 +262,7 @@ public class ClientHandler extends RequestHandler {
             try {
                 sessionMgr.registerRequest(sessionID, ctx.channel());
             } catch (Exception e) {
+                
                 logger.warn("Failed to register update request", e);
                 sendError(ctx.channel(), INTERNAL_SERVER_ERROR);
             }
@@ -289,11 +296,19 @@ public class ClientHandler extends RequestHandler {
             }
             
             if (stats == null) {
+                
+                logger.warn("Failed to find stats, NULL given");
                 sendError(ctx.channel(), NOT_FOUND);
                 return;
             }
             
-            sendResponse(ctx.channel(), new LikeUpdate(stats), false);
+            try {
+                sendResponse(ctx.channel(), new LikeUpdate(stats), false);
+            } catch (Exception e) {
+                
+                logger.warn("Failed create response", e);
+                sendError(ctx.channel(), INTERNAL_SERVER_ERROR);
+            }
         }
     }
     
@@ -311,21 +326,28 @@ public class ClientHandler extends RequestHandler {
             try {
                 votes = songMgr.getVotes();
             } catch (Exception e) {
+                
                 logger.warn("Failed to get votes", e);
                 sendError(ctx.channel(), INTERNAL_SERVER_ERROR);
                 return;
             }
             
-            sendResponse(ctx.channel(), new VoteUpdate(votes), false);
+            try {
+                sendResponse(ctx.channel(), new VoteUpdate(votes), false);
+            } catch (Exception e) {
+                
+                logger.warn("Failed create response", e);
+                sendError(ctx.channel(), INTERNAL_SERVER_ERROR);
+            }
         }
     }
     
     /**
      * Request an immediate update on the current song
-     * @param ctx
-     * @param req
-     * @param sessionID
-     * @param ipAddress
+     * @param ctx {@link ChannelHandlerContext} for this request
+     * @param req {@link FullHttpRequest} send by the client
+     * @param sessionID {@link long} Session ID parsed from the URI
+     * @param ipAddress {@link String} IP address of the remote client
      */
     public void requestSongUpdate(ChannelHandlerContext ctx, FullHttpRequest req, long sessionID, String ipAddress) {
         if (validateMethod(ctx.channel(), req, HttpMethod.GET) && validateSession(ctx.channel(), sessionID, ipAddress)) {
@@ -334,17 +356,26 @@ public class ClientHandler extends RequestHandler {
             try {
                 activeSong = songMgr.getActiveSong(); // TODO Need to finish this
             } catch (Exception e) {
+                
                 logger.warn("Failed to get active song", e);
                 sendError(ctx.channel(), INTERNAL_SERVER_ERROR);
                 return;
             }
             
             if (activeSong == null) {
+                
+                logger.warn("No active song, NULL returned");
                 sendError(ctx.channel(), NOT_FOUND);
                 return;
             }
             
-            sendResponse(ctx.channel(), new SongUpdate(activeSong), false);
+            try {
+                sendResponse(ctx.channel(), new SongUpdate(activeSong), false);
+            } catch (Exception e) {
+                
+                logger.warn("Failed create response", e);
+                sendError(ctx.channel(), INTERNAL_SERVER_ERROR);
+            }
         }
     }
     
@@ -368,7 +399,13 @@ public class ClientHandler extends RequestHandler {
                 return;
             }
             
-            sendResponse(ctx.channel(), new SongListUpdate(songList), false);
+            try {
+                sendResponse(ctx.channel(), new SongListUpdate(songList), false);
+            } catch (Exception e) {
+                
+                logger.warn("Failed create response", e);
+                sendError(ctx.channel(), INTERNAL_SERVER_ERROR);
+            }
         }
     }
     
@@ -389,6 +426,7 @@ public class ClientHandler extends RequestHandler {
                 decoder = new QueryStringDecoder(req.getUri());
                 songID = Long.parseLong(decoder.parameters().get("songID").get(0));
             } catch (Exception e) {
+                
                 logger.warn("Invalid song ID", e);
                 sendError(ctx.channel(), BAD_REQUEST);
                 return;

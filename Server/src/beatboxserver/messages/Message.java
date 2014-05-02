@@ -6,8 +6,10 @@
 
 package beatboxserver.messages;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
+import java.io.IOException;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
  *
@@ -26,15 +28,16 @@ public class Message {
      * @param json
      * @return
      * @throws ClassNotFoundException 
+     * @throws IOException
      */
-    public static final Message constructMessage(String name, String json) throws ClassNotFoundException {
+    public static final Message constructMessage(String name, String json) throws ClassNotFoundException, IOException {
         if (name == null || json == null) {
             throw new IllegalArgumentException();
         }
         
          // Get the message class
         Class messageClass = Class.forName(name);
-        Gson gson = (new GsonBuilder()).create();
+        /*Gson gson = (new GsonBuilder()).create();*/
         
         
         // Check if messageClass is a subclass of Message as required
@@ -42,7 +45,9 @@ public class Message {
             throw new ClassNotFoundException();
         }
         
-        return (Message)gson.fromJson(json, messageClass);
+        /*return (Message)gson.fromJson(json, messageClass);*/
+        ObjectMapper mapper = new ObjectMapper();
+        return (Message)mapper.readValue(json, messageClass);
     }
     
     /**
@@ -79,5 +84,6 @@ public class Message {
         return sb.toString();
     }
     
+    @JsonIgnore
     private MessageType messageType;
 }

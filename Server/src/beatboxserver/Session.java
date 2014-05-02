@@ -9,7 +9,10 @@ package beatboxserver;
 import beatboxserver.updates.SessionUpdate;
 import io.netty.channel.Channel;
 
-import com.google.gson.annotations.Expose;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 
 /**
  * 
@@ -24,9 +27,10 @@ public abstract class Session {
     public enum SessionType {User, Speaker};
     
     /**
-     * 
-     * @param id
-     * @param type 
+     * Create a new {@link Session}
+     * @param id {@link long} ID for the new {@link Session}
+     * @param ipAddress {@link String} IP address for the session
+     * @param type {@SessionType} of the new {@link Session}
      */
     public Session(long id, String ipAddress, SessionType type) {
         this.id = id;
@@ -37,7 +41,7 @@ public abstract class Session {
     
     
     /**
-     * 
+     * Get the session ID
      * @return 
      */
     public long getID() {
@@ -52,30 +56,37 @@ public abstract class Session {
     }
     
     /**
-     * 
-     * @param update 
+     * Send update to the given session
+     * @param update {@link SessionUpdate} to send to the client
      */
     public void sendUpdate(SessionUpdate update) {
         if (update == null) {
             throw new IllegalArgumentException();
         }
+        
+        logger.trace("Queuing update");
         updateQueue.queueUpdate(update);
     }
     
     
     /**
-     * 
-     * @param ch 
+     * Queue a request for the given {@link Session}
+     * @param ch {@link Channel} requesting an update
      */
     public void assignRequest(Channel ch) {
         updateQueue.queueRequest(ch);
     }
     
-    @Expose
-    private long id;
+    private final long id;
     
-    private String ipAddresss;
+    @JsonIgnore
+    private final String ipAddresss;
     
-    private SessionType clientType;
-    private SessionUpdateQueue updateQueue;
+    @JsonIgnore
+    private final SessionType clientType;
+    
+    @JsonIgnore
+    private final SessionUpdateQueue updateQueue;
+    
+    private static final Logger logger = LogManager.getFormatterLogger(Session.class.getName());
 }

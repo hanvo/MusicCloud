@@ -6,7 +6,6 @@
 
 package beatboxserver;
 
-import com.google.gson.FieldNamingPolicy;
 import io.netty.buffer.Unpooled;
 import io.netty.buffer.ByteBuf;
 
@@ -30,11 +29,12 @@ import java.net.InetSocketAddress;
 import java.util.List;
 import java.util.Map;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.PropertyNamingStrategy;
+import com.fasterxml.jackson.core.JsonProcessingException;
+
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.LogManager;
-
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 
 import static io.netty.handler.codec.http.HttpHeaders.Names.*;
 import static io.netty.handler.codec.http.HttpResponseStatus.*;
@@ -209,17 +209,18 @@ public abstract class RequestHandler {
      * @param ch {@link Channel} to be used to send the response
      * @param data {@link Object} response to be sent to the client
      * @param keepAlive 
+     * @throws JsonProcessingException
      */
-    public static void sendResponse(Channel ch, Object data, boolean keepAlive) {
+    public static void sendResponse(Channel ch, Object data, boolean keepAlive) throws JsonProcessingException {
         if (ch == null || data == null) {
             throw new IllegalArgumentException();
         }
             
-        Gson gson = (new GsonBuilder())
-                .excludeFieldsWithoutExposeAnnotation()
-                .setFieldNamingPolicy(FieldNamingPolicy.LOWER_CASE_WITH_UNDERSCORES).create();
+        
+        ObjectMapper mapper = new ObjectMapper();
+        mapper.setPropertyNamingStrategy(PropertyNamingStrategy.CAMEL_CASE_TO_LOWER_CASE_WITH_UNDERSCORES);
             
-        String body = gson.toJson(data);
+        String body = mapper.writeValueAsString(data);
         FullHttpResponse response = createResponse(HttpResponseStatus.OK, body);
         sendResponse(ch, response, keepAlive);
         
@@ -294,20 +295,23 @@ public abstract class RequestHandler {
     }
     
     /**
-     * 
-     * @param channel
-     * @param sessionID
-     * @param ipAddress
+     * Validate a client session based on supplied information and the database
+     * @param channel {@link Channel} for the request
+     * @param sessionID {@link long} session ID supplied in the request
+     * @param ipAddress {@link String} IP address 
      * @return 
      */
     protected boolean validateSession(Channel channel,long sessionID, String ipAddress) {
         // Validate the session
         try {
             if (!sessionMgr.validSession(sessionID, ipAddress)) {
+                
+                logger.warn("Rejected session validation, invalid session");
                 sendError(channel, FORBIDDEN);
                 return false;
             }
         } catch (Exception e) {
+            
             logger.warn("Exception while validating session", e);
             sendError(channel, FORBIDDEN);
             return false;
@@ -327,12 +331,16 @@ public abstract class RequestHandler {
     protected boolean validateMethod(Channel channel, FullHttpRequest req, HttpMethod method) {
         if (channel != null && req != null && method != null) {
             if (!req.getMethod().equals(method)) {
+                
+                logger.warn("Invalid request method");
                 sendError(channel, METHOD_NOT_ALLOWED);
                 return false;
             } else {
                 return true;
             }
         } else {
+            
+            logger.warn("Invalid request method");
             sendError(channel, METHOD_NOT_ALLOWED);
             return false;
         }

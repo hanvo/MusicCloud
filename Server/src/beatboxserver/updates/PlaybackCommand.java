@@ -7,8 +7,6 @@
 package beatboxserver.updates;
 
 
-import com.google.gson.annotations.Expose;
-
 /**
  *
  * @author rahmanj
@@ -21,19 +19,24 @@ public class PlaybackCommand {
     public enum Command {Play, Stop};
     
     /**
-     * 
-     * @param command
-     * @param songID 
+     * Construct a new {@link PlaybackCommand}
+     * @param command {@link Command} for the {@link SpeakerSession}
+     * @param songID ID of the song
      */
     public PlaybackCommand(Command command, long songID) {
         this.command = command;
         id = songID;
     }
     
+    public Command getCommand() {
+        return command;
+    }
     
-    @Expose
-    private Command command;
+    public long getID() {
+        return id;
+    }
     
-    @Expose
-    private long id;
+    private final Command command;
+    
+    private final long id;
 }

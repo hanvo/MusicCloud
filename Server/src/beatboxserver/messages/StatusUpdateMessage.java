@@ -6,8 +6,6 @@
 
 package beatboxserver.messages;
 
-import com.google.gson.annotations.Expose;
-
 /**
  *
  * @author rahmanj
@@ -23,16 +21,13 @@ public class StatusUpdateMessage extends Message {
     /**
      * Song ID of currently playing song
      */
-    @Expose
     public long id;
     
-    @Expose
     public Status status;
     
     /**
      * Playback position in milliseconds
      */
-    @Expose
     public long position;
     
 }

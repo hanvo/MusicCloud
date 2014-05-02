@@ -6,7 +6,6 @@
 
 package beatboxserver.messages;
 
-import com.google.gson.annotations.Expose;
 
 /**
  *
@@ -22,6 +21,5 @@ public class ReadyMessage extends Message {
     /**
      * Song ID that is ready to play
      */
-    @Expose
     public long id;
 }

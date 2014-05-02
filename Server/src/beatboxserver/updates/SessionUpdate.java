@@ -6,13 +6,9 @@
 
 package beatboxserver.updates;
 
-import com.google.gson.FieldNamingPolicy;
-import java.lang.reflect.Type;
-
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.reflect.TypeToken;
-import com.google.gson.annotations.Expose;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.PropertyNamingStrategy;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 /**
  * Represents client update messages to be sent to clients
@@ -27,6 +23,7 @@ public abstract class SessionUpdate<T> {
     
     /**
      * Construct a new instance of ClientUpdate
+     * @param type {@link UpdateType} describing this {@link ClientUpdate}
      * @param value Value to be included in update, may be a class instance or array
      */
     public SessionUpdate(UpdateType type, T value) {
@@ -39,12 +36,15 @@ public abstract class SessionUpdate<T> {
      * @return 
      */
     public String toJson() {
-        Gson gson = (new GsonBuilder())
-                .setFieldNamingPolicy(FieldNamingPolicy.LOWER_CASE_WITH_UNDERSCORES)
-                .excludeFieldsWithoutExposeAnnotation()
-                .create();
-        Type type = new TypeToken<SessionUpdate<T>>(){}.getClass();
-        return gson.toJson(this, type);
+        ObjectMapper mapper = new ObjectMapper();
+        mapper.setPropertyNamingStrategy(PropertyNamingStrategy.CAMEL_CASE_TO_LOWER_CASE_WITH_UNDERSCORES);
+        String s = null;
+        try {
+            s = mapper.writeValueAsString(this);
+        } catch (Exception e) {
+            System.out.println(e.getMessage());
+        }
+        return s;
     }
     
     /**
@@ -55,9 +55,11 @@ public abstract class SessionUpdate<T> {
         return updateType;
     }
     
-    @Expose
+    public T getValues() {
+        return values;
+    }
+    
     protected final T values;
     
-    @Expose
     protected UpdateType updateType;
 }

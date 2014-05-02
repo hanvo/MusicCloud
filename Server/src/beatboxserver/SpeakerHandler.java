@@ -6,12 +6,10 @@
 
 package beatboxserver;
 
-
 import beatboxserver.messages.*;
-
+import beatboxserver.updates.*;
 
 import java.util.NoSuchElementException;
-import java.util.List;
 
 import io.netty.channel.ChannelHandlerContext;
 
@@ -35,23 +33,23 @@ import static io.netty.handler.codec.http.HttpResponseStatus.*;
 public class SpeakerHandler extends RequestHandler {
     
     /**
-     * 
-     * @param clientManager
-     * @param songManager 
+     * Construct a new {@link SpeakerHandler} instance
+     * @param sessionManager {@link SessionManager} for this {@link SpeakerHandler}
+     * @param songManager {@link SongManager} for this {@link SpeakerHandler}
      */
-    public SpeakerHandler(SessionManager clientManager, SongManager songManager) {
-        super(clientManager, songManager);
+    public SpeakerHandler(SessionManager sessionManager, SongManager songManager) {
+        super(sessionManager, songManager);
     }
     
     /**
-     * 
+     * Authenticate a new session base on IP and Pin
      * @param ctx {@link ChannelHandlerContext} for this request
      * @param req {@link FullHttpRequest} send by the client
      * @param sessionID {@link long} Session ID parsed from the URI
      * @param ipAddress {@link String} IP address of the remote client
      * @param body 
      */
-    public void authenticate(ChannelHandlerContext ctx, FullHttpRequest req, long clientID, String ipAddress, Message body) {
+    public void authenticate(ChannelHandlerContext ctx, FullHttpRequest req, long sessionID, String ipAddress, Message body) {
         if (validateMethod(ctx.channel(), req, HttpMethod.POST)) {
             
             AuthenticateMessage message;
@@ -60,6 +58,8 @@ public class SpeakerHandler extends RequestHandler {
             try {
                 message = (AuthenticateMessage)body;
             } catch (ClassCastException e) {
+                
+                logger.warn("Error with message type", e);
                 sendError(ctx.channel(), BAD_REQUEST);
                 return;
             }
@@ -78,12 +78,32 @@ public class SpeakerHandler extends RequestHandler {
                 return;
             }
             
-            sendResponse(ctx.channel(), session, false);
+            
+            
+            // Broadcast update to speaker session
+            synchronized (songMgr) {
+                try {
+                    songMgr.scheduleNextSong();
+                } catch (Exception e) {
+                    
+                    logger.warn("Failed to start playback", e);
+                    sendError(ctx.channel(), INTERNAL_SERVER_ERROR);
+                    return;
+                }
+            }
+            
+            try {
+                sendResponse(ctx.channel(), session, false);
+            } catch (Exception e) {
+                
+                logger.warn("Failed create response", e);
+                sendError(ctx.channel(), INTERNAL_SERVER_ERROR);
+            }
         }
     }
     
     /**
-     * 
+     * Deauthenticate a {@Session}
      * @param ctx {@link ChannelHandlerContext} for this request
      * @param req {@link FullHttpRequest} send by the client
      * @param sessionID {@link long} Session ID parsed from the URI
@@ -98,6 +118,8 @@ public class SpeakerHandler extends RequestHandler {
             try {
                 message = (DeauthenticateMessage)body;
             } catch (ClassCastException e) {
+                
+                logger.warn("Error with message type", e);
                 sendError(ctx.channel(), BAD_REQUEST);
                 return;
             }
@@ -110,25 +132,24 @@ public class SpeakerHandler extends RequestHandler {
             try {
                 sessionMgr.destroySession(message.id);
             } catch (SecurityException e) {
+                
+                logger.warn("Security exception", e);
                 sendError(ctx.channel(), FORBIDDEN);
                 return;
-            } catch (ClassCastException e) {
+            
+            } catch (Exception e) {
 
-               sendError(ctx.channel(), BAD_REQUEST);
-               return;
-           } catch (Exception e) {
-                
-               logger.warn("Failed to destroy session", e);
-               sendError(ctx.channel(), INTERNAL_SERVER_ERROR);
-               return;
-           }
+                logger.warn("Failed to destroy session", e);
+                sendError(ctx.channel(), INTERNAL_SERVER_ERROR);
+                return;
+            }
            
            sendResponse(ctx.channel(), HttpResponseStatus.OK, false);
        }
     }
     
     /**
-     * 
+     * Handle a request for a speaker update
      * @param ctx {@link ChannelHandlerContext} for this request
      * @param req {@link FullHttpRequest} send by the client
      * @param sessionID {@link long} Session ID parsed from the URI
@@ -140,6 +161,7 @@ public class SpeakerHandler extends RequestHandler {
             try {
                 sessionMgr.registerRequest(sessionID, ctx.channel());
             } catch (Exception e) {
+                
                 logger.warn("Failed to register update request", e);
                 sendError(ctx.channel(), INTERNAL_SERVER_ERROR);
             }
@@ -147,7 +169,7 @@ public class SpeakerHandler extends RequestHandler {
     }
     
     /**
-     * 
+     * Process a status update from the speaker
      * @param ctx {@link ChannelHandlerContext} for this request
      * @param req {@link FullHttpRequest} send by the client
      * @param sessionID {@link long} Session ID parsed from the URI
@@ -163,6 +185,7 @@ public class SpeakerHandler extends RequestHandler {
                 message = (StatusUpdateMessage)body;
             } catch (ClassCastException e) {
                 
+                logger.warn("Error with message type");
                 sendError(ctx.channel(), BAD_REQUEST);
                 return;
             }
@@ -170,6 +193,7 @@ public class SpeakerHandler extends RequestHandler {
             try {
                 songMgr.speakerStatusUpdate(sessionID, message);
             } catch (Exception e) {
+                
                 logger.warn("Speaker status update failed", e);
                 sendError(ctx.channel(), INTERNAL_SERVER_ERROR);
                 return;
@@ -180,7 +204,7 @@ public class SpeakerHandler extends RequestHandler {
     }
     
     /**
-     * 
+     * Handle a request for {@link SongData}
      * @param ctx {@link ChannelHandlerContext} for this request
      * @param req {@link FullHttpRequest} send by the client
      * @param sessionID {@link long} Session ID parsed from the URI
@@ -194,12 +218,14 @@ public class SpeakerHandler extends RequestHandler {
             try {
                 decoder = new QueryStringDecoder(req.getUri());
                 if (!decoder.parameters().containsKey("songID")) {
+                    
                     logger.warn("No song ID given");
                     sendError(ctx.channel(), BAD_REQUEST);
                     return;
                 }
                 songID = Long.parseLong(decoder.parameters().get("songID").get(0));
             } catch (Exception e) {
+                
                 logger.warn("Invalid song ID", e);
                 sendError(ctx.channel(), BAD_REQUEST);
                 return;
@@ -209,10 +235,12 @@ public class SpeakerHandler extends RequestHandler {
             try {
                 data = songMgr.getSongData(songID);
             } catch (NoSuchElementException e) {
+                
                 logger.warn("Song not found", e);
                 sendError(ctx.channel(), NOT_FOUND);
                 return;
             } catch (Exception e) {
+                
                 logger.warn("Failed to retrieve song", e);
                 sendError(ctx.channel(), INTERNAL_SERVER_ERROR);
                 return;

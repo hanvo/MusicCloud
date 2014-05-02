@@ -13,13 +13,20 @@ package beatboxserver;
  */
 public class AuthenticationManager {
     
+    /**
+     * Construct new {@link AuthenticationManager}
+     */
     public AuthenticationManager() {
         
     }
     
-    
+    /**
+     * Authenticate a session given the pin
+     * @param pin
+     * @return 
+     */
     public boolean authenticate(String pin) {
-        // TODO
+        // TODO, more thoughout logic
         return pin.equals("1234");
     }
 }

@@ -19,6 +19,9 @@ import io.netty.channel.Channel;
 import io.netty.handler.codec.http.FullHttpResponse;
 import io.netty.handler.codec.http.HttpResponseStatus;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 
 /**
  *
@@ -26,8 +29,10 @@ import io.netty.handler.codec.http.HttpResponseStatus;
  */
 public class SessionUpdateQueue {
     
+    /**
+     * Create new {@link SessionUpdateQueue}
+     */
     public SessionUpdateQueue() {
-        /*executor = Executors.newFixedThreadPool(1);*/
         channelQueue = new ArrayDeque<>();
         updateTypeQueue = new ArrayDeque<>();
         updates = new HashMap<>();
@@ -50,28 +55,37 @@ public class SessionUpdateQueue {
         synchronized(this) {
             
             // Check if there are updates to send
-            if (updates.size() > 0) {
+            if (updateTypeQueue.size() > 0) {
                 updateType = updateTypeQueue.poll();
                 
-                update = updates.get(updateType);
-                updates.remove(updateType);
-                
-                json = update.toJson();
-                response = RequestHandler.createResponse(HttpResponseStatus.OK, json);
-                
-                RequestHandler.sendResponse(ch, response, false);
+                if (updates.containsKey(updateType)) {
+                    update = updates.get(updateType);
+                    updates.remove(updateType);
+
+                    json = update.toJson();
+                    response = RequestHandler.createResponse(HttpResponseStatus.OK, json);
+
+                    logger.trace("Sending update to session");
+                    logger.trace("Update: %s", json);
+                    RequestHandler.sendResponse(ch, response, false);
+                } else {
+                    
+                    // Enqueue the request
+                    logger.trace("Queuing request from session");
+                    channelQueue.add(ch);
+                }
             } else {
+                
                 // Enqueue the request
+                logger.trace("Queuing request from session");
                 channelQueue.add(ch);
             }
-            
-        }
-        
+        }     
     }
     
     /**
      * Queue a {@ClientUpdate} to be matched with an incoming request
-     * @param update 
+     * @param update {@link SessionUpdate} to send to the {@link Session}
      */
     public void queueUpdate(SessionUpdate update) {
         FullHttpResponse response;
@@ -85,11 +99,19 @@ public class SessionUpdateQueue {
                 json = update.toJson();
                 response = RequestHandler.createResponse(HttpResponseStatus.OK, json);
                 
+                logger.trace("Sending update to session");
                 RequestHandler.sendResponse(chan, response, false);
-            } else {
+            } else if (updates.containsKey(update.getUpdateType())){
                 
                 // Overwrite the old update with the same type
+                logger.trace("Coalescing update");
                 updates.put(update.getUpdateType(), update);
+            } else {
+                
+                // Add new update
+                logger.trace("Adding new update");
+                updates.put(update.getUpdateType(), update);
+                updateTypeQueue.add(update.getUpdateType());
             }
         }
     }
@@ -111,4 +133,6 @@ public class SessionUpdateQueue {
     private final Queue<Channel> channelQueue;
     private final Map<UpdateType, SessionUpdate> updates;
     private final Queue<UpdateType> updateTypeQueue;
+    
+    private final static Logger logger = LogManager.getFormatterLogger((ProtocolMessageHandler.class.getName()));
 }

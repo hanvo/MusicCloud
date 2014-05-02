@@ -8,13 +8,14 @@ package beatboxserver;
 
 import io.netty.buffer.ByteBuf;
 
-import com.google.gson.annotations.Expose;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 /**
  *
  * @author rahmanj
  */
 public class Song {
+    
     
     public enum SongStatus {Playing, Stopped, Inactive};
     
@@ -113,7 +114,7 @@ public class Song {
      * 
      * @return 
      */
-    public ByteBuf getImageBuffer() {
+    public ByteBuf getImageData() {
         return imageData;
     }
     
@@ -134,27 +135,24 @@ public class Song {
         return votes;
     }
     
-    @Expose
     private long id;
     
-    @Expose
     private String name;
     
-    @Expose
     private String artist;
     
-    @Expose
     private String album;
     
-    
+    @JsonIgnore
     private String path;
     
+    @JsonIgnore
     private String imageMimeType;
+    
+    @JsonIgnore
     private ByteBuf imageData;
     
-    @Expose
     private long length;
-    
-    @Expose
+
     private long votes;
 }
