@@ -29,7 +29,7 @@ import json
 import socket
 import sys
 import Queue
-#import pygame
+import pygame
 import os
 import fnmatch
 
@@ -38,7 +38,7 @@ _Rlock = threading.RLock()
 flag_serv_func = 0
 _clientID = -1
 _playingstate = 0
-#SONG_END = pygame.USEREVENT + 1
+SONG_END = pygame.USEREVENT + 1
 _serv_playback_queue = Queue.Queue(0)
 _playback_conn_queue = Queue.Queue(0)
 _conn_playback_queue = Queue.Queue(0)
@@ -123,7 +123,7 @@ def play_back_func():
 				print "IM PLAYING"
 				_playingstate = 1
 				pygame.mixer.music.set_endevent(SONG_END)
-				pygame.mixer.music.load(_songID)
+				pygame.mixer.music.load(str(_songID))
 				pygame.mixer.music.play()
 				while pygame.mixer.music.get_busy():
 					pygame.time.Clock().tick(10)
