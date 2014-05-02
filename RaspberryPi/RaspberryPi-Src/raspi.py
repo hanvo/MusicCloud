@@ -185,15 +185,15 @@ def communicate_func():
 		if _request_set['status']=='need_song':
 			print "IN NEED SONG"
 			_songID = _request_set['id']
-			_comm_sock.request("GET","klamath.dnsdynamic.com:5050/request_song?clientID="+str(_clientID)+"&songID"+str(_songID))
+			print _songID
+			_comm_sock.request("GET","klamath.dnsdynamic.com:5050/speaker/request_song?clientID="+str(_clientID)+"&songID="+str(_songID))
 			_song_data_resp = _comm_sock.getresponse()
 			
 			print "Song Data Response"
 			print _song_data_resp.status, _song_data_resp.reason
 
 			if _song_data_resp.status == 200:
-				_song_data_json = _song_data_resp.read()
-				_song_data = json.loads(_song_data_json)
+				_song_data= _song_data_resp.read()
 				output_file = open(str(_songID),'w')
 				output_file.write(_song_data)
 				output_file.close()
