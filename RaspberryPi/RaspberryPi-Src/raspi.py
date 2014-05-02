@@ -33,10 +33,11 @@ import Queue
 import os
 import fnmatch
 
-timeout = 10
+timeout = 100
 _Rlock = threading.RLock()
 flag_serv_func = 0
 _clientID = -1
+_playingstate = 0
 #SONG_END = pygame.USEREVENT + 1
 _serv_playback_queue = Queue.Queue(0)
 _playback_conn_queue = Queue.Queue(0)
@@ -53,38 +54,43 @@ def serv_func():
 		flag_serv_func = 1
 		params = json.dumps({"pin":1234},encoding = "ASCII")
 		headers = {"Content-Type": "application/json"}
-		print "Authenticating"
+		print "Authenticating\n"
 		_serv_sock.request("POST","klamath.dnsdynamic.com:5050/speaker/authenticate",params,headers)
 		_serv_resp_json = _serv_sock.getresponse()
 
 		if _serv_resp_json.status != 200:
-			sys.exit(-1)
+			sys.exit()
 		else:
 			pass
-		print "Authenticated response"
+		print "Authenticated response\n"
 		print _serv_resp_json.status, _serv_resp_json.reason
-		print "_serv_resp_json is \n"+str(_serv_resp_json)
 		_serv_resp_message = _serv_resp_json.read()
 		_serv_response = json.loads(_serv_resp_message)
 		_clientID = _serv_response['id']
 		print "Client ID is ="+str(_clientID)
+		print "\n"
 		_serv_comm_ID_queue.put(_clientID)
 	else:
 		pass
 	
 	try:
 		while True:
-			print "Sending request_update"
-			print "Client ID is ="+str(_clientID)
+			print "Sending request_update\n"
+			print "Client ID in try is ="+str(_clientID)
+			print "\n"
 			_serv_sock.request("GET","klamath.dnsdynamic.com:5050/speaker/request_update?clientID="+str(_clientID))
 			_upcoming_song_resp = _serv_sock.getresponse()
-			print "Request Update Response"
-			print _upcoming_song_resp.status, _upcoming_song_resp.reason
+			print "Request Update Response\n"
+			print _upcoming_song_resp.status, _upcoming_song_resp.reason, _upcoming_song_resp.getheaders()
 			#Push _upcoming_song_resp.read() the Queue it could also be the play_command
 			if _upcoming_song_resp.status == 200:
-				_serv_playback_queue.put(_upcoming_song_resp.read())
+				rresp = _upcoming_song_resp.read()
+				print "Message from server \n"+str(rresp)
+				print "\n"
+				_serv_playback_queue.put(rresp)
 			else:
-				sys.exit(-1)
+				print "exiting\n"
+				sys.exit()
 	except socket.timeout:
 		serv_func()
 
@@ -99,20 +105,22 @@ def play_back_func():
 	
 	while True:
 		#pygame.mixer.init() #might have to make global if going to recursively call
-
+		global _playingstate
 		_response = json.loads(_serv_playback_queue.get())
 		_serv_playback_queue.task_done()
 		print "the Response in play_back_func is \n"+str(_response)
-
+		print "\n"
 		_message = {"id":"","status":"","position":""}
 		_update_type = _response['update_type']
-
+		print "Update type is = "+_update_type
+		print "\n"
 		if _update_type == "playback_command":
 			_values = _response['values']
 			_songID = _values['id']
 			_command = _values['command']
 
 			if _command == 'Play':
+				_playingstate = 1
 				#pygame.mixer.music.set_endevent(SONG_END)
 				#pygame.mixer.music.load(_songID)
 				#pygame.mixer.music.play()
@@ -141,6 +149,7 @@ def play_back_func():
 			
 
 		if _update_type == "upcoming_song":
+			print "IN UPCOMING SONG\n"
 			_flag_ut = 0
 			_values = _response['values']
 			_songID = _values['id']
@@ -156,7 +165,9 @@ def play_back_func():
 				_message['status'] = 'need_song'
 				_message['position'] = str(0);
 				_playback_conn_queue.put(_message)
-
+				if _playingstate == 0:
+					_message['status'] = 'Ready'
+					_playback_conn_queue.put(_message)
 
 def communicate_func():
 	while True:
@@ -186,7 +197,7 @@ def communicate_func():
 				output_file.write(_song_data)
 				output_file.close()
 			else:
-				sys.exit(-1)
+				sys.exit()
 
 		# NEED TO IMPLEMENT READY, playback position for READY(?)
 
