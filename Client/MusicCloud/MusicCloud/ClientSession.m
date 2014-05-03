@@ -8,14 +8,14 @@
 
 #import "ClientSession.h"
 #import "SongInfo.h"
-
-// if set, does not make HTTP requests.
-// all requests return successfully
-#define OFFLINE 0
-
-#define BASE_URL @"http://128.211.222.68:5050"
+#import "CurrentSongInfo.h"
+#import "ImageFetchSession.h"
 
 @interface ClientSession ()
+
+@property (strong, nonatomic) ImageFetchSession *imageFetchSession;
+
+@property (nonatomic) BOOL requestingUpdates;
 
 @end
 
@@ -24,7 +24,13 @@
 - (id)initWithBaseURL:(NSURL *)url {
     if (self = [super initWithBaseURL:url]) {
         self.requestSerializer = [AFJSONRequestSerializer serializer];
+        self.requestSerializer.timeoutInterval = 30;
+        
         self.responseSerializer = [AFJSONResponseSerializer serializerWithReadingOptions:NSJSONReadingAllowFragments];
+        
+        _imageFetchSession = [ImageFetchSession sharedSession];
+        
+        _requestingUpdates = NO;
     }
     return self;
 }
@@ -61,30 +67,38 @@
         
         [_delegate clientDidReceiveSongList:songs];
     } else if ([updateType isEqualToString:@"likes"]) {
-        NSArray *likeInfos = [response objectForKey:@"values"];
-        for (NSDictionary *likeInfo in likeInfos) {
-            NSInteger songID = [[likeInfo objectForKey:@"id"] integerValue];
-            NSInteger likes = [[likeInfo objectForKey:@"likes"] integerValue];
-            NSInteger dislikes = [[likeInfo objectForKey:@"dislikes"] integerValue];
-        }
+        CurrentSongInfo *songInfo = [[CurrentSongInfo alloc] init];
+        NSDictionary *likeInfo = [response objectForKey:@"values"];
+        songInfo.songInfo.songID = [[likeInfo objectForKey:@"id"] integerValue];
+        songInfo.likes = [[likeInfo objectForKey:@"likes"] integerValue];
+        songInfo.dislikes = [[likeInfo objectForKey:@"dislikes"] integerValue];
         
-        //[_delegate clientDidReceiveLikeUpdate:<#(SongInfo *)#>]
+        [_delegate clientDidReceiveLikeUpdate:songInfo];
     } else if ([updateType isEqualToString:@"votes"]) {
-        
+        NSMutableArray *votes = [NSMutableArray array];
+        NSArray *voteDicts = [response objectForKey:@"values"];
+        for (NSDictionary *dict in voteDicts) {
+            SongInfo *info = [[SongInfo alloc] init];
+            info.songID = [[dict objectForKey:@"id"] integerValue];
+            info.votes = [[dict objectForKey:@"votes"] integerValue];
+            [votes addObject:info];
+        }
+        NSLog(@"received vote update: %@", votes);
+        [_delegate clientDidReceiveVoteUpdate:votes];
     } else if ([updateType isEqualToString:@"current_song"]) {
         NSDictionary *values = [response objectForKey:@"values"];
         
-        SongInfo *song = [[SongInfo alloc] init];
-        song.songID = [[values objectForKey:@"id"] integerValue];
-        song.songName = [values objectForKey:@"name"];
-        song.songArtist = [values objectForKey:@"artist"];
-        song.songAlbum = [values objectForKey:@"album"];
-        song.songLength = [[values objectForKey:@"length"] integerValue];
+        CurrentSongInfo *song = [[CurrentSongInfo alloc] init];
+        song.songInfo.songID = [[values objectForKey:@"id"] integerValue];
+        song.songInfo.songName = [values objectForKey:@"name"];
+        song.songInfo.songArtist = [values objectForKey:@"artist"];
+        song.songInfo.songAlbum = [values objectForKey:@"album"];
+        song.songInfo.songLength = [[values objectForKey:@"length"] integerValue];
         NSString *status = [values objectForKey:@"status"];
         if ([status isEqualToString:@"Playing"])
-            song.status = SS_PLAYING;
+            song.songInfo.status = SS_PLAYING;
         else if ([status isEqualToString:@"Paused"])
-            song.status = SS_PAUSED;
+            song.songInfo.status = SS_PAUSED;
         else
             NSLog(@"Unknown song status: %@", status);
         song.position = [[values objectForKey:@"position"] integerValue];
@@ -112,11 +126,11 @@
         NSInteger clientID = [[responseObject objectForKey:@"id"] integerValue];
         _clientID = clientID;
         
+        NSLog(@"CLIENT ID %d", clientID);
+        
         _authenticated = YES;
         [_delegate clientDidAuthenticate:YES];
     } failure:^(NSURLSessionDataTask *task, NSError *error) {
-        NSLog(@"task: %@", task);
-        NSLog(@"err %@", error);
         [_delegate clientDidFailTask:task error:error];
     }];
 }
@@ -127,7 +141,7 @@
         return;
     }
     
-    NSDictionary *params = @{ @"ClientID": [NSString stringWithFormat:@"%d", _clientID]};
+    NSDictionary *params = @{@"id": @(_clientID)};
     [self POST:@"client/deauthenticate" parameters:params success:^(NSURLSessionDataTask *task, id responseObject) {
         _clientID = -1;
     } failure:^(NSURLSessionDataTask *task, NSError *error) {
@@ -173,9 +187,12 @@
         return;
     }
     
-    NSDictionary *params = @{ @"clientID": [NSString stringWithFormat:@"%d", _clientID] };
-    [self POST:@"client/vote" parameters:params success:^(NSURLSessionDataTask *task, id responseObject) {
-        
+    NSString *query = [self createURLQuery:@"client/vote"];
+    NSDictionary *params = @{@"id": @(songID)};
+    NSLog(@"sending vote for id %d", songID);
+    [self POST:query parameters:params success:^(NSURLSessionDataTask *task, id responseObject) {
+        // Do nothing
+        NSLog(@"vote success");
     } failure:^(NSURLSessionDataTask *task, NSError *error) {
         [_delegate clientDidFailTask:task error:error];
     }];
@@ -186,7 +203,13 @@
         return;
     }
     
-    
+    NSString *query = [self createURLQuery:@"client/like"];
+    NSDictionary *params = @{@"id": @(songID)};
+    [self POST:query parameters:params success:^(NSURLSessionDataTask *task, id responseObject) {
+        
+    } failure:^(NSURLSessionDataTask *task, NSError *error) {
+        [_delegate clientDidFailTask:task error:error];
+    }];
 }
 
 - (void)sendDislike:(NSInteger)songID {
@@ -194,19 +217,10 @@
         return;
     }
     
-    
-}
-
-- (void)requestUpdate {
-    if (OFFLINE) {
+    NSString *query = [self createURLQuery:@"client/dislike"];
+    NSDictionary *params = @{@"id": @(songID)};
+    [self POST:query parameters:params success:^(NSURLSessionDataTask *task, id responseObject) {
         
-        return;
-    }
-    
-    NSString *query = [self createURLQuery:@"request_update"];
-    NSDictionary *params = @{ @"ClientID": [NSString stringWithFormat:@"%d", _clientID] };
-    [self GET:query parameters:params success:^(NSURLSessionDataTask *task, id responseObject) {
-        NSLog(@"response obj %@", responseObject);
     } failure:^(NSURLSessionDataTask *task, NSError *error) {
         [_delegate clientDidFailTask:task error:error];
     }];
@@ -226,6 +240,47 @@
     }];
 }
 
+- (void)updateRequestLoop {
+    NSString *query = [self createURLQuery:@"client/request_update"];
+    [self GET:query parameters:nil success:^(NSURLSessionDataTask *task, id responseObject) {
+        [self handleUpdateResponse:responseObject];
+        
+        if (_requestingUpdates)
+            [self updateRequestLoop];
+    } failure:^(NSURLSessionDataTask *task, NSError *error) {
+        if (error.code != -1001) { // timeout error code (these are normal)
+            [_delegate clientDidFailTask:task error:error];
+        }
+        
+        if (_requestingUpdates)
+            [self updateRequestLoop];
+    }];
+}
+
+- (void)startUpdateRequests {
+    if (OFFLINE) {
+        
+        return;
+    }
+    
+    if (!_requestingUpdates) {
+        _requestingUpdates = YES;
+        
+        [self updateRequestLoop];
+    }
+}
+
+- (void)stopUpdateRequests {
+    if (OFFLINE) {
+        return;
+    }
+    
+    if (_requestingUpdates) {
+        _requestingUpdates = NO;
+        // will end update request loop
+    }
+}
+
 - (void)requestVoteUpdate {
     if (OFFLINE) {
         
@@ -243,24 +298,24 @@
 - (void)requestSongUpdate {
     if (OFFLINE) {
         static int count = 0;
-        SongInfo *song = [[SongInfo alloc] init];
+        CurrentSongInfo *song = [[CurrentSongInfo alloc] init];
 
         if (count == 0) {
-            song.songID = 2;
-            song.songName = @"Dark Horse";
-            song.songArtist = @"Katy Perry";
-            song.songAlbum = @"Prism";
-            song.songLength = 160;
-            song.status = SS_PLAYING;
+            song.songInfo.songID = 2;
+            song.songInfo.songName = @"Dark Horse";
+            song.songInfo.songArtist = @"Katy Perry";
+            song.songInfo.songAlbum = @"Prism";
+            song.songInfo.songLength = 160;
+            song.songInfo.status = SS_PLAYING;
             song.position = 12;
             count++;
         } else if (count == 1) {
-            song.songID = 1;
-            song.songName = @"Your Guardian Angel";
-            song.songArtist = @"Red Jumpsuit Apparatus";
-            song.songAlbum = @"Don't You Fake It";
-            song.songLength = 180;
-            song.status = SS_PLAYING;
+            song.songInfo.songID = 1;
+            song.songInfo.songName = @"Your Guardian Angel";
+            song.songInfo.songArtist = @"Red Jumpsuit Apparatus";
+            song.songInfo.songAlbum = @"Don't You Fake It";
+            song.songInfo.songLength = 180;
+            song.songInfo.status = SS_PLAYING;
             song.position = 0;
             count = 0;
         }
@@ -270,7 +325,6 @@
     }
     
     NSString *query = [self createURLQuery:@"request_song_update"];
-    NSLog(@"query %@", query);
     [self GET:query parameters:nil success:^(NSURLSessionDataTask *task, id responseObject) {
         [self handleUpdateResponse:responseObject];
     } failure:^(NSURLSessionDataTask *task, NSError *error) {
@@ -286,20 +340,12 @@
     NSString *songIDParam = [NSString stringWithFormat:@"&songID=%d", song.songID];
     NSString *query = [[self createURLQuery:@"client/request_photo"] stringByAppendingString:songIDParam];
     
-    // save default serializer
-    AFHTTPResponseSerializer <AFURLResponseSerialization> *defaultSerializer = self.responseSerializer;
-    // set image serializer
-    self.responseSerializer = [AFImageResponseSerializer serializer];
-    [self GET:query parameters:nil success:^(NSURLSessionDataTask *task, id responseObject) {
+    [_imageFetchSession GET:query parameters:nil success:^(NSURLSessionDataTask *task, id responseObject) {
         UIImage *image = (UIImage *)responseObject;
+        //NSLog(@"image %@ for song %@", image, song);
         [_delegate clientDidReceiveAlbumArt:image forSong:song];
-        
-        // restore default serializer
-        self.responseSerializer = defaultSerializer;
     } failure:^(NSURLSessionDataTask *task, NSError *error) {
         [_delegate clientDidFailTask:task error:error];
-        // restore default serializer
-        self.responseSerializer = defaultSerializer;
     }];
 }
 

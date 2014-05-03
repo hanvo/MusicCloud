@@ -8,6 +8,17 @@
 
 #import <Foundation/Foundation.h>
 
+@class SongInfo;
+
 @interface CurrentSongInfo : NSObject
+
+@property (strong, nonatomic) SongInfo *songInfo;
+@property (nonatomic) NSInteger likes;
+@property (nonatomic) NSInteger dislikes;
+
+@property (nonatomic) NSInteger position;
+
+
+@property (nonatomic) double balance;
 
 @end

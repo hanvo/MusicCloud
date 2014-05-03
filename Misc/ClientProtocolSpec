@@ -239,7 +239,8 @@ Server to Client messages:
 			(<Key>: <Value>\r\n)*
 			 Content-Type: application/json\r\n
 			 Content-Length: <JsonLength>\r\n\r\n
-			 {"update_type": "votes", "values": [({"id": "<Votes>"})*]}"
+			 {"update_type": "votes", "values": [({"id": <SongID>,
+			 									   "<Votes>": <Votes>})*]}"
 		Remarks:
 		
 

@@ -9,7 +9,14 @@
 #import <Foundation/Foundation.h>
 #import "AFNetworking.h"
 
+// if set, does not make HTTP requests.
+// all requests return successfully
+#define OFFLINE 0
+
+#define BASE_URL @"http://klamath.dnsdynamic.com:5050"
+
 @class SongInfo;
+@class CurrentSongInfo;
 
 @protocol ClientSessionDelegate <NSObject>
 // server to client messages
@@ -17,9 +24,9 @@
 @optional;
 - (void)clientDidAuthenticate:(BOOL)auth;
 
-- (void)clientDidReceiveSongUpdate:(SongInfo *)song;
-- (void)clientDidReceiveVoteUpdate:(SongInfo *)song;
-- (void)clientDidReceiveLikeUpdate:(SongInfo *)song;
+- (void)clientDidReceiveSongUpdate:(CurrentSongInfo *)song;
+- (void)clientDidReceiveVoteUpdate:(NSArray *)song;
+- (void)clientDidReceiveLikeUpdate:(CurrentSongInfo *)song;
 
 - (void)clientDidReceiveAlbumArt:(UIImage *)image forSong:(SongInfo *)song;
 
@@ -55,7 +62,11 @@
 - (void)sendLike:(NSInteger)songID;
 - (void)sendDislike:(NSInteger)songID;
 
-- (void)requestUpdate;
+// updates are requested continually with a large timout, and
+// when either a response or timeout is received, another request is sent
+- (void)startUpdateRequests;
+- (void)stopUpdateRequests;
+
 - (void)requestLikeUpdate;
 - (void)requestVoteUpdate;
 - (void)requestSongUpdate;

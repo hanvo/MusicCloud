@@ -10,4 +10,6 @@
 
 @interface ImageFetchSession : AFHTTPSessionManager
 
++ (instancetype)sharedSession;
+
 @end
