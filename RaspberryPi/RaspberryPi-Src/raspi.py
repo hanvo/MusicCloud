@@ -235,15 +235,15 @@ def playback_func():
 
 						logging.info('Playback command received for next song')
 				
+						# Update current song
+						current_song = next_song
+						current_song_state = PLAYING
+
 						# Set next song to UNKNOWN since the next song
 						# because the current song and we don't know
 						# the new next song
 						next_song = UNKNOWN
 						next_song_state = UNKNOWN
-
-						# Update current song
-						current_song = next_song
-						current_song_state = PLAYING
 
 						# Start playback via PyGame
 						pygame.mixer.music.set_endevent(SONG_END)
