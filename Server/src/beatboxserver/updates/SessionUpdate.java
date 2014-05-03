@@ -8,7 +8,9 @@ package beatboxserver.updates;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.PropertyNamingStrategy;
-import com.fasterxml.jackson.annotation.JsonIgnore;
+
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 
 /**
  * Represents client update messages to be sent to clients
@@ -24,7 +26,7 @@ public abstract class SessionUpdate<T> {
     /**
      * Construct a new instance of ClientUpdate
      * @param type {@link UpdateType} describing this {@link ClientUpdate}
-     * @param value Value to be included in update, may be a class instance or array
+     * @param value {@link T} value to be included in update, may be a class instance or array
      */
     public SessionUpdate(UpdateType type, T value) {
         this.values = value;
@@ -60,6 +62,8 @@ public abstract class SessionUpdate<T> {
     }
     
     protected final T values;
-    
+     
     protected UpdateType updateType;
+    
+    private static final Logger logger = LogManager.getFormatterLogger(SessionUpdate.class.getName());
 }

@@ -100,6 +100,7 @@ public class SessionUpdateQueue {
                 response = RequestHandler.createResponse(HttpResponseStatus.OK, json);
                 
                 logger.trace("Sending update to session");
+                logger.trace("Update: %s", json);
                 RequestHandler.sendResponse(chan, response, false);
             } else if (updates.containsKey(update.getUpdateType())){
                 

@@ -274,7 +274,7 @@ public final class SongManager {
      */
     public ActiveSong getActiveSong() throws SQLException, IllegalStateException, NoSuchElementException {
         synchronized (this) {
-            if (activeSong != null) {
+            if (activeSong == null) {
                 activeSong = getActiveSongFromDB();
             }
             return activeSong;
@@ -290,7 +290,7 @@ public final class SongManager {
      */
     private ActiveSong getActiveSongFromDB() throws SQLException, IllegalStateException, NoSuchElementException {
         
-        ActiveSong active;
+        ActiveSong active = null;
         
         String query = "SELECT id, name, path, artist, album, length, counts.vote_count AS votes FROM songs "
                      + "LEFT OUTER JOIN (SELECT song_id, COUNT(*) as vote_count FROM votes GROUP BY song_id) counts "
@@ -330,25 +330,45 @@ public final class SongManager {
      * @throws IllegalStateException
      */
     private Song getNextSong() throws SQLException, NoSuchElementException, IllegalStateException {
+        
+        if (nextSong == null) {
+            nextSong = getNextSongFromDB();
+        } else {
+            logger.trace("Returning previous value of nextSong"); // TODO DEBUG TEMP
+        }
+        
+        return nextSong;
+    }
+
+    /**
+     * 
+     * @return
+     * @throws IllegalStateException
+     * @throws NoSuchElementException
+     * @throws SQLException 
+     */
+    private Song getNextSongFromDB() throws IllegalStateException, NoSuchElementException, SQLException {
+        
+        logger.trace("Getting next song from DB");
+        
         Song song;
         
         String query = "SELECT id, name, path, artist, album, length, counts.vote_count AS votes FROM songs "
-                     + "LEFT OUTER JOIN (SELECT song_id, COUNT(*) as vote_count FROM votes GROUP BY song_id) counts "
-                     + "ON counts.song_id = id WHERE status = '" + SongStatus.Inactive.ordinal() + "' "
-                     + "ORDER BY counts.vote_count IS NOT NULL, counts.vote_count DESC LIMIT 1";
-        
+                + "LEFT OUTER JOIN (SELECT song_id, COUNT(*) as vote_count FROM votes GROUP BY song_id) counts "
+                + "ON counts.song_id = id WHERE status = '" + SongStatus.Inactive.ordinal() + "' "
+                + "ORDER BY counts.vote_count IS NOT NULL, counts.vote_count DESC LIMIT 1";
         try (Statement stmt = databaseMgr.createStatement()) {
             ResultSet rs = stmt.executeQuery(query);
             
             // Check if we even have a next song
             if (rs.next()) {
                 song = new Song(rs.getLong("id"),
-                    rs.getString("name"),
-                    rs.getString("artist"),
-                    rs.getString("album"),
-                    rs.getString("path"),
-                    rs.getLong("length"),
-                    rs.getLong("votes"));
+                        rs.getString("name"),
+                        rs.getString("artist"),
+                        rs.getString("album"),
+                        rs.getString("path"),
+                        rs.getLong("length"),
+                        rs.getLong("votes"));
             } else {
                 throw new NoSuchElementException();
             }
@@ -359,6 +379,7 @@ public final class SongManager {
             }
         }
         
+        logger.trace("Song ID %d selected next", song.getID());
         return song;
     }
     
@@ -386,6 +407,8 @@ public final class SongManager {
                 
                 byte[] data = rs.getBytes("image");
 
+                logger.trace("Got %d bytes for song %d photo", data.length, songID);
+                
                 ByteBuf buf = Unpooled.copiedBuffer(data);
                 photo = new SongPhoto(buf, rs.getString("image_type"));
             } else {
@@ -420,6 +443,8 @@ public final class SongManager {
                     // Mark the current song as Playing
                     if (update.id == nextSong.getID()) {
 
+                        logger.trace("Speaker started playback of correct song");
+                        
                         updatePlayback();
 
                         // Tell the phone clients that something happened
@@ -449,7 +474,7 @@ public final class SongManager {
                     String query = "UPDATE songs SET status = " + SongStatus.Stopped.ordinal() + " WHERE id = ?";
                     try (PreparedStatement stmt = databaseMgr.createPreparedStatement(query)) {
                         stmt.setLong(1, activeSong.getID());
-                        stmt.executeQuery();
+                        stmt.executeUpdate();
                     }
 
                     if (nextSong == null) {
@@ -472,6 +497,8 @@ public final class SongManager {
                 // Send the playback command if the song ID matches the active song
                 if (update.id == nextSong.getID()) {
 
+                    logger.trace("Sending playback command");
+                    
                     // Send message to start playback
                     sessionMgr.sendUpdate(new PlaybackCommandUpdate(
                             new PlaybackCommand(PlaybackCommand.Command.Play, nextSong.getID())),
@@ -569,8 +596,7 @@ public final class SongManager {
      * @throws SQLException 
      */
     private void updatePlayback() throws SQLException {
-        // Update the database with information about the next song
-        updateNextSong(activeSong, nextSong);
+        
         
         if (songTimerTask != null) {
             songTimerTask.cancel();
@@ -584,7 +610,8 @@ public final class SongManager {
             public void run() {
                 synchronized(manager) {
                     try {
-                        manager.scheduleNextSong();
+                        manager.skipToNext();
+                        //manager.scheduleNextSong();
                     } catch (Exception e) {
                         // TODO, handle this later
                     }
@@ -592,10 +619,16 @@ public final class SongManager {
             }
         };
         
-        // Schedule to run approx 5 seconds before the end of the song
-        logger.trace("Scheduling timer task for %d seconds", nextSong.getLength() - 5);
-        songTimer.schedule(songTimerTask, (nextSong.getLength() - 5) * 1000);
+        // Schedule to run approx 10 seconds before the end of the song
+        // PROBLEM, what if the song is shorter than 10 seconds???
+        //logger.trace("Scheduling timer task for %d seconds", nextSong.getLength() - 10);
+        //songTimer.schedule(songTimerTask, (nextSong.getLength() - 10) * 1000);
         
+        logger.trace("Scheduling timer task for %d seconds", 30);
+        songTimer.schedule(songTimerTask, 30 * 1000);
+        
+        // Update the database with information about the next song
+        updateNextSong(activeSong, nextSong);
         
         // Update object state based on the transition
         activeSong = new ActiveSong(nextSong.getID(),
@@ -605,6 +638,7 @@ public final class SongManager {
                 nextSong.getPath(),
                 nextSong.getLength(),
                 nextSong.getVotes());
+        
         nextSong = null;
     }
     
@@ -614,6 +648,7 @@ public final class SongManager {
      */
     private void skipToNext() throws SQLException {
         
+        logger.info("Skipping current song");
 
         if (nextSong != null) {
             throw new IllegalStateException();
@@ -627,6 +662,8 @@ public final class SongManager {
             songTimerTask.cancel();
             songTimerTask = null;
         }
+        
+        nextSong = getNextSong();
 
         // Inform the speakers of our choice for the next song
         UpcomingSongUpdate update = new UpcomingSongUpdate(nextSong);
@@ -691,10 +728,12 @@ public final class SongManager {
             stmt.setLong(1, nextSong.getID());
             stmt.executeUpdate();
         }
+        
         // Mark the next song as active
-        query = "UPDATE songs SET status = " + SongStatus.Playing.ordinal() + " WHERE song_id = ?";
+        query = "UPDATE songs SET status = " + SongStatus.Playing.ordinal() + " WHERE id = ?";
         try (final PreparedStatement stmt = databaseMgr.createPreparedStatement(query)) {
             stmt.setLong(1, nextSong.getID());
+            stmt.executeUpdate();
         }
     }
 
@@ -706,6 +745,7 @@ public final class SongManager {
     private void removeCurrentSongFromDB(ActiveSong currentSong) throws SQLException {
         String query;
         
+        // Remove all likes from the database
         query = "DELETE FROM likes where song_id = ?";
         try (PreparedStatement stmt = databaseMgr.createPreparedStatement(query)) {
             stmt.setLong(1, currentSong.getID());

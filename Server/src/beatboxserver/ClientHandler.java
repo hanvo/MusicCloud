@@ -153,7 +153,6 @@ public class ClientHandler extends RequestHandler {
     public void vote(ChannelHandlerContext ctx, FullHttpRequest req, long sessionID, String ipAddress, Message body) throws SQLException {
         if (validateMethod(ctx.channel(), req, HttpMethod.POST) && validateSession(ctx.channel(), sessionID, ipAddress)) {
             
-            
             // Do, your patriotic duty, and vote
             VoteMessage message;
             try {
