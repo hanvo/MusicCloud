@@ -388,10 +388,11 @@ def communicate_func():
 
 		if playback_message['status']=='need_song':
 			
-			logging.debug("IN NEED SONG with song_id = " + str(song_id))
-
 			# Request song data from server
 			song_id = playback_message['id']
+
+			logging.debug("IN NEED SONG with song_id = " + str(song_id))
+
 			song_data_response = send_request(_comm_sock, "request_song", {"clientID": client_id, "songID": song_id})
 			
 			logging.debug("Song Data Response: " + str(song_data_response.status) + " " + str(song_data_response.reason))
