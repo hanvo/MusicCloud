@@ -459,12 +459,30 @@ def communicate_func():
 			# If we stopped, we need to check if we can start the next song
 			if playback_message['status'] == 'Stopped':
 				
-				# Tell the server we are ready to play the next song
+				# Check if we have the song
+				found_song = 0
+
+				for file in os.listdir('.'):
+					if fnmatch.fnmatch(file,str(song_id)):
+						found_song = 1
+					else:
+						pass
+				
+				if found_song:
+
+					# Tell the server we are ready to play the next song
+					playback_message['id'] = next_song
+					playback_message['status'] = 'Ready'
+					playback_message['position'] = '0'
+					response = send_request(_comm_sock, "status_update", {"clientID": client_id}, playback_message, "POST")		
+					# TODO Check response status
+			else:
+				
+				# Ask for the next song
 				playback_message['id'] = next_song
-				playback_message['status'] = 'Ready'
-				playback_message['position'] = '0'
-				response = send_request(_comm_sock, "status_update", {"clientID": client_id}, playback_message, "POST")		
-				# TODO Check response status		
+				playback_message['status'] = 'need_song'
+				playback_message['position'] = '0'	
+				playback_connection_queue.put(playback_message)
 
 
 if __name__ == "__main__":
