@@ -138,6 +138,8 @@ public final class SessionManager {
             throw new IllegalArgumentException();
         }
         
+        logger.trace("Deleting session %d", sessionID);
+        
         synchronized(this) {
             try (PreparedStatement stmt = databaseMgr.createPreparedStatement("DELETE FROM sessions WHERE id = ?")) {
                 stmt.setLong(1, sessionID);

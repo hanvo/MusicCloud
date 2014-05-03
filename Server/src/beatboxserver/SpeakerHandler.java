@@ -64,6 +64,7 @@ public class SpeakerHandler extends RequestHandler {
                 return;
             }
             
+            // Create new session
             try {
                 session = (SpeakerSession)sessionMgr.createSession(message.pin, ipAddress, SessionType.Speaker);
             } catch (SecurityException e) {
@@ -78,15 +79,34 @@ public class SpeakerHandler extends RequestHandler {
                 return;
             }
             
-            
-            
+
             // Broadcast update to speaker session
             synchronized (songMgr) {
                 try {
-                    songMgr.scheduleNextSong();
-                } catch (Exception e) {
                     
-                    logger.warn("Failed to start playback", e);
+                    // Get active song and order the speaker to play it back
+                    ActiveSong currentSong = songMgr.getActiveSong();
+                    
+                    sessionMgr.sendUpdate(
+                            new PlaybackCommandUpdate(
+                                    new PlaybackCommand(PlaybackCommand.Command.Play, currentSong.getID())
+                            ), session.getID());
+                } catch (NoSuchElementException e) {
+
+                    logger.trace("No active song, scheduling next song");
+
+                    // Attempt to schedule a new next song since we don't have a next song
+                    try {
+                        songMgr.scheduleNextSong();
+                    } catch (Exception ex) {
+
+                        logger.warn("Failed to start playback", ex);
+                        sendError(ctx.channel(), INTERNAL_SERVER_ERROR);
+                        return;
+                    }
+                } catch (Exception e) {
+
+                    logger.warn("Unknown failure updaing speaker", e);
                     sendError(ctx.channel(), INTERNAL_SERVER_ERROR);
                     return;
                 }
