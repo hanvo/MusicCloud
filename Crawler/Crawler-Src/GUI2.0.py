@@ -14,6 +14,7 @@ import os
 import sys
 from crawling import crawl
 
+
 class RedirectText(object):
     def __init__(self,aWxTextCtrl):
         self.out=aWxTextCtrl
@@ -31,7 +32,7 @@ class MyFrame(wx.Frame):
 
       #making dat panel
       panel = wx.Panel(self, wx.ID_ANY)
-      log = wx.TextCtrl(panel,wx.ID_ANY, size=(150,100),  style = wx.TE_MULTILINE|wx.TE_READONLY|wx.HSCROLL)
+      log = wx.TextCtrl(panel,wx.ID_ANY, size=(100,100),  style = wx.TE_MULTILINE|wx.TE_READONLY|wx.HSCROLL)
 
       #widgets to the panel
       sizer = wx.BoxSizer(wx.VERTICAL)
@@ -48,6 +49,9 @@ class MyFrame(wx.Frame):
       self.SetMenuBar(menuBar)
 
       self.Bind(wx.EVT_MENU, self.opendir, id=104)
+
+    def OnClose(self,event):
+      self.Close(True)
 
     def opendir(self,event):
         dlg = wx.DirDialog(self, "Choose a directory:", "~/", 0, (10,10), wx.Size(400,300))

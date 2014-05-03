@@ -45,6 +45,8 @@
 - (void)viewWillAppear:(BOOL)animated {
     [super viewWillAppear:animated];
     
+    _pinField.text = nil;
+    
     [_overlay setAlpha:0.0];
     
     [[ClientSession sharedSession] setDelegate:self];
@@ -110,6 +112,7 @@
     [UIView animateWithDuration:0.3 animations:^{
         [_overlay setAlpha:0.0];
     } completion:^(BOOL finished) {
+        NSLog(@"error: %@", err);
         UIAlertView *alert = [[UIAlertView alloc] initWithTitle:@"MusicCloud Error" message:@"Could not connect to DJ" delegate:nil cancelButtonTitle:nil otherButtonTitles:@"OK", nil];
         [alert show];
     }];

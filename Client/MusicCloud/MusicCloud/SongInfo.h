@@ -20,7 +20,6 @@ enum {
 @property (strong, nonatomic) NSString *songArtist;
 @property (strong, nonatomic) NSString *songAlbum;
 @property (nonatomic) NSInteger songLength; // in seconds
-@property (nonatomic) NSInteger position;
 @property (nonatomic) SongStatus status;
 
 @property (strong, nonatomic) UIImage *albumArt;
