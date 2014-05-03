@@ -196,6 +196,10 @@ def playback_func():
 		
 	pygame.mixer.init() #might have to make global if going to recursively call
 
+	#some platforms might need to init the display for some parts of pygame.
+    pygame.display.init()
+    screen = pygame.display.set_mode((1,1))
+
 	_message = {"id":"","status":"","position":""}
 
 	while True:
@@ -254,8 +258,6 @@ def playback_func():
 						_message['id'] = str(current_song)
 						_message['status'] = 'Playing'
 						_message['position'] = str(0)
-
-						logging.info("The message in Play is " + str(_message))
 
 						playback_connection_queue.put(_message)
 					
