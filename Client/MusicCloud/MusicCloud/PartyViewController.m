@@ -70,6 +70,14 @@
     [_session startUpdateRequests];
 }
 
+- (void)viewDidLayoutSubviews {
+    [super viewDidLayoutSubviews];
+    
+    CGRect frame = _tableView.frame;
+    frame.size.height = self.view.frame.size.height - frame.origin.y;
+    [_tableView setFrame:frame];
+}
+
 - (void)viewWillDisappear:(BOOL)animated {
     [super viewWillDisappear:animated];
     
@@ -111,13 +119,13 @@
     int mins = (int)((double)secs/60.0);
     secs -= mins*60.0;
     
-    _progressLabel.text = [NSString stringWithFormat:@"%d:%02d", mins, secs];
+    _progressLabel.text = [NSString stringWithFormat:@"%d:%02ld", mins, (long)secs];
     
     secs = song.songInfo.songLength;
     mins = (int)((double)secs/60.0);
     secs -= mins*60.0;
     
-    _totalLabel.text = [NSString stringWithFormat:@"%d:%02d", mins, secs];
+    _totalLabel.text = [NSString stringWithFormat:@"%d:%02ld", mins, (long)secs];
 }
 
 - (void)tick {
@@ -157,8 +165,8 @@
     SongInfo *info = _songList[indexPath.row];
     cell.nameLabel.text = info.songName;
     cell.artistLabel.text = info.songArtist;
-    cell.voteLabel.text = [NSString stringWithFormat:@"%d", info.votes];
-    cell.idLabel.text = [NSString stringWithFormat:@"%d", info.songID];
+    cell.voteLabel.text = [NSString stringWithFormat:@"%ld", (long)info.votes];
+    cell.idLabel.text = [NSString stringWithFormat:@"%ld", (long)info.songID];
     
     cell.albumImageView.image = info.albumArt;
     
@@ -177,7 +185,7 @@
     dispatch_async(queue, ^{
         for (SongInfo *song in _songList) {
             [_session requestAlbumArtForSong:song];
-            [NSThread sleepForTimeInterval:0.05];
+            [NSThread sleepForTimeInterval:0.1];
         }
     });
 }
@@ -204,7 +212,7 @@
     [_tableView beginUpdates];
     NSMutableArray *newIPS = [NSMutableArray arrayWithCapacity:_songList.count];
     for (int i = 0; i < _songList.count; i++) {
-        int newRow = [_songList indexOfObject:oldSongList[i]];
+        NSInteger newRow = [_songList indexOfObject:oldSongList[i]];
         NSIndexPath *oldIP = [NSIndexPath indexPathForRow:i inSection:0];
         NSIndexPath *newIP = [NSIndexPath indexPathForRow:newRow inSection:0];
         if ([_selectedPath isEqual:oldIP])

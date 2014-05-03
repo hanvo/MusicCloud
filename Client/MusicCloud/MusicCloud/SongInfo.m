@@ -11,7 +11,7 @@
 @implementation SongInfo
 
 - (NSString *)description {
-    return [NSString stringWithFormat:@"SongInfo [id: %d, name: %@, artist: %@, album: %@, votes: %d]", _songID, _songName, _songArtist, _songAlbum, _votes];
+    return [NSString stringWithFormat:@"SongInfo [id: %ld, name: %@, artist: %@, album: %@, votes: %ld]", (long)_songID, _songName, _songArtist, _songAlbum, (long)_votes];
 }
 
 @end

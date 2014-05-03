@@ -52,7 +52,7 @@
 - (void)applicationWillTerminate:(UIApplication *)application {
     ClientSession *session = [ClientSession sharedSession];
     if (session.isAuthenticated) {
-        NSLog(@"Deauthenticating client with clientID %d", session.clientID);
+        NSLog(@"Deauthenticating client with clientID %ld", (long)session.clientID);
         [session deauthenticateClient];
     }
 }
