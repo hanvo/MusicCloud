@@ -196,7 +196,8 @@ def playback_func():
 		
 	pygame.mixer.init() #might have to make global if going to recursively call
 
-	#some platforms might need to init the display for some parts of pygame.
+	# Some platforms might need to init the display for some parts of pygame.
+	os.environ["SDL_VIDEODRIVER"] = "dummy"
 	pygame.display.init()
 	screen = pygame.display.set_mode((1,1))
 
@@ -245,7 +246,7 @@ def playback_func():
 						current_song_state = PLAYING
 
 						# Start playback via PyGame
-						#pygame.mixer.music.set_endevent(SONG_END)
+						pygame.mixer.music.set_endevent(SONG_END)
 						pygame.mixer.music.load(str(song_id))
 						pygame.mixer.music.play()
 
