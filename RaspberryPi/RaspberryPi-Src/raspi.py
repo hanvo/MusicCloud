@@ -197,8 +197,8 @@ def playback_func():
 	pygame.mixer.init() #might have to make global if going to recursively call
 
 	#some platforms might need to init the display for some parts of pygame.
-    pygame.display.init()
-    screen = pygame.display.set_mode((1,1))
+	pygame.display.init()
+	screen = pygame.display.set_mode((1,1))
 
 	_message = {"id":"","status":"","position":""}
 
