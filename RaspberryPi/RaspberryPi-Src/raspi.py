@@ -289,6 +289,8 @@ def playback_func():
 							_message['status'] = 'Stopped'
 							_message['position'] = str(pygame.mixer.music.get_pos())
 
+							current_song_state = STOPPED
+
 							playback_connection_queue.put(_message)
 							# TODO Look at _next_song
 							# and send requestSong/ready or wait until
