@@ -274,7 +274,7 @@ public final class SongManager {
      */
     public ActiveSong getActiveSong() throws SQLException, IllegalStateException, NoSuchElementException {
         synchronized (this) {
-            if (activeSong != null) {
+            if (activeSong == null) {
                 activeSong = getActiveSongFromDB();
             }
             return activeSong;
@@ -290,7 +290,7 @@ public final class SongManager {
      */
     private ActiveSong getActiveSongFromDB() throws SQLException, IllegalStateException, NoSuchElementException {
         
-        ActiveSong active;
+        ActiveSong active = null;
         
         String query = "SELECT id, name, path, artist, album, length, counts.vote_count AS votes FROM songs "
                      + "LEFT OUTER JOIN (SELECT song_id, COUNT(*) as vote_count FROM votes GROUP BY song_id) counts "
@@ -386,6 +386,8 @@ public final class SongManager {
                 
                 byte[] data = rs.getBytes("image");
 
+                logger.trace("Got %d bytes for song %d photo", data.length, songID);
+                
                 ByteBuf buf = Unpooled.copiedBuffer(data);
                 photo = new SongPhoto(buf, rs.getString("image_type"));
             } else {
@@ -472,6 +474,8 @@ public final class SongManager {
                 // Send the playback command if the song ID matches the active song
                 if (update.id == nextSong.getID()) {
 
+                    logger.trace("Sending playback command");
+                    
                     // Send message to start playback
                     sessionMgr.sendUpdate(new PlaybackCommandUpdate(
                             new PlaybackCommand(PlaybackCommand.Command.Play, nextSong.getID())),
@@ -592,9 +596,10 @@ public final class SongManager {
             }
         };
         
-        // Schedule to run approx 5 seconds before the end of the song
-        logger.trace("Scheduling timer task for %d seconds", nextSong.getLength() - 5);
-        songTimer.schedule(songTimerTask, (nextSong.getLength() - 5) * 1000);
+        // Schedule to run approx 10 seconds before the end of the song
+        // PROBLEM, what if the song is shorter than 10 seconds???
+        logger.trace("Scheduling timer task for %d seconds", nextSong.getLength() - 10);
+        songTimer.schedule(songTimerTask, (nextSong.getLength() - 10) * 1000);
         
         
         // Update object state based on the transition
