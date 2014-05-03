@@ -97,7 +97,7 @@ def create_url(request, query_vars = {}):
 	if len(query_vars) > 0:
 		url = url + "?"
 		count = 0
-		for key in query_vars:
+		for key in query_vars.keys():
 			if count != 0:
 				url = url + "&"
 			url = url + str(key) + "=" + str(query_vars[key])
