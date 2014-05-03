@@ -100,6 +100,7 @@ def create_url(request, query_vars = {}):
 		for key in query_vars.keys():
 			if count != 0:
 				url = url + "&"
+			count = count + 1
 			url = url + str(key) + "=" + str(query_vars[key])
 
 	return url
