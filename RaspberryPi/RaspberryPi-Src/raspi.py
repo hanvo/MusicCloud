@@ -154,7 +154,7 @@ def update_func():
 	
 	try:
 		while True:
-			logging.info("Sending request_update"))
+			logging.info("Sending request_update")
 
 			update_response = send_request(http_connection, "request_update", {"clientID": client_id})
 
