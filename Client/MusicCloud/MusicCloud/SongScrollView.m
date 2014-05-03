@@ -47,7 +47,7 @@
     [super layoutSubviews];
     
     CGFloat x = self.contentSize.width-TILE_PAD;
-    for (int i = _tiles.count-1; i >= 0; i--) {
+    for (NSInteger i = _tiles.count-1; i >= 0; i--) {
         SongTileView *tile = _tiles[i];
         
         x -= tile.bounds.size.width;

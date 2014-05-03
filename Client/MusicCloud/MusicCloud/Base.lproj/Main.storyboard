@@ -4,7 +4,7 @@
         <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="3733"/>
     </dependencies>
     <scenes>
-        <!--Login View Controller - MusicCloud-->
+        <!--Login View Controller - MusicCloud - Log In-->
         <scene sceneID="ufC-wZ-h7g">
             <objects>
                 <viewController id="vXZ-lx-hvc" customClass="LoginViewController" sceneMemberID="viewController">
@@ -84,7 +84,7 @@
                         </constraints>
                     </view>
                     <extendedEdge key="edgesForExtendedLayout" bottom="YES"/>
-                    <navigationItem key="navigationItem" title="MusicCloud" id="IvI-z7-fud"/>
+                    <navigationItem key="navigationItem" title="MusicCloud - Log In" id="IvI-z7-fud"/>
                     <connections>
                         <outlet property="enterButton" destination="snL-6W-zkT" id="MXC-7k-yAV"/>
                         <outlet property="pinField" destination="Y4D-3c-Ag7" id="Kfm-13-g9a"/>
@@ -95,7 +95,7 @@
             </objects>
             <point key="canvasLocation" x="417" y="8"/>
         </scene>
-        <!--Party View Controller-->
+        <!--Party View Controller - MusicCloud - Party-->
         <scene sceneID="6LV-z2-Z3s">
             <objects>
                 <viewController id="iOv-Pr-oJ6" customClass="PartyViewController" sceneMemberID="viewController">
@@ -223,7 +223,7 @@
                         <color key="backgroundColor" white="0.096145072989999997" alpha="1" colorSpace="calibratedWhite"/>
                     </view>
                     <extendedEdge key="edgesForExtendedLayout" bottom="YES"/>
-                    <navigationItem key="navigationItem" id="xvy-Wt-OAT">
+                    <navigationItem key="navigationItem" title="MusicCloud - Party" id="xvy-Wt-OAT">
                         <barButtonItem key="rightBarButtonItem" image="menu.png" id="vRf-UN-hT8">
                             <connections>
                                 <action selector="menuPressed:" destination="iOv-Pr-oJ6" id="PEM-5I-w8d"/>

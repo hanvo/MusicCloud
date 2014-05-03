@@ -46,7 +46,7 @@
 }
 
 - (NSString *)createURLQuery:(NSString *)query {
-    return [NSString stringWithFormat:@"%@?clientID=%d", query, _clientID];
+    return [NSString stringWithFormat:@"%@?clientID=%ld", query, (long)_clientID];
 }
 
 - (void)handleUpdateResponse:(id)response {
@@ -126,7 +126,7 @@
         NSInteger clientID = [[responseObject objectForKey:@"id"] integerValue];
         _clientID = clientID;
         
-        NSLog(@"CLIENT ID %d", clientID);
+        NSLog(@"CLIENT ID %ld", (long)clientID);
         
         _authenticated = YES;
         [_delegate clientDidAuthenticate:YES];
@@ -189,7 +189,7 @@
     
     NSString *query = [self createURLQuery:@"client/vote"];
     NSDictionary *params = @{@"id": @(songID)};
-    NSLog(@"sending vote for id %d", songID);
+    NSLog(@"sending vote for id %ld", (long)songID);
     [self POST:query parameters:params success:^(NSURLSessionDataTask *task, id responseObject) {
         // Do nothing
         NSLog(@"vote success");
@@ -250,6 +250,7 @@
     } failure:^(NSURLSessionDataTask *task, NSError *error) {
         if (error.code != -1001) { // timeout error code (these are normal)
             [_delegate clientDidFailTask:task error:error];
+            [NSThread sleepForTimeInterval:1.0];
         }
         
         if (_requestingUpdates)
@@ -337,7 +338,7 @@
         return;
     }
     
-    NSString *songIDParam = [NSString stringWithFormat:@"&songID=%d", song.songID];
+    NSString *songIDParam = [NSString stringWithFormat:@"&songID=%ld", (long)song.songID];
     NSString *query = [[self createURLQuery:@"client/request_photo"] stringByAppendingString:songIDParam];
     
     [_imageFetchSession GET:query parameters:nil success:^(NSURLSessionDataTask *task, id responseObject) {

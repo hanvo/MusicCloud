@@ -19,7 +19,7 @@
 }
 
 - (NSString *)description {
-    return [NSString stringWithFormat:@"CurrentSongInfo [SongInfo: %@, likes: %d, dislikes: %d]", _songInfo, _likes, _dislikes];
+    return [NSString stringWithFormat:@"CurrentSongInfo [SongInfo: %@, likes: %ld, dislikes: %ld]", _songInfo, (long)_likes, (long)_dislikes];
 }
 
 @end
