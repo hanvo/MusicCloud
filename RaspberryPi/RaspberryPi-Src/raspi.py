@@ -21,6 +21,25 @@ thread will wait on the queue.
 
 """
 
+#
+# NOTES:
+#
+# Author: Jason P. Rahman
+#
+# Added code to handle:
+#	The case when a song file is already present
+#	Record the next song ID as a state machine
+#	Record the currently playing song ID
+#	Added a sanity check for the "Stopped" code
+#		More places similar checks can be made
+#	Added a few other notes
+#
+#	Next Steps:
+#		Update stopped code to send Ready/Send song request/wait for previous song request
+#		Continue adding more sanity checked
+#		Continue tracking _current_song _next_song state variables
+#
+
 #Importing the thread function
 from threading import Thread
 import threading
@@ -38,6 +57,10 @@ _Rlock = threading.RLock()
 flag_serv_func = 0
 _clientID = -1
 _playingstate = 0
+# Set to >= 0 when next song is known
+_next_song = -1 # TODO Review/Update code to ensure this is kept current
+# Set to >= when currently playing a song, even when stopped
+_current_song = -1 # TODO Review/Update code to ensure this is kept current
 SONG_END = pygame.USEREVENT + 1
 _serv_playback_queue = Queue.Queue(0)
 _playback_conn_queue = Queue.Queue(0)
@@ -102,7 +125,9 @@ def serv_func():
 
 
 def play_back_func():
-	
+	global _next_song # Global variable holding ID of next song to 	
+
+
 	while True:
 		pygame.mixer.init() #might have to make global if going to recursively call
 		global _playingstate
@@ -121,6 +146,13 @@ def play_back_func():
 
 			if _command == 'Play':
 				print "IM PLAYING"
+
+				# Set next song to -1 since the next song
+				# because the current song and we don't know
+				# the new next song
+				_next_song = -1
+				_current_song = _songID
+
 				_playingstate = 1
 				pygame.mixer.music.set_endevent(SONG_END)
 				pygame.mixer.music.load(str(_songID))
@@ -143,13 +175,19 @@ def play_back_func():
 				#		send a ready message
 
 			if _command == 'Stop':
-				pygame.mixer.music.stop()
-				_message['id'] = str(_songID)
-				_message['status'] = 'Stopped'
-				_message['position'] = str(pygame.mixer.music.get_pos())
-				_playback_conn_queue.put(_message)
-				_message['status'] = 'Ready'
-				_playback_conn_queue.put(_message)
+				# Sanity check for command
+				if _songID == _current_song:
+					pygame.mixer.music.stop()
+					_message['id'] = str(_songID)
+					_message['status'] = 'Stopped'
+					_message['position'] = str(pygame.mixer.music.get_pos())
+					_playback_conn_queue.put(_message)
+					# TODO Look at _next_song
+					# and send requestSong/ready or wait until
+					# previous ready call succeeds
+				else:
+					# Error
+					pass
 			
 
 		if _update_type == "upcoming_song":
@@ -158,18 +196,28 @@ def play_back_func():
 			_values = _response['values']
 			_songID = _values['id']
 
+			# Set next song
+			_next_song = _songID
+
 			for file in os.listdir('.'):
 				if fnmatch.fnmatch(file,str(_songID)):
 					_flag_ut = 1
 				else:
 					pass
 			
-			if _flag_ut == 0:
+			if _flag_ut == 0: # We need the file, so request first
 				_message['id'] = str(_songID)
 				_message['status'] = 'need_song'
 				_message['position'] = str(0);
 				print "The Message is \n"+str(_message)
 				print "\n"
+				_playback_conn_queue.put(_message)
+			elif _playingstate == 0:
+				# We aren't playing anything right now
+				# So send ready immediately since we have the file
+				_message['id'] = str(_songID)
+				_message['status'] = 'Ready'
+				_message['position'] = '-1'
 				_playback_conn_queue.put(_message)
 
 def communicate_func():
