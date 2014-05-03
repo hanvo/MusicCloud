@@ -241,7 +241,7 @@ def playback_func():
 						current_song_state = PLAYING
 
 						# Start playback via PyGame
-						pygame.mixer.music.set_endevent(SONG_END)
+						#pygame.mixer.music.set_endevent(SONG_END)
 						pygame.mixer.music.load(str(song_id))
 						pygame.mixer.music.play()
 
@@ -269,6 +269,9 @@ def playback_func():
 						_message['position'] = str(0);
 
 						playback_connection_queue.put(_message)
+					elif song_id == next_song and next_song_state == DOWNLOADING:
+						logging.debug("Waiting for download to finish")
+						# TODO Have the comm thread auto start playback now
 
 				if command == 'Stop':
 
@@ -305,38 +308,42 @@ def playback_func():
 				logging.debug("Setting next_song to " + str(song_id))
 
 				# Set next song
-				next_song = song_id
-				next_song_state = UNKNOWN
+				if song_id != next_song:
+					next_song = song_id
+					next_song_state = UNKNOWN
 
-				found_song = 0
+					found_song = 0
 
-				for file in os.listdir('.'):
-					if fnmatch.fnmatch(file,str(song_id)):
-						found_song = 1
-					else:
-						pass
+					for file in os.listdir('.'):
+						if fnmatch.fnmatch(file,str(song_id)):
+							found_song = 1
+						else:
+							pass
 			
-				if found_song == 0: # We need the file, so request first
+					if found_song == 0: # We need the file, so request first
 				
-					logging.debug('Could not find song, asking next')
+						logging.debug('Could not find song, asking next')
 
-					_message['id'] = str(song_id)
-					_message['status'] = 'need_song'
-					_message['position'] = str(0);
-
-					playback_connection_queue.put(_message)
-				else:
-					logging.debug('Song ready for playback')
-					next_song_state = READY
-
-					if current_song_state != PLAYING:
-						# We aren't playing anything right now
-						# So send ready immediately since we have the file
-				
 						_message['id'] = str(song_id)
-						_message['status'] = 'Ready'
-						_message['position'] = '0'
+						_message['status'] = 'need_song'
+						_message['position'] = str(0);
+
 						playback_connection_queue.put(_message)
+					else:
+						logging.debug('Song ready for playback')
+						next_song_state = READY
+
+						if current_song_state != PLAYING:
+							# We aren't playing anything right now
+							# So send ready immediately since we have the file
+				
+							_message['id'] = str(song_id)
+							_message['status'] = 'Ready'
+							_message['position'] = '0'
+							playback_connection_queue.put(_message)
+				else:
+					logging.debug("Upcoming song same as previous upcoming song")
+
 			else:
 				logging.warning("Unknown update received: " + update_type)
 
@@ -385,17 +392,21 @@ def communicate_func():
 
 		if client_id == UNKNOWN:
 
+			logging.debug("Getting client ID from queue")
+
 			client_id = server_communication_ID_queue.get() # Getting the clientID from the queue
 			server_communication_ID_queue.task_done()
 		
 			logging.info("client_id in communicate_func is " + str(client_id))
 
-		if playback_message['status']=='need_song':
+		if playback_message['status'] == 'need_song':
 			
 			# Request song data from server
 			song_id = playback_message['id']
 
 			logging.debug("IN NEED SONG with song_id = " + str(song_id))
+
+			next_song_state = DOWNLOADING
 
 			song_data_response = send_request(_comm_sock, "request_song", {"clientID": client_id, "songID": song_id})
 			
@@ -409,6 +420,8 @@ def communicate_func():
 				output_file = open(str(song_id),'w')
 				output_file.write(_song_data)
 				output_file.close()
+	
+				next_song_state = READY
 
 				if current_song_state != PLAYING:
 					# Send ready message to the server
@@ -422,7 +435,7 @@ def communicate_func():
 					# Update status in the background
 					# When PyGame finishes playing, it will see the status
 					# And begin send ready
-					next_song_state = READY
+					pass
 
 			else:
 			
