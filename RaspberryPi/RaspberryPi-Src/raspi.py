@@ -33,7 +33,7 @@ import pygame
 import os
 import fnmatch
 
-timeout = 100
+timeout = 50	
 _Rlock = threading.RLock()
 flag_serv_func = 0
 _clientID = -1
@@ -176,6 +176,7 @@ def communicate_func():
 	while True:
 		print "DEBUG: Entered WHILE "
 		global _clientID
+		global _playingstate
 		# Pop the specific request from the Queue, depending on that do the following
 		_request_set = _playback_conn_queue.get()
 		_playback_conn_queue.task_done()
