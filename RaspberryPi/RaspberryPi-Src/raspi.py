@@ -58,7 +58,7 @@ logging.basicConfig(level=logging.DEBUG, format='%(asctime)s %(levelname)s %(mes
 
 timeout = 50	
 _Rlock = threading.RLock()
-flag_serv_func = 0
+flag_update_func = 0
 SONG_END = pygame.USEREVENT + 1
 
 
@@ -125,48 +125,46 @@ def send_request(http_socket, request, query_vars = {}, body_params = {}, method
 #
 # Main function for the server thread
 #
-def serv_func():
+def update_func():
 	global client_id
 	global server_url
 
 	global server_url
 	global server_port
 
-	_serv_sock = httplib.HTTPConnection(server_url, server_port, timeout = timeout)
+	http_connection = httplib.HTTPConnection(server_url, server_port, timeout = timeout)
 	socket.setdefaulttimeout(timeout)
 	
 	if client_id == UNKNOWN:
 
 		logging.info("Authenticating")
-		_serv_resp_json = send_request(_serv_sock, "authenticate", {}, {"pin":1234}, "POST")
+		server_response = send_request(http_connection, "authenticate", {}, {"pin":1234}, "POST")
 
-		if _serv_resp_json.status != 200:
+		if server_response.status != 200:
 			sys.exit()
 
-		logging.info("Authenticated response" + str(_serv_resp_json.status) + " " + _serv_resp_json.reason)
+		logging.info("Authenticated response " + str(server_response.status) + " " + server_response.reason)
 
-		_serv_resp_message = _serv_resp_json.read()
-		_serv_response = json.loads(_serv_resp_message)
+		server_response = json.loads(server_response.read())
 
-		client_id = _serv_response['id']
-		logging.debug("Client ID is " + str(client_id))
+		client_id = server_response['id']
+		logging.debug("Authenticated with client ID " + str(client_id))
 		server_communication_ID_queue.put(client_id)
 	
 	
 	try:
 		while True:
-			logging.info("Sending request_update")
-			logging.info("Client ID in try is ="+str(client_id))
+			logging.info("Sending request_update"))
 
-			_upcoming_song_resp = send_request(_serv_sock, "request_update", {"clientID": client_id})
+			update_response = send_request(http_connection, "request_update", {"clientID": client_id})
 
 			logging.info("Request Update Response")
-			logging.info(str(_upcoming_song_resp.status) + " " + str(_upcoming_song_resp.reason) + " " + str(_upcoming_song_resp.getheaders()))
-			#Push _upcoming_song_resp.read() the Queue it could also be the playcommand
+			logging.info(str(update_response.status) + " " + str(update_response.reason) + " " + str(update_response.getheaders()))
+			#Push update_response.read() the Queue it could also be the playcommand
 
-			if _upcoming_song_resp.status == 200:
+			if update_response.status == 200:
 
-				rresp = _upcoming_song_resp.read()
+				rresp = update_response.read()
 				logging.debug("Message from server: "+str(rresp))
 				server_playback_queue.put(rresp)
 			else:
@@ -177,13 +175,13 @@ def serv_func():
 		logging.debug("Timeout for connection")
 		
 		# NOTE: This will lead to stack overflow
-		serv_func()
+		update_func()
 
-	_serv_sock.close()
+	http_connection.close()
 	# DEAUTHENTICATE
 	params1 = json.dumps({"id":str(client_id)},encoding = "ASCII")
 	headers = {"Content-Type":"application/json"}
-	_serv_sock.request("POST","klamath.dnsdynamic.com:5050/speaker/deauthenticate",params1,headers)
+	http_connection.request("POST","klamath.dnsdynamic.com:5050/speaker/deauthenticate",params1,headers)
 
 
 #
@@ -202,19 +200,20 @@ def playback_func():
 	while True:
 		
 		try:
+	
+			# Get the update from the queue, but use timeout
+			# to multiplex this with the Pygame event loop
 			update_body = server_playback_queue.get(True, 0.1)
 
-			_response = json.loads(update_body)
+			response = json.loads(update_body)
 			server_playback_queue.task_done()
-
-			logging.info("Response in playback_func is " + str(_response))
 		
-			update_type = _response['update_type']
+			update_type = response['update_type']
 
 			logging.debug("Update type is = " + update_type)
 
 			if update_type == "playbackcommand":
-				values = _response['values']
+				values = response['values']
 				song_id = values['id']
 				command = values['command']
 
@@ -242,8 +241,8 @@ def playback_func():
 
 						# Start playback via PyGame
 						pygame.mixer.music.set_endevent(SONG_END)
-						#pygame.mixer.music.load(str(song_id))
-						#pygame.mixer.music.play()
+						pygame.mixer.music.load(str(song_id))
+						pygame.mixer.music.play()
 
 						#while pygame.mixer.music.get_busy():
 						#	pygame.time.Clock().tick(10)
@@ -251,7 +250,7 @@ def playback_func():
 						logging.debug('Started playback through PyGame')
 						logging.debug('Sending Playing status message to communcation thread')
 
-						_message['id'] = str()
+						_message['id'] = str(current_song)
 						_message['status'] = 'Playing'
 						_message['position'] = str(0)
 
@@ -299,7 +298,7 @@ def playback_func():
 
 				logging.info("Processing upcoming_song update")
 
-				values = _response['values']
+				values = response['values']
 				song_id = values['id']
 
 				logging.debug("Setting next_song to " + str(song_id))
@@ -346,6 +345,7 @@ def playback_func():
 				if event.type == SONG_END:
 					current_song_state = STOPPED
 
+					_message['id'] = current_song
 					_message['status'] = 'Stopped'
 					_message['position'] = str(pygame.mixer.music.get_pos())
 					playback_connection_queue.put(_message)
@@ -358,7 +358,7 @@ def playback_func():
 #
 def communicate_func():
 	while True:
-		logging.debug("Entered WHILE")
+
 		global client_id
 
 		global server_url
@@ -370,33 +370,36 @@ def communicate_func():
 		global current_song_state		
 
 		# Pop the specific request from the Queue, depending on that do the following
-		_request_set = playback_connection_queue.get()
+		playback_message = playback_connection_queue.get()
 		playback_connection_queue.task_done()
 
-		logging.debug("communicate_func received request: \n"+str(_request_set))
+		logging.info("Message in communication thread: " + str(playback_message))
+
+		logging.debug("communicate_func received request: " + str(playback_message))
 		_comm_sock = httplib.HTTPConnection(server_url, server_port, timeout = timeout)
 		
 
 		if client_id == UNKNOWN:
+
 			client_id = server_communication_ID_queue.get() # Getting the clientID from the queue
 			server_communication_ID_queue.task_done()
 		
-		logging.info("client_id in communicate_func is " + str(client_id))
+			logging.info("client_id in communicate_func is " + str(client_id))
 
-		if _request_set['status']=='need_song':
+		if playback_message['status']=='need_song':
 			
 			logging.debug("IN NEED SONG with song_id = " + str(song_id))
 
 			# Request song data from server
-			song_id = _request_set['id']
-			_song_data_resp = send_request(_comm_sock, "request_song", {"clientID": client_id, "songID": song_id})
+			song_id = playback_message['id']
+			song_data_response = send_request(_comm_sock, "request_song", {"clientID": client_id, "songID": song_id})
 			
-			logging.debug("Song Data Response: " + str(_song_data_resp.status) + " " + str(_song_data_resp.reason))
+			logging.debug("Song Data Response: " + str(song_data_response.status) + " " + str(song_data_response.reason))
 
-			if _song_data_resp.status == 200:
+			if song_data_response.status == 200:
 				logging.debug("Song song data from server, saving to file")
 
-				_song_data= _song_data_resp.read()
+				_song_data= song_data_response.read()
 
 				output_file = open(str(song_id),'w')
 				output_file.write(_song_data)
@@ -405,14 +408,15 @@ def communicate_func():
 				if current_song_state != PLAYING:
 					# Send ready message to the server
 
-					_request_set['status'] = 'Ready'
-					logging.debug("The Message in playing state is "+str(_request_set))
-					send_request(_comm_sock, "status_update", {"clientID": client_id}, _request_set, "POST")
+					playback_message['status'] = 'Ready'
+					logging.debug("The Message in playing state is "+str(playback_message))
+					send_request(_comm_sock, "status_update", {"clientID": client_id}, playback_message, "POST")
 
 				else:
 					
 					# Update status in the background
 					# When PyGame finishes playing, it will see the status
+					# And begin send ready
 					next_song_state = READY
 
 			else:
@@ -423,22 +427,26 @@ def communicate_func():
 		# NEED TO IMPLEMENT READY, playback position for READY(?)
 
 		else:
-			if _request_set['status']== 'Playing':
-				logging.debug("IN PLAYING")
-		
-			if _request_set['status']== 'Stopped':
-				logging.debug("IN STOPPED")
+	
+			logging.debug("Sending " + str(playback_message['status']) + " status update")
+			response = send_request(_comm_sock, "status_update", {"clientID": client_id}, playback_message, "POST")
 
-			if _request_set['status']== 'Ready':
-				logging.debug("IN READY")
+			# TODO Check response status from the server (Need 200)
 
-			logging.debug("Sending " + str(_request_set['status']) + " status update")
-			response = send_request(_comm_sock, "status_update", {"clientID": client_id}, _request_set, "POST")
+			# If we stopped, we need to check if we can start the next song
+			if playback_message['status'] == 'Stopped':
+				
+				# Tell the server we are ready to play the next song
+				playback_message['id'] = next_song
+				playback_message['status'] = 'Ready'
+				playback_message['position'] = '0'
+				response = send_request(_comm_sock, "status_update", {"clientID": client_id}, playback_message, "POST")		
+				# TODO Check response status		
 
 
 if __name__ == "__main__":
 	thread1 = Thread(target = playback_func, args =() )
-	thread2 = Thread(target = serv_func, args=() )
+	thread2 = Thread(target = update_func, args=() )
 	thread3 = Thread(target = communicate_func, args =() )
 	thread1.start()
 	thread2.start()
