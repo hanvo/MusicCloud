@@ -124,7 +124,7 @@ def send_request(http_socket, request, query_vars = {}, body_params = {}, method
 	return http_socket.getresponse()
 
 #
-# Main function for the server thread
+# Main function for requesting updates from the server
 #
 def update_func():
 	global client_id
@@ -213,7 +213,7 @@ def playback_func():
 
 			logging.debug("Update type is = " + update_type)
 
-			if update_type == "playbackcommand":
+			if update_type == "playback_command":
 				values = response['values']
 				song_id = values['id']
 				command = values['command']
@@ -295,7 +295,7 @@ def playback_func():
 						logging.error("Stop command from server for wrong song")
 			
 
-			if update_type == "upcoming_song":
+			elif update_type == "upcoming_song":
 
 				logging.info("Processing upcoming_song update")
 
@@ -337,6 +337,8 @@ def playback_func():
 						_message['status'] = 'Ready'
 						_message['position'] = '0'
 						playback_connection_queue.put(_message)
+			else:
+				logging.warning("Unknown update received: " + update_type)
 
 		except Queue.Empty:
 
@@ -346,6 +348,7 @@ def playback_func():
 				if event.type == SONG_END:
 					current_song_state = STOPPED
 
+					# Send stopped message to the server
 					_message['id'] = current_song
 					_message['status'] = 'Stopped'
 					_message['position'] = str(pygame.mixer.music.get_pos())
