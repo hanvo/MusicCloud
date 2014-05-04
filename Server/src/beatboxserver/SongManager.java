@@ -239,7 +239,7 @@ public final class SongManager {
         // Search for songs, while sorting by votes (Sub query to get the vote count)
         ResultSet rs = stmt.executeQuery("SELECT id, name, path, artist, album, length, counts.vote_count as votes FROM songs "
                                        + "LEFT OUTER JOIN (SELECT song_id, COUNT(*) as vote_count FROM votes GROUP BY song_id) counts "
-                                       + "ON counts.song_id = id ORDER BY counts.vote_count IS NOT NULL, counts.vote_count DESC");
+                                       + "ON counts.song_id = id ORDER BY counts.vote_count IS NOT NULL, counts.vote_count DESC, last_played ASC");
         while (rs.next()) {
             songs.add(new Song(rs.getLong("id"),
                     rs.getString("name"),
@@ -262,8 +262,10 @@ public final class SongManager {
         List<VoteData> votes = new ArrayList<>();
         Statement stmt = databaseMgr.createStatement();
         
-        // TODO Fix missing songs, send data for songs with 0 votes
-        ResultSet rs = stmt.executeQuery("SELECT song_id AS id, COUNT(*) as votes FROM votes GROUP BY song_id");
+        // Return 0 for songs with no votes, return the 
+        ResultSet rs = stmt.executeQuery("SELECT songs.id as id, IFNULL(vote_totals.votes, 0) as votes FROM songs "
+                                    + "LEFT OUTER JOIN (SELECT song_id AS id, COUNT(*) as votes FROM votes GROUP BY song_id) vote_totals "
+                                    + "ON songs.id = vote_totals.id");
         while (rs.next()) {
             votes.add(new VoteData(rs.getLong("id"), rs.getLong("votes")));
         }
@@ -305,7 +307,7 @@ public final class SongManager {
         String query = "SELECT id, name, path, artist, album, length, counts.vote_count AS votes FROM songs "
                      + "LEFT OUTER JOIN (SELECT song_id, COUNT(*) as vote_count FROM votes GROUP BY song_id) counts "
                      + "ON counts.song_id = id WHERE status != '" + SongStatus.Inactive.ordinal() + "' "
-                     + "ORDER BY counts.vote_count IS NOT NULL, counts.vote_count DESC LIMIT 1";
+                     + "ORDER BY counts.vote_count IS NOT NULL, counts.vote_count DESC, last_played ASC LIMIT 1";
         
         try (Statement stmt = databaseMgr.createStatement()) {
             ResultSet rs = stmt.executeQuery(query);
@@ -343,6 +345,8 @@ public final class SongManager {
     private Song getNextSong() throws SQLException, NoSuchElementException, IllegalStateException {
         
         if (nextSong == null) {
+            
+            logger.info("Retrieving next song from database");
             nextSong = getNextSongFromDB();
         } else {
             logger.trace("Returning previous value of nextSong"); // TODO DEBUG TEMP
@@ -360,14 +364,12 @@ public final class SongManager {
      */
     private Song getNextSongFromDB() throws IllegalStateException, NoSuchElementException, SQLException {
         
-        logger.trace("Getting next song from DB");
-        
         Song song;
         
         String query = "SELECT id, name, path, artist, album, length, counts.vote_count AS votes FROM songs "
                 + "LEFT OUTER JOIN (SELECT song_id, COUNT(*) as vote_count FROM votes GROUP BY song_id) counts "
                 + "ON counts.song_id = id WHERE status = '" + SongStatus.Inactive.ordinal() + "' "
-                + "ORDER BY counts.vote_count IS NOT NULL, counts.vote_count DESC LIMIT 1";
+                + "ORDER BY counts.vote_count IS NOT NULL DESC, counts.vote_count DESC, last_played ASC LIMIT 1";
         
         try (Statement stmt = databaseMgr.createStatement()) {
             ResultSet rs = stmt.executeQuery(query);
@@ -569,6 +571,7 @@ public final class SongManager {
         int bytesLeft = length;
         int lastRead;
         
+        // Read data from disk in a loop to ensure we read everything
         do {
             lastRead = fs.read(data, bytesRead, bytesLeft);
             bytesRead = bytesRead + lastRead;
@@ -767,7 +770,7 @@ public final class SongManager {
             stmt.executeUpdate();
         }
         // Mark the active song as inactive now that a new song is starting
-        query = "UPDATE songs SET status = " + SongStatus.Inactive.ordinal() + " WHERE id = ?";
+        query = "UPDATE songs SET status = " + SongStatus.Inactive.ordinal() + ", last_played = datetime() WHERE id = ?";
         try (PreparedStatement stmt = databaseMgr.createPreparedStatement(query)) {
             stmt.setLong(1, currentSong.getID());
             stmt.executeUpdate();
