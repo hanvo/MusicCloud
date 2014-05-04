@@ -53,14 +53,15 @@ import os
 import fnmatch
 
 import logging
+import time
 
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s %(levelname)s %(message)s')
 
 timeout = 50	
 _Rlock = threading.RLock()
-flag_update_func = 0
 SONG_END = pygame.USEREVENT + 1
 
+keep_running = True
 
 server_playback_queue = Queue.Queue(0)
 playback_connection_queue = Queue.Queue(0)
@@ -104,11 +105,11 @@ def create_url(request, query_vars = {}):
 			url = url + str(key) + "=" + str(query_vars[key])
 
 	return url
-			
+
 #
 # Send a request over the given socket
 #
-def send_request(http_socket, request, query_vars = {}, body_params = {}, method = "GET"):
+def send_request(http_connection, request, query_vars = {}, body_params = {}, method = "GET"):
 	headers = {"Content-Type": "application/json"}
 	
 	url = create_url(request, query_vars)
@@ -120,8 +121,241 @@ def send_request(http_socket, request, query_vars = {}, body_params = {}, method
 	else:
 		body = ""
 
-	http_socket.request(method, url, body, headers)
-	return http_socket.getresponse()
+	http_connection.request(method, url, body, headers)
+	return http_connection.getresponse()
+
+#
+# Format a log message for a HTTP response
+#
+def create_response_log_message(response):
+	log_message = "Response: " + str(response.status)
+	log_message = log_message + " " + str(response.reason)
+	log_message = log_message + " " + str(response.getheaders())
+	return log_message
+
+#
+# Check if we need to request a given song
+#
+def check_for_song(song_id):
+	found_song = 0
+
+	for file in os.listdir('.'):
+		if fnmatch.fnmatch(file,str(song_id)):
+			found_song = 1
+		else:
+			pass
+	return found_song
+
+#
+# Handle a play command from the server
+#
+def handle_play_command(song_id):
+	global next_song
+	global current_song
+	global next_song_state
+	global current_song_state
+
+	_message = {"id":"","status":"","position":""}
+
+	if song_id == current_song:
+
+		logging.error('Play command for current song, ignoring')
+
+	elif current_song_state != PLAYING and song_id == next_song and next_song_state == READY:
+
+		logging.info('Playback command received for next song')
+				
+		# Update current song
+		current_song = next_song
+		current_song_state = PLAYING
+
+		# Set next song to UNKNOWN since the next song
+		# because the current song and we don't know
+		# the new next song
+		next_song = UNKNOWN
+		next_song_state = UNKNOWN
+
+		# Start playback via PyGame
+		pygame.mixer.music.load(str(song_id))
+		pygame.mixer.music.play()
+
+
+		logging.debug('Started playback through PyGame')
+		logging.debug('Sending Playing status message to communcation thread')
+
+		_message['id'] = str(current_song)
+		_message['status'] = 'Playing'
+		_message['position'] = str(0)
+
+		playback_connection_queue.put(_message)
+					
+	elif song_id == next_song and next_song_state == UNKNOWN:
+					
+		logging.info('Play command for unavailable song, requesting from server')				
+	
+		# We need to get the next song from the server
+		_message['id'] = str(song_id)
+		_message['status'] = 'need_song'
+		_message['position'] = str(0);
+
+		playback_connection_queue.put(_message)
+	elif song_id == next_song and next_song_state == DOWNLOADING:
+		logging.debug("Waiting for download to finish")
+		# TODO Have the comm thread auto start playback now
+
+
+#
+# Handle incoming stop requests
+#
+def handle_stop_command(song_id):
+	global next_song
+	global current_song
+	global next_song_state
+	global current_song_state
+
+	_message = {"id":"","status":"","position":""}
+
+	# Sanity check for command
+	if song_id == current_song:
+
+		# Check the current state of the song
+		if current_song_state == PLAYING:
+			pygame.mixer.music.stop()
+
+			_message['id'] = str(song_id)
+			_message['status'] = 'Stopped'
+			_message['position'] = str(pygame.mixer.music.get_pos())
+
+			current_song_state = STOPPED
+
+			playback_connection_queue.put(_message)
+			# TODO Look at _next_song
+			# and send requestSong/ready or wait until
+			# previous ready call succeeds
+		else:
+			pass # TODO decide how to handle this
+	
+	else:
+		# TODO Error, how to handle this
+		logging.error("Stop command from server for wrong song")
+
+
+#
+# Logic to handle upcoming song updates
+#
+def handle_upcoming_song_update(song_id):
+
+	global next_song
+	global current_song
+	global next_song_state
+	global current_song_state
+
+	_message = {"id":"","status":"","position":""}
+
+	# Set next song
+	if song_id != current_song:
+
+		fetch_song = False
+
+		# Check if this is a duplicate update message
+		if song_id != next_song:
+
+			next_song = song_id
+			next_song_state = UNKNOWN
+
+			fetch_song = True
+		elif next_song_state == UNKNOWN:
+			fetch_song = True
+			
+
+		# Fetch the next song if we've been given a new song
+		# Or we have a next song but we don't have it yet
+		if fetch_song:
+
+			found_song = check_for_song(song_id)
+			
+			if found_song == 0: # We need the file, so request first
+				
+				logging.debug('Could not find song, asking from server')
+
+				_message['id'] = str(song_id)
+				_message['status'] = 'need_song'
+				_message['position'] = str(0);
+
+				playback_connection_queue.put(_message)
+			else:
+				logging.debug('Song ready for playback')
+				next_song_state = READY
+
+				# Check on the current song to make decision about next move
+				if current_song_state != PLAYING:
+					# We aren't playing anything right now
+					# So send ready immediately since we have the file
+				
+					_message['id'] = str(song_id)
+					_message['status'] = 'Ready'
+					_message['position'] = '0'
+					playback_connection_queue.put(_message)
+				else:
+					logging.debug("Song ready for playback, waiting for previous song to end")
+
+		else:
+			logging.debug("Not fetching song, download in progress")
+												
+	elif song_id == next_song:
+			logging.debug("Duplicate upcoming song update")
+
+#
+# Handle a need song request
+#
+def handle_need_song(song_id):
+	global next_song
+	global current_song
+	global next_song_state
+	global current_song_state
+
+	playback_message = {"id": 0, "position": 0, "status": "ready"}
+
+	logging.debug("IN NEED SONG with song_id = " + str(song_id))
+
+	# Mark as downloading currently
+	next_song_state = DOWNLOADING
+
+	song_response = send_request(_comm_sock, "request_song", {"clientID": client_id, "songID": song_id})
+			
+	log_message = create_response_log_message(song_response)
+	logging.debug("Song Data Response: " + log_message)
+
+	if song_response.status == 200:
+		logging.debug("Song song data from server, saving to file")
+
+		song_data = song_response.read()
+
+		output_file = open(str(song_id),'w')
+		output_file.write(song_data)
+		output_file.close()
+	
+		next_song_state = READY
+
+		if current_song_state != PLAYING:
+			# Send ready message to the server
+
+			playback_message['status'] = 'Ready'
+			logging.debug("The Message in playing state is "+str(playback_message))
+			send_request(_comm_sock, "status_update", {"clientID": client_id}, playback_message, "POST")
+
+		else:	
+			# Update status in the background and when PyGame finishes playing,
+			# it will see the next_song_state and send "ready"
+			logging.debug("Song %d retrieved, waiting for previous song to finish")
+
+	else:
+		# Failed to download song, set state UNKNOWN (Maybe add error state later)
+		next_song_state = UNKNOWN
+		logging.error("Failed to get song data from server")
+		# TODO How to handle this error??
+			
+
 
 #
 # Main function for requesting updates from the server
@@ -133,10 +367,13 @@ def update_func():
 	global server_url
 	global server_port
 
+	global keep_running
+
 	http_connection = httplib.HTTPConnection(server_url, server_port, timeout = timeout)
 	socket.setdefaulttimeout(timeout)
 	
-	if client_id == UNKNOWN:
+	# Perform authentication
+	try:
 
 		logging.info("Authenticating")
 		server_response = send_request(http_connection, "authenticate", {}, {"pin":1234}, "POST")
@@ -144,24 +381,31 @@ def update_func():
 		if server_response.status != 200:
 			sys.exit()
 
-		logging.info("Authenticated response " + str(server_response.status) + " " + server_response.reason)
+		log_message = create_response_log_message(server_response)
+		logging.info("Authenticated response " + log_message)
 
 		server_response = json.loads(server_response.read())
 
 		client_id = server_response['id']
 		logging.debug("Authenticated with client ID " + str(client_id))
 		server_communication_ID_queue.put(client_id)
+	except Exception as e:
+		logging.error("Authentication failed from exception: " + str(e))
+		http_connection.close()
+		keep_running = False
 	
-	
-	try:
-		while True:
+	while keep_running:
+		try:
+			http_connection = httplib.HTTPConnection(server_url, server_port, timeout = timeout)
+			socket.setdefaulttimeout(timeout)
+
 			logging.info("Sending request_update")
 
 			update_response = send_request(http_connection, "request_update", {"clientID": client_id})
 
 			logging.info("Request Update Response")
-			logging.info(str(update_response.status) + " " + str(update_response.reason) + " " + str(update_response.getheaders()))
-			#Push update_response.read() the Queue it could also be the playcommand
+			log_message = create_response_log_message(update_response)
+			logging.info(log_message)
 
 			if update_response.status == 200:
 
@@ -169,20 +413,21 @@ def update_func():
 				logging.debug("Message from server: "+str(rresp))
 				server_playback_queue.put(rresp)
 			else:
-				logging.warning("Exiting")
-				sys.exit()
+				log_message = create_response_log_message(update_response)
+				logging.warning("Failed to get update from server: " + log_message)
+				
+			http_connection.close()
+		except socket.timeout:
+			logging.debug("Timeout for connection, resending")
+		except Exception as e:
+			logging.exception("Critical exception thrown " + str(e))
+			sys.exit()
 
-	except socket.timeout:
-		logging.debug("Timeout for connection")
-		
-		# NOTE: This will lead to stack overflow
-		update_func()
-
-	http_connection.close()
 	# DEAUTHENTICATE
-	params1 = json.dumps({"id":str(client_id)},encoding = "ASCII")
-	headers = {"Content-Type":"application/json"}
-	http_connection.request("POST","klamath.dnsdynamic.com:5050/speaker/deauthenticate",params1,headers)
+	send_request(http_connection, "deauthenticate", {"clientID": client_id}, {"id": client_id}, "POST")
+	http_connection.close()
+	
+	logging.info("Update thread exiting")
 
 
 #
@@ -193,17 +438,25 @@ def playback_func():
 	global current_song
 	global next_song_state
 	global current_song_state
-		
-	pygame.mixer.init() #might have to make global if going to recursively call
 
-	# Some platforms might need to init the display for some parts of pygame.
-	os.environ["SDL_VIDEODRIVER"] = "dummy"
-	pygame.display.init()
-	screen = pygame.display.set_mode((1,1))
+	global keep_running
+		
+	try:
+		# Initialize the mixer for PyGame
+		pygame.mixer.init()
+		pygame.mixer.music.set_endevent(SONG_END)
+
+		# Some platforms might need to init the display for some parts of pygame.
+		os.environ["SDL_VIDEODRIVER"] = "dummy"
+		pygame.display.init()
+		pygame.display.set_mode((1,1))
+	except Exception as e:
+		logging.error("Failed to initialized PyGame: " + str(e))
+		keep_running = False
 
 	_message = {"id":"","status":"","position":""}
 
-	while True:
+	while keep_running:
 		
 		try:
 	
@@ -225,152 +478,33 @@ def playback_func():
 
 				if command == 'Play':
 
-					logging.info("Play command recieved")
+					logging.info("Play command received")
 
-					if song_id == current_song:
+					handle_play_command(song_id)
+				elif command == 'Stop':
 
-						logging.error('Play command for current song, ignoring')
+					logging.info("Stop command received")
 
-					elif current_song_state != PLAYING and song_id == next_song and next_song_state == READY:
-
-						logging.info('Playback command received for next song')
-				
-						# Update current song
-						current_song = next_song
-						current_song_state = PLAYING
-
-						# Set next song to UNKNOWN since the next song
-						# because the current song and we don't know
-						# the new next song
-						next_song = UNKNOWN
-						next_song_state = UNKNOWN
-
-						# Start playback via PyGame
-						pygame.mixer.music.set_endevent(SONG_END)
-						pygame.mixer.music.load(str(song_id))
-						pygame.mixer.music.play()
-
-#						while pygame.mixer.music.get_busy():
-						#	pygame.time.Clock().tick(10)
-
-						logging.debug('Started playback through PyGame')
-						logging.debug('Sending Playing status message to communcation thread')
-
-						_message['id'] = str(current_song)
-						_message['status'] = 'Playing'
-						_message['position'] = str(0)
-
-						playback_connection_queue.put(_message)
-					
-					elif song_id == next_song and next_song_state == UNKNOWN:
-					
-						logging.info('Play command for unavailable song, requesting from server')				
-	
-						# We need to get the next song from the server
-						_message['id'] = str(song_id)
-						_message['status'] = 'need_song'
-						_message['position'] = str(0);
-
-						playback_connection_queue.put(_message)
-					elif song_id == next_song and next_song_state == DOWNLOADING:
-						logging.debug("Waiting for download to finish")
-						# TODO Have the comm thread auto start playback now
-
-				if command == 'Stop':
-
-					# Sanity check for command
-					if song_id == current_song:
-
-						# Check the current state of the song
-						if current_song_state == PLAYING:
-							pygame.mixer.music.stop()
-
-							_message['id'] = str(song_id)
-							_message['status'] = 'Stopped'
-							_message['position'] = str(pygame.mixer.music.get_pos())
-
-							current_song_state = STOPPED
-
-							playback_connection_queue.put(_message)
-							# TODO Look at _next_song
-							# and send requestSong/ready or wait until
-							# previous ready call succeeds
-						else:
-							pass # TODO decide how to handle this
-	
-					else:
-						# TODO Error, how to handle this
-						logging.error("Stop command from server for wrong song")
+					handle_stop_command(song_id)
+				else:
+					logging.warn("Unknown playback command received: " + command)
 			
-
 			elif update_type == "upcoming_song":
-
-				logging.info("Processing upcoming_song update")
 
 				values = response['values']
 				song_id = values['id']
 
-				logging.debug("Setting next_song to " + str(song_id))
+				logging.info("Processing upcoming_song update for ID " + str(song_id))
 
-				# Set next song
-				if song_id != current_song:
-
-					fetch_song = False
-
-					# Check if this is a duplicate
-					if song_id != next_song:
-						next_song = song_id
-						next_song_state = UNKNOWN
-
-						fetch_song = True
-					elif next_song_state == UNKNOWN:
-						fetch_song = True
-
-					# Fetch the next song if we've been given a new song
-					# Or we have a next song but we're not fetching it
-					if fetch_song:
-
-						found_song = 0
-
-						for file in os.listdir('.'):
-							if fnmatch.fnmatch(file,str(song_id)):
-								found_song = 1
-							else:
-								pass
-			
-						if found_song == 0: # We need the file, so request first
-				
-							logging.debug('Could not find song, asking for next')
-
-							_message['id'] = str(song_id)
-							_message['status'] = 'need_song'
-							_message['position'] = str(0);
-
-							playback_connection_queue.put(_message)
-						else:
-							logging.debug('Song ready for playback')
-							next_song_state = READY
-
-							if current_song_state != PLAYING:
-								# We aren't playing anything right now
-								# So send ready immediately since we have the file
-				
-								_message['id'] = str(song_id)
-								_message['status'] = 'Ready'
-								_message['position'] = '0'
-								playback_connection_queue.put(_message)
-						
-
-						
-				elif song_id == next_song:
-					logging.debug("Upcoming song same as current song")
-
+				handle_upcoming_song_update(song_id)
 			else:
 				logging.warning("Unknown update received: " + update_type)
 
 		except Queue.Empty:
 
 			# If the queue is empty, extract an event from PyGame
+			# But only if current_song_state is playing
+			# which means we're expecting a stop event
 			if current_song_state == PLAYING:
 				event = pygame.event.poll()
 				if event.type == SONG_END:
@@ -381,7 +515,10 @@ def playback_func():
 					_message['status'] = 'Stopped'
 					_message['position'] = str(pygame.mixer.music.get_pos())
 					playback_connection_queue.put(_message)
-		
+		except Exception as e:
+			logging.error("Exception in playback thread: " + str(e))
+
+	logging.info("Playback thread exiting")	
 
 		
 
@@ -389,20 +526,28 @@ def playback_func():
 # Main function for server communication thread
 #
 def communicate_func():
-	while True:
 
-		global client_id
+	global client_id
 
-		global server_url
-		global server_port
+	global server_url
+	global server_port
 
-		global next_song
-		global current_song
-		global next_song_state
-		global current_song_state		
+	global next_song
+	global current_song
+	global next_song_state
+	global current_song_state
+
+	global keep_running
+
+	while keep_running:	
 
 		# Pop the specific request from the Queue, depending on that do the following
-		playback_message = playback_connection_queue.get()
+		# Use a timeout to remain responsive to updates to keep_running
+		try:
+			playback_message = playback_connection_queue.get(True, 0.5)
+		except Queue.Empty:
+			continue
+
 		playback_connection_queue.task_done()
 
 		logging.info("Message in communication thread: " + str(playback_message))
@@ -425,46 +570,7 @@ def communicate_func():
 			# Request song data from server
 			song_id = playback_message['id']
 
-			logging.debug("IN NEED SONG with song_id = " + str(song_id))
-
-			next_song_state = DOWNLOADING
-
-			song_data_response = send_request(_comm_sock, "request_song", {"clientID": client_id, "songID": song_id})
-			
-			logging.debug("Song Data Response: " + str(song_data_response.status) + " " + str(song_data_response.reason))
-
-			if song_data_response.status == 200:
-				logging.debug("Song song data from server, saving to file")
-
-				_song_data= song_data_response.read()
-
-				output_file = open(str(song_id),'w')
-				output_file.write(_song_data)
-				output_file.close()
-	
-				next_song_state = READY
-
-				if current_song_state != PLAYING:
-					# Send ready message to the server
-
-					playback_message['status'] = 'Ready'
-					logging.debug("The Message in playing state is "+str(playback_message))
-					send_request(_comm_sock, "status_update", {"clientID": client_id}, playback_message, "POST")
-
-				else:
-					
-					# Update status in the background
-					# When PyGame finishes playing, it will see the status
-					# And begin send ready
-					pass
-
-			else:
-			
-				logging.error("Failed to get song data from server")
-				# TODO How to handle this error??
-
-		# NEED TO IMPLEMENT READY, playback position for READY(?)
-
+			handle_need_song(song_id)
 		else:
 	
 			logging.debug("Sending " + str(playback_message['status']) + " status update")
@@ -476,13 +582,7 @@ def communicate_func():
 			if playback_message['status'] == 'Stopped' and next_song != UNKNOWN:
 				
 				# Check if we have the song
-				found_song = 0
-
-				for file in os.listdir('.'):
-					if fnmatch.fnmatch(file,str(next_song)):
-						found_song = 1
-					else:
-						pass
+				found_song = check_for_song(next_song)
 				
 				if found_song:
 
@@ -500,14 +600,30 @@ def communicate_func():
 					playback_message['position'] = '0'	
 					playback_connection_queue.put(playback_message)
 
+	logging.info("Communication thread exiting")
+
+def main():
+	playback_thread = Thread(target = playback_func, args =())
+	update_thread = Thread(target = update_func, args=())
+	communicate_thread = Thread(target = communicate_func, args =())
+
+	#playback_thread.daemon = True
+	#update_thread.daemon = True
+	#communicate_thread.daemon = True
+
+	playback_thread.start()
+	update_thread.start()
+	communicate_thread.start()
+
+	while threading.active_count() > 0:
+		time.sleep(0.1)
 
 if __name__ == "__main__":
-	thread1 = Thread(target = playback_func, args =() )
-	thread2 = Thread(target = update_func, args=() )
-	thread3 = Thread(target = communicate_func, args =() )
-	thread1.start()
-	thread2.start()
-	thread3.start()
-	thread1.join()
-	thread2.join()
-	thread3.join()
+	
+	# This is to fix our control-c woes
+	try:
+		main()
+	except KeyboardInterrupt:
+		logging.info("Interrupt received, exiting...")
+		keep_running = False
+

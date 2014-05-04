@@ -19,6 +19,8 @@ import io.netty.channel.Channel;
 import io.netty.handler.codec.http.FullHttpResponse;
 import io.netty.handler.codec.http.HttpResponseStatus;
 
+import java.io.IOException;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -67,7 +69,9 @@ public class SessionUpdateQueue {
 
                     logger.trace("Sending update to session");
                     logger.trace("Update: %s", json);
+                    
                     RequestHandler.sendResponse(ch, response, false);
+                    
                 } else {
                     
                     // Enqueue the request
@@ -93,6 +97,10 @@ public class SessionUpdateQueue {
         String json;
         
         synchronized(this) {
+            
+            // Remove any closed channels first
+            updateQueueSize();
+            
             if (channelQueue.size() > 0) {
                 chan = channelQueue.poll();
                 
@@ -131,7 +139,23 @@ public class SessionUpdateQueue {
         }
     }
     
+    /**
+     * Removed previously closed channels from the queue
+     */
+    public void updateQueueSize() {
+        Channel chan;
+        
+        logger.debug("Removing stale connections");
+        
+        while (channelQueue.size() > 0 && !channelQueue.element().isActive()) {
+
+            logger.debug("Removing closed channel");
+            channelQueue.remove();
+        }
+    }
+    
     private final Queue<Channel> channelQueue;
+    //private final
     private final Map<UpdateType, SessionUpdate> updates;
     private final Queue<UpdateType> updateTypeQueue;
     

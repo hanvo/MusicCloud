@@ -1,3 +1,5 @@
+#!/bin/python
+
 #File Crawling
 #Things that are done:
 # -Crawling of music files
@@ -23,7 +25,7 @@ from mutagen import File
 import eyed3
 
 def main():
-    crawl()
+    crawl(".")
     
 def crawl(dir):
     #print 'selected dir: ', dir
@@ -86,9 +88,8 @@ def crawl(dir):
             else:
                 print "*** No Album Art work - ", y ,"***"
                 #print "\n"
-                artwork = 'null'
-                artType = 'null'
-                artCoverID = 'null'
+                artType = 'Unknown'
+                artCoverID = 'Unknown'
 
             audioFile = eyed3.load(path) #loading for artist/Album
             artist = audioFile.tag.artist
@@ -98,13 +99,19 @@ def crawl(dir):
 
             #print "Inserting values: \"" + str(songCount) + "\" \"" + str(y) + "\" \"" + str(path) + "\" \"" + str(audioLength) + "\" \"" + str(artist) + "\" \"" + str(album) + "\" \"" + str(artType) + "\""# Debug statement
             #print "\n"
+
+            # Cleanup any null values
+            if artist == None:
+                artist = 'Unknown'
+            if album == None:
+                album = 'Unknown'
     
             c.execute('insert into music values (?,?,?,?,?,?,?,?,?)', (songCount,y,path,audioLength,artist,album,artwork,artType,artCoverID,))
             songCount = songCount + 1
                 
-    #print "\n"
-    #for row in c.execute('SELECT id,song,path,lengthOfSong,artist,album,artType,artCoverID FROM music '):
-    #  print row
+    print "\n"
+    for row in c.execute('SELECT id,song,path,lengthOfSong,artist,album,artType,artCoverID FROM music '):
+      print row
 
 
     #c.execute('SELECT art FROM music')

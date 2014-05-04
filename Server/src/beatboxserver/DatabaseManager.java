@@ -100,6 +100,7 @@ public final class DatabaseManager {
                 transactionLock.unlock();
                 throw e;
             }
+            transactionLock.unlock();
         } else {
             throw new IllegalStateException();
         }
@@ -189,7 +190,8 @@ public final class DatabaseManager {
                                             + "length REAL NOT NULL, "
                                             + "image_type STRING, "
                                             + "image BLOB, "
-                                            + "status INTEGER NOT NULL DEFAULT '" + SongStatus.Inactive + "')");
+                                            + "status INTEGER NOT NULL DEFAULT '" + SongStatus.Inactive + "', "
+                                            + "last_played DATETIME NOT NULL DEFAULT '0000-00-00 00:00:00')");
         
         // Create votes table
         stmt.executeUpdate("CREATE TABLE votes (session_id INTEGER REFERENCES sessions(id) ON DELETE CASCADE, "

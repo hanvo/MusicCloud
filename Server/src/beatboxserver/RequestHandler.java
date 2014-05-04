@@ -216,7 +216,6 @@ public abstract class RequestHandler {
             throw new IllegalArgumentException();
         }
             
-        
         ObjectMapper mapper = new ObjectMapper();
         mapper.setPropertyNamingStrategy(PropertyNamingStrategy.CAMEL_CASE_TO_LOWER_CASE_WITH_UNDERSCORES);
             
