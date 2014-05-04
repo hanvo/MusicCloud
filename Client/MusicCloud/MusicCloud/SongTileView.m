@@ -8,6 +8,7 @@
 
 #import "SongTileView.h"
 #import "SongInfo.h"
+#import "MarqueeLabel.h"
 
 #import <QuartzCore/QuartzCore.h>
 
@@ -19,6 +20,8 @@
 - (id)initWithSong:(SongInfo *)song {
     self = [[[NSBundle mainBundle] loadNibNamed:@"SongTileView" owner:self options:nil] firstObject];
     if (self) {
+        _song = song;
+        
         self.backgroundColor = [UIColor whiteColor];
         
         //self.layer.borderWidth = 1.0;
@@ -29,11 +32,44 @@
         self.layer.shadowOpacity = 0.5;
         self.layer.shadowPath = [[UIBezierPath bezierPathWithRect:self.bounds] CGPath]; // improves performance
         
-        self.titleLabel.text = song.songName;
-        self.albumLabel.text = song.songAlbum;
-        self.artistLabel.text = song.songArtist;
+        _titleLabel.marqueeType = MLContinuous;
+        _titleLabel.animationCurve = UIViewAnimationOptionCurveLinear;
+        _titleLabel.continuousMarqueeExtraBuffer = 50.0f;
+        _titleLabel.numberOfLines = 1;
+        _titleLabel.opaque = NO;
+        _titleLabel.enabled = YES;
+        _titleLabel.lengthOfScroll = 5;
+        _titleLabel.backgroundColor = [UIColor clearColor];
+        
+        _albumLabel.marqueeType = MLContinuous;
+        _albumLabel.animationCurve = UIViewAnimationOptionCurveLinear;
+        _albumLabel.continuousMarqueeExtraBuffer = 50.0f;
+        _albumLabel.numberOfLines = 1;
+        _albumLabel.opaque = NO;
+        _albumLabel.enabled = YES;
+        _albumLabel.lengthOfScroll = 5;
+        _albumLabel.backgroundColor = [UIColor clearColor];
+        
+        _artistLabel.marqueeType = MLContinuous;
+        _artistLabel.animationCurve = UIViewAnimationOptionCurveLinear;
+        _artistLabel.continuousMarqueeExtraBuffer = 50.0f;
+        _artistLabel.numberOfLines = 1;
+        _artistLabel.opaque = NO;
+        _artistLabel.enabled = YES;
+        _artistLabel.lengthOfScroll = 5;
+        _artistLabel.backgroundColor = [UIColor clearColor];
     }
     return self;
+}
+
+- (void)layoutSubviews {
+    [super layoutSubviews];
+    
+    self.titleLabel.text = _song.songName;
+    self.albumLabel.text = _song.songAlbum;
+    self.artistLabel.text = _song.songArtist;
+    
+    self.albumImageView.image = _song.albumArt;
 }
 
 @end

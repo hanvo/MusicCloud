@@ -16,4 +16,6 @@
 
 - (void)addSong:(SongInfo *)song animated:(BOOL)anim;
 
+- (void)updateCurrentSong;
+
 @end
