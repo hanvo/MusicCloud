@@ -83,7 +83,6 @@ public class SpeakerHandler extends RequestHandler {
             // Broadcast update to speaker session
             synchronized (songMgr) {
                 try {
-                    
                     // Get active song and order the speaker to play it back
                     ActiveSong currentSong = songMgr.getActiveSong();
                     
@@ -98,7 +97,7 @@ public class SpeakerHandler extends RequestHandler {
                     // Attempt to schedule a new next song since we don't have a next song
                     try {
                         
-                        songMgr.scheduleNextSong();
+                        songMgr.newSpeakerAuthenticated(session.getID());
                     } catch (Exception ex) {
 
                         logger.warn("Failed to start playback", ex);

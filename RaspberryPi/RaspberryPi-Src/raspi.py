@@ -176,8 +176,8 @@ def handle_play_command(song_id):
 		next_song_state = UNKNOWN
 
 		# Start playback via PyGame
-		pygame.mixer.music.load(str(song_id))
-		pygame.mixer.music.play()
+		#pygame.mixer.music.load(str(song_id))
+		#pygame.mixer.music.play()
 
 
 		logging.debug('Started playback through PyGame')
@@ -391,11 +391,14 @@ def update_func():
 		server_communication_ID_queue.put(client_id)
 	except Exception as e:
 		logging.error("Authentication failed from exception: " + str(e))
-		logging.info("Update thread exiting")
-		return
+		http_connection.close()
+		keep_running = False
 	
 	while keep_running:
 		try:
+			http_connection = httplib.HTTPConnection(server_url, server_port, timeout = timeout)
+			socket.setdefaulttimeout(timeout)
+
 			logging.info("Sending request_update")
 
 			update_response = send_request(http_connection, "request_update", {"clientID": client_id})
@@ -410,8 +413,10 @@ def update_func():
 				logging.debug("Message from server: "+str(rresp))
 				server_playback_queue.put(rresp)
 			else:
-				logging.warning("Exiting")
-				sys.exit()
+				log_message = create_response_log_message(update_response)
+				logging.warning("Failed to get update from server: " + log_message)
+				
+			http_connection.close()
 		except socket.timeout:
 			logging.debug("Timeout for connection, resending")
 		except Exception as e:
@@ -419,7 +424,7 @@ def update_func():
 			sys.exit()
 
 	# DEAUTHENTICATE
-	send_request(http_connection, "request_update", {"clientID": client_id}, {"id": client_id}, "POST")
+	send_request(http_connection, "deauthenticate", {"clientID": client_id}, {"id": client_id}, "POST")
 	http_connection.close()
 	
 	logging.info("Update thread exiting")
@@ -433,15 +438,21 @@ def playback_func():
 	global current_song
 	global next_song_state
 	global current_song_state
-		
-	# Initialize the mixer for PyGame
-	pygame.mixer.init()
-	pygame.mixer.music.set_endevent(SONG_END)
 
-	# Some platforms might need to init the display for some parts of pygame.
-	os.environ["SDL_VIDEODRIVER"] = "dummy"
-	pygame.display.init()
-	pygame.display.set_mode((1,1))
+	global keep_running
+		
+	try:
+		# Initialize the mixer for PyGame
+		pygame.mixer.init()
+		pygame.mixer.music.set_endevent(SONG_END)
+
+		# Some platforms might need to init the display for some parts of pygame.
+		os.environ["SDL_VIDEODRIVER"] = "dummy"
+		pygame.display.init()
+		pygame.display.set_mode((1,1))
+	except Exception as e:
+		logging.error("Failed to initialized PyGame: " + str(e))
+		keep_running = False
 
 	_message = {"id":"","status":"","position":""}
 
@@ -504,6 +515,8 @@ def playback_func():
 					_message['status'] = 'Stopped'
 					_message['position'] = str(pygame.mixer.music.get_pos())
 					playback_connection_queue.put(_message)
+		except Exception as e:
+			logging.error("Exception in playback thread: " + str(e))
 
 	logging.info("Playback thread exiting")	
 

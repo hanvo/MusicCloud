@@ -65,12 +65,31 @@ public final class SongManager {
     }
     
     /**
+     * 
+     * @param sessionID
+     * @throws SQLException
+     */
+    public void newSpeakerAuthenticated(long sessionID) throws SQLException {
+        ActiveSong currentSong = null;
+        try {
+            
+            // TODO improve this logic
+            currentSong = getActiveSong();
+            sessionMgr.sendUpdate(new UpcomingSongUpdate(activeSong), sessionID);
+        } catch (NoSuchElementException e) {
+            
+            logger.info("First speaker to connect, scheduling first song");
+            scheduleNextSong();
+        } catch (Exception e) {
+            
+            // TODO handle this
+        }
+    }
+    /**
      * Schedule playback to start for the next song once the previous song finishes
      * @throws SQLException
      */
     public void scheduleNextSong() throws SQLException {
-
-        
         if (nextSong == null) {
             nextSong = getNextSong();
             
