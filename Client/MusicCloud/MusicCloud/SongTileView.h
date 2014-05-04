@@ -8,14 +8,17 @@
 
 #import <UIKit/UIKit.h>
 
+@class MarqueeLabel;
 @class SongInfo;
 
 @interface SongTileView : UIView
 
+@property (strong, nonatomic) SongInfo *song;
+
 @property (weak, nonatomic) IBOutlet UIImageView *albumImageView;
-@property (weak, nonatomic) IBOutlet UILabel *titleLabel;
-@property (weak, nonatomic) IBOutlet UILabel *albumLabel;
-@property (weak, nonatomic) IBOutlet UILabel *artistLabel;
+@property (weak, nonatomic) IBOutlet MarqueeLabel *titleLabel;
+@property (weak, nonatomic) IBOutlet MarqueeLabel *albumLabel;
+@property (weak, nonatomic) IBOutlet MarqueeLabel *artistLabel;
 
 - (id)initWithSong:(SongInfo *)song;
 

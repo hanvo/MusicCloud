@@ -13,7 +13,7 @@
 #import <QuartzCore/QuartzCore.h>
 
 #define TILE_PAD 8
-#define TILE_WIDTH 220
+#define TILE_WIDTH 280
 
 @interface SongScrollView ()
 
@@ -83,6 +83,11 @@
     
     CGPoint contentOffset = CGPointMake(contentSize.width - TILE_WIDTH - TILE_PAD, 0);
     [self setContentOffset:contentOffset animated:anim];
+}
+
+- (void)updateCurrentSong {
+    SongTileView *song = [_tiles lastObject];
+    [song layoutSubviews];
 }
 
 @end

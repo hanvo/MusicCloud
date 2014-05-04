@@ -43,7 +43,6 @@
     
     [_passthroughView setScrollView:_songScrollView];
     
-    [_voteMeterView setBalance:-1.0];
     [_progressLabel setText:@"0:00"];
     [_totalLabel setText:@"0:00"];
     
@@ -195,6 +194,7 @@
     _currentSong.dislikes = song.dislikes;
     _currentSong.balance = song.balance;
     
+    [_voteMeterView setBalanceEnabled:YES];
     [_voteMeterView setBalance:_currentSong.balance animated:YES];
 }
 
@@ -240,14 +240,19 @@
     }
     
     if (newSong) {
-        [_songList addObject:song];
+        SongInfo *match = [self songForSongID:song.songInfo.songID];
+        if (match) { // already found album art
+            song.songInfo.albumArt = match.albumArt;
+        }
+        
+        //[_songList addObject:song.songInfo];
         _currentSong = song;
         
         [_songScrollView addSong:song.songInfo animated:YES];
         
         [self updateLabels:song];
-        [_downVoteButton setBackgroundColor:[UIColor blackColor]];
-        [_upVoteButton setBackgroundColor:[UIColor blackColor]];
+        [_downVoteButton setTitleColor:[UIColor whiteColor] forState:UIControlStateNormal];
+        [_upVoteButton setTitleColor:[UIColor whiteColor] forState:UIControlStateNormal];
         [_downVoteButton setEnabled:YES];
         [_upVoteButton setEnabled:YES];
         
@@ -260,6 +265,11 @@
     song.albumArt = image;
     NSIndexPath *indexPath = [NSIndexPath indexPathForRow:[_songList indexOfObject:song] inSection:0];
     [self.tableView reloadRowsAtIndexPaths:@[indexPath] withRowAnimation:UITableViewRowAnimationAutomatic];
+    
+    if (song.songID == _currentSong.songInfo.songID) {
+        _currentSong.songInfo.albumArt = image;
+        [_songScrollView updateCurrentSong];
+    }
 }
 
 - (void)clientDidReceiveFailure:(NSString *)message {

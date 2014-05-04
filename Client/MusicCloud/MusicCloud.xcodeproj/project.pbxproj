@@ -40,6 +40,7 @@
 		03B5D8F218FCFDDF006ACB60 /* PassthroughView.m in Sources */ = {isa = PBXBuildFile; fileRef = 03B5D8F118FCFDDF006ACB60 /* PassthroughView.m */; };
 		03E4885D19148297004D527E /* CurrentSongInfo.m in Sources */ = {isa = PBXBuildFile; fileRef = 03E4885C19148297004D527E /* CurrentSongInfo.m */; };
 		03E4886019155DDF004D527E /* ImageFetchSession.m in Sources */ = {isa = PBXBuildFile; fileRef = 03E4885F19155DDF004D527E /* ImageFetchSession.m */; };
+		03E488631915B58A004D527E /* MarqueeLabel.m in Sources */ = {isa = PBXBuildFile; fileRef = 03E488621915B58A004D527E /* MarqueeLabel.m */; };
 		03FCE9AB18FEC49F00D363E2 /* AFHTTPRequestOperation.m in Sources */ = {isa = PBXBuildFile; fileRef = 03FCE99918FEC49F00D363E2 /* AFHTTPRequestOperation.m */; };
 		03FCE9AC18FEC49F00D363E2 /* AFHTTPRequestOperationManager.m in Sources */ = {isa = PBXBuildFile; fileRef = 03FCE99B18FEC49F00D363E2 /* AFHTTPRequestOperationManager.m */; };
 		03FCE9AD18FEC49F00D363E2 /* AFHTTPSessionManager.m in Sources */ = {isa = PBXBuildFile; fileRef = 03FCE99D18FEC49F00D363E2 /* AFHTTPSessionManager.m */; };
@@ -116,6 +117,8 @@
 		03E4885C19148297004D527E /* CurrentSongInfo.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = CurrentSongInfo.m; sourceTree = "<group>"; };
 		03E4885E19155DDF004D527E /* ImageFetchSession.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ImageFetchSession.h; sourceTree = "<group>"; };
 		03E4885F19155DDF004D527E /* ImageFetchSession.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = ImageFetchSession.m; sourceTree = "<group>"; };
+		03E488611915B58A004D527E /* MarqueeLabel.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MarqueeLabel.h; sourceTree = "<group>"; };
+		03E488621915B58A004D527E /* MarqueeLabel.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MarqueeLabel.m; sourceTree = "<group>"; };
 		03FCE99818FEC49F00D363E2 /* AFHTTPRequestOperation.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = AFHTTPRequestOperation.h; sourceTree = "<group>"; };
 		03FCE99918FEC49F00D363E2 /* AFHTTPRequestOperation.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = AFHTTPRequestOperation.m; sourceTree = "<group>"; };
 		03FCE99A18FEC49F00D363E2 /* AFHTTPRequestOperationManager.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = AFHTTPRequestOperationManager.h; sourceTree = "<group>"; };
@@ -293,6 +296,8 @@
 				03A29C56190399DD003210D9 /* SongTileView.h */,
 				03A29C57190399DD003210D9 /* SongTileView.m */,
 				03A29C5419039904003210D9 /* SongTileView.xib */,
+				03E488611915B58A004D527E /* MarqueeLabel.h */,
+				03E488621915B58A004D527E /* MarqueeLabel.m */,
 			);
 			name = Views;
 			sourceTree = "<group>";
@@ -468,6 +473,7 @@
 				03FCE9B118FEC49F00D363E2 /* AFURLRequestSerialization.m in Sources */,
 				03B5D8D918FCE8EA006ACB60 /* LoginViewController.m in Sources */,
 				03FCE9B318FEC49F00D363E2 /* AFURLSessionManager.m in Sources */,
+				03E488631915B58A004D527E /* MarqueeLabel.m in Sources */,
 				03B5D8F218FCFDDF006ACB60 /* PassthroughView.m in Sources */,
 				03FCE9AC18FEC49F00D363E2 /* AFHTTPRequestOperationManager.m in Sources */,
 				03E4885D19148297004D527E /* CurrentSongInfo.m in Sources */,
