@@ -72,15 +72,20 @@ class MyFrame(wx.Frame):
       self.CreateStatusBar()
       menuBar = wx.MenuBar()
       menu = wx.Menu()
+      view = wx.Menu()
       menu.Append(104, "&Open", "Select Directory to Crawl")
       menu.Append(105, "&Clear", "Clear Message Box")
       menu.Append(106, "&Exit", "Exit Program")
+      view.Append(100, "&About", "About")
       menuBar.Append(menu, "&File")
+      menuBar.Append(view, "&Project")
       self.SetMenuBar(menuBar)
+
 
       self.Bind(wx.EVT_MENU, self.opendir, id=104)
       self.Bind(wx.EVT_MENU, self.clearMess, id=105)
       self.Bind(wx.EVT_MENU, self.exitProg, id=106)
+      self.Bind(wx.EVT_MENU, self.OnAboutBox, id=100)
 
     def OnClose(self,event):
       self.Close(True)
@@ -115,6 +120,26 @@ class MyFrame(wx.Frame):
     def exitProg(self,event):
       self.Close()
 
+    def OnAboutBox(self,event):
+      description = """Crawls through a selected file recursively. 
+It searches for Mp3 files and if true stores meta data into a local db file. 
+Computer Science 2014 Spring 
+Professor Li 
+April - May """
+      licence = """(C) NO RE-USEARINO. BAD CODE. Trololol Don Phan"""
+      info = wx.AboutDialogInfo()
+      info.SetIcon(wx.Icon('icon-120.png', wx.BITMAP_TYPE_ANY))
+      info.SetName('Daddy Yeezy')
+      info.SetVersion('1.0')
+      info.SetDescription(description)
+      info.SetLicence(licence)
+      info.AddDeveloper('Don Phan - phand@purdue.edu - Crawler')
+      info.AddDeveloper('Jason Rahman - rahmanj@purdue.edu - Server ')
+      info.AddDeveloper('Anant Goel - goela@purdue.edu - Raspberry Pi ')
+      info.AddDeveloper('Josh Selbo - jselbo@purdue.edu - iOS Dev')
+
+
+      wx.AboutBox(info)
 
 
 class MyApp(wx.App):
