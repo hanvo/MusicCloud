@@ -102,9 +102,9 @@ def crawl(dir):
             c.execute('insert into music values (?,?,?,?,?,?,?,?,?)', (songCount,y,path,audioLength,artist,album,artwork,artType,artCoverID,))
             songCount = songCount + 1
                 
-    #print "\n"
-    #for row in c.execute('SELECT id,song,path,lengthOfSong,artist,album,artType,artCoverID FROM music '):
-    #  print row
+    print "\n"
+    for row in c.execute('SELECT id,song,path,lengthOfSong,artist,album,artType,artCoverID FROM music '):
+      print row
 
 
     #c.execute('SELECT art FROM music')
