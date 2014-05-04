@@ -103,12 +103,16 @@ class MyFrame(wx.Frame):
       print 'Pinging Server Status...'
       try:
         timeout = 50
-        serverSocket = httplib.HTTPConnection('klamath.dnsdynamic.com',5050, timeout = timeout)
+        http = httplib.HTTPConnection('klamath.dnsdynamic.com',5050, timeout = timeout)
         socket.setdefaulttimeout(timeout)
-        params = json.dumps({"pin":1234},encoding = "ASCII")
-        header = {"Content-Type": "application/json"}
-        serverSocket.request("POST","klamath.dnsydynamic.com:5050/client/authenticate",params,header)
-        serverJson = serverSocket.getresponse()
+
+        server_response = send_request(http, "autenticate",{},{"pin":1234},"POST")
+        server_response = json.loads(server_response.read())
+        client_id = server_response['id']
+
+        send_request(http,"deauthenticate", {"clientID": client_id},{"id": client_id}, "POST")
+        http.close()
+
         print "Server Online"
       except Exception, e:
         print "Server Offline"
