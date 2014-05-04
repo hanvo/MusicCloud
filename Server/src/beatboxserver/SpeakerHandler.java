@@ -97,6 +97,7 @@ public class SpeakerHandler extends RequestHandler {
 
                     // Attempt to schedule a new next song since we don't have a next song
                     try {
+                        
                         songMgr.scheduleNextSong();
                     } catch (Exception ex) {
 

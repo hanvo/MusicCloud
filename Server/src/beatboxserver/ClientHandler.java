@@ -353,7 +353,14 @@ public class ClientHandler extends RequestHandler {
             
             ActiveSong activeSong;
             try {
-                activeSong = songMgr.getActiveSong(); // TODO Need to finish this
+                
+                logger.debug("Getting active song");
+                activeSong = songMgr.getActiveSong(); 
+            } catch (NoSuchElementException e) {
+                
+                logger.warn("No current active song");
+                sendError(ctx.channel(), NOT_FOUND);
+                return;
             } catch (Exception e) {
                 
                 logger.warn("Failed to get active song", e);
@@ -369,6 +376,8 @@ public class ClientHandler extends RequestHandler {
             }
             
             try {
+                
+                logger.debug("Sending song update");
                 sendResponse(ctx.channel(), new SongUpdate(activeSong), false);
             } catch (Exception e) {
                 

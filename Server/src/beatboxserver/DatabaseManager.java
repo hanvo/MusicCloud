@@ -100,6 +100,7 @@ public final class DatabaseManager {
                 transactionLock.unlock();
                 throw e;
             }
+            transactionLock.unlock();
         } else {
             throw new IllegalStateException();
         }

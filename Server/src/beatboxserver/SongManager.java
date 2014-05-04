@@ -95,7 +95,7 @@ public final class SongManager {
             throw new IllegalArgumentException();
         }
         
-        try (PreparedStatement stmt = databaseMgr.createPreparedStatement("INSERT OR REPLACE votes(session_id, song_id) VALUES (?, ?)")) {
+        try (PreparedStatement stmt = databaseMgr.createPreparedStatement("INSERT OR REPLACE INTO votes(session_id, song_id) VALUES (?, ?)")) {
             stmt.setLong(1, sessionID);
             stmt.setLong(2, songID);
             if (stmt.executeUpdate() != 1) {
@@ -119,7 +119,7 @@ public final class SongManager {
             throw new IllegalArgumentException();
         }
         
-        try (PreparedStatement stmt = databaseMgr.createPreparedStatement("INSERT OR REPLACE likes (session_id, song_id) VALUES (?, ?, '1')")) {
+        try (PreparedStatement stmt = databaseMgr.createPreparedStatement("INSERT OR REPLACE INTO likes (session_id, song_id, value) VALUES (?, ?, '1')")) {
             stmt.setLong(1, sessionID);
             stmt.setLong(2, songID);
             if (stmt.executeUpdate() != 1) {
@@ -143,7 +143,7 @@ public final class SongManager {
             throw new IllegalArgumentException();
         }
         
-        try (PreparedStatement stmt = databaseMgr.createPreparedStatement("INSERT OR REPLACE likes (session_id, song_id, value) VALUES (?, ?, '-1')")) {
+        try (PreparedStatement stmt = databaseMgr.createPreparedStatement("INSERT OR REPLACE INTO likes (session_id, song_id, value) VALUES (?, ?, '-1')")) {
             stmt.setLong(1, sessionID);
             stmt.setLong(2, songID);
             if (stmt.executeUpdate() != 1) {
@@ -186,6 +186,8 @@ public final class SongManager {
      */
     public LikeData getStats() throws SQLException, NoSuchElementException {
         
+        logger.debug("Getting like statistics for the active song");
+        
         long songID = -1;
         long likes, dislikes;
         try (Statement stmt = databaseMgr.createStatement()) {
@@ -207,11 +209,13 @@ public final class SongManager {
                 count = rs.getLong("likes");
                 songID = rs.getLong("id");
                 
+                logger.debug("In getStats() value: %d, count: %d, songID: %d", value, count, songID);
+                
                 // Dislikes are stored as -1, likes are stored as 1
                 if (value < 0) {
-                    dislikes = count;
+                    dislikes += count;
                 } else if (value > 0) {
-                    likes = count;
+                    likes += count;
                 }
             }
         }
@@ -257,6 +261,8 @@ public final class SongManager {
     public List<VoteData> getVotes() throws SQLException {
         List<VoteData> votes = new ArrayList<>();
         Statement stmt = databaseMgr.createStatement();
+        
+        // TODO Fix missing songs, send data for songs with 0 votes
         ResultSet rs = stmt.executeQuery("SELECT song_id AS id, COUNT(*) as votes FROM votes GROUP BY song_id");
         while (rs.next()) {
             votes.add(new VoteData(rs.getLong("id"), rs.getLong("votes")));
@@ -276,6 +282,8 @@ public final class SongManager {
         synchronized (this) {
             if (activeSong == null) {
                 activeSong = getActiveSongFromDB();
+            } else {
+                logger.debug("Returning cached active song");
             }
             return activeSong;
         }
@@ -290,12 +298,15 @@ public final class SongManager {
      */
     private ActiveSong getActiveSongFromDB() throws SQLException, IllegalStateException, NoSuchElementException {
         
+        logger.debug("Fetching active song from DB");
+        
         ActiveSong active = null;
         
         String query = "SELECT id, name, path, artist, album, length, counts.vote_count AS votes FROM songs "
                      + "LEFT OUTER JOIN (SELECT song_id, COUNT(*) as vote_count FROM votes GROUP BY song_id) counts "
                      + "ON counts.song_id = id WHERE status != '" + SongStatus.Inactive.ordinal() + "' "
                      + "ORDER BY counts.vote_count IS NOT NULL, counts.vote_count DESC LIMIT 1";
+        
         try (Statement stmt = databaseMgr.createStatement()) {
             ResultSet rs = stmt.executeQuery(query);
             
@@ -357,6 +368,7 @@ public final class SongManager {
                 + "LEFT OUTER JOIN (SELECT song_id, COUNT(*) as vote_count FROM votes GROUP BY song_id) counts "
                 + "ON counts.song_id = id WHERE status = '" + SongStatus.Inactive.ordinal() + "' "
                 + "ORDER BY counts.vote_count IS NOT NULL, counts.vote_count DESC LIMIT 1";
+        
         try (Statement stmt = databaseMgr.createStatement()) {
             ResultSet rs = stmt.executeQuery(query);
             
@@ -449,7 +461,7 @@ public final class SongManager {
 
                         // Tell the phone clients that something happened
                         sessionMgr.broadcastUpdate(new SongUpdate(activeSong), SessionType.User.ordinal());
-                    } else if (update.id != activeSong.getID()){
+                    } else if (activeSong != null && update.id != activeSong.getID()){
 
                         logger.trace("Incorrect song being played, attempting correction");
 
@@ -585,6 +597,8 @@ public final class SongManager {
             throw new IllegalArgumentException();
         }
         
+        logger.debug("Likes: %d Dislikes: %d");
+        
         long difference = likes - dislikes;
         long sum = likes + dislikes;
         
@@ -610,8 +624,8 @@ public final class SongManager {
             public void run() {
                 synchronized(manager) {
                     try {
-                        manager.skipToNext();
-                        //manager.scheduleNextSong();
+                        //manager.skipToNext();
+                        manager.scheduleNextSong();
                     } catch (Exception e) {
                         // TODO, handle this later
                     }
@@ -621,11 +635,11 @@ public final class SongManager {
         
         // Schedule to run approx 10 seconds before the end of the song
         // PROBLEM, what if the song is shorter than 10 seconds???
-        //logger.trace("Scheduling timer task for %d seconds", nextSong.getLength() - 10);
-        //songTimer.schedule(songTimerTask, (nextSong.getLength() - 10) * 1000);
+        logger.trace("Scheduling timer task for %d seconds", nextSong.getLength() - 20);
+        songTimer.schedule(songTimerTask, (nextSong.getLength() - 20) * 1000);
         
-        logger.trace("Scheduling timer task for %d seconds", 30);
-        songTimer.schedule(songTimerTask, 30 * 1000);
+        //logger.trace("Scheduling timer task for %d seconds", 30);
+        //songTimer.schedule(songTimerTask, 30 * 1000);
         
         // Update the database with information about the next song
         updateNextSong(activeSong, nextSong);
@@ -638,6 +652,7 @@ public final class SongManager {
                 nextSong.getPath(),
                 nextSong.getLength(),
                 nextSong.getVotes());
+        activeSong.setPlaybackStatus(SongStatus.Playing);
         
         nextSong = null;
     }
@@ -752,7 +767,7 @@ public final class SongManager {
             stmt.executeUpdate();
         }
         // Mark the active song as inactive now that a new song is starting
-        query = "UPDATE songs SET status = " + SongStatus.Inactive.ordinal() + " WHERE song_id = ?";
+        query = "UPDATE songs SET status = " + SongStatus.Inactive.ordinal() + " WHERE id = ?";
         try (PreparedStatement stmt = databaseMgr.createPreparedStatement(query)) {
             stmt.setLong(1, currentSong.getID());
             stmt.executeUpdate();
