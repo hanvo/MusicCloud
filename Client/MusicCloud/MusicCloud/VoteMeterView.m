@@ -40,21 +40,32 @@
     
     self.backgroundColor = [UIColor greenColor];
     
+    _balance = 0.0;
+    _balanceEnabled = NO;
+    
     CGRect frame = CGRectMake(0, 0, 0, self.bounds.size.height);
     _redBar = [[UIView alloc] initWithFrame:frame];
     _redBar.backgroundColor = [UIColor redColor];
     [self addSubview:_redBar];
 }
 
+- (void)layoutSubviews {
+    [super layoutSubviews];
+    
+    [self layoutBar];
+}
+
 - (void)layoutBar {
     CGRect frame = _redBar.frame;
-    if (_balance == -1.0) {
+    
+    if (_balanceEnabled) {
+        frame.size.width = (0.5-(_balance/2.0)) * self.bounds.size.width; // basically calculus
+        self.backgroundColor = [UIColor greenColor];
+    } else {
         frame.size.width = 0;
         self.backgroundColor = [UIColor blackColor];
-    } else {
-        frame.size.width = _balance * self.bounds.size.width;
-        self.backgroundColor = [UIColor greenColor];
     }
+    
     [_redBar setFrame:frame];
 }
 

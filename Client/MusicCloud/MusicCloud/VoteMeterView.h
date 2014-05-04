@@ -10,10 +10,12 @@
 
 @interface VoteMeterView : UIView
 
-// must be double in range [0.0, 1.0]
-// unless the value is set to -1.0, in which case
+// must be double in range [-1.0, 1.0]
+// unless balanceEnabled is NO, then
 // the meter will be blank
 @property (nonatomic) double balance;
+
+@property (nonatomic) BOOL balanceEnabled;
 
 - (void)setBalance:(double)balance animated:(BOOL)anim;
 

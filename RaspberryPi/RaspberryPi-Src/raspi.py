@@ -313,41 +313,57 @@ def playback_func():
 				logging.debug("Setting next_song to " + str(song_id))
 
 				# Set next song
-				if song_id != next_song:
-					next_song = song_id
-					next_song_state = UNKNOWN
+				if song_id != current_song:
 
-					found_song = 0
+					fetch_song = False
 
-					for file in os.listdir('.'):
-						if fnmatch.fnmatch(file,str(song_id)):
-							found_song = 1
-						else:
-							pass
+					# Check if this is a duplicate
+					if song_id != next_song:
+						next_song = song_id
+						next_song_state = UNKNOWN
+
+						fetch_song = True
+					elif next_song_state == UNKNOWN:
+						fetch_song = True
+
+					# Fetch the next song if we've been given a new song
+					# Or we have a next song but we're not fetching it
+					if fetch_song:
+
+						found_song = 0
+
+						for file in os.listdir('.'):
+							if fnmatch.fnmatch(file,str(song_id)):
+								found_song = 1
+							else:
+								pass
 			
-					if found_song == 0: # We need the file, so request first
+						if found_song == 0: # We need the file, so request first
 				
-						logging.debug('Could not find song, asking next')
+							logging.debug('Could not find song, asking for next')
 
-						_message['id'] = str(song_id)
-						_message['status'] = 'need_song'
-						_message['position'] = str(0);
-
-						playback_connection_queue.put(_message)
-					else:
-						logging.debug('Song ready for playback')
-						next_song_state = READY
-
-						if current_song_state != PLAYING:
-							# We aren't playing anything right now
-							# So send ready immediately since we have the file
-				
 							_message['id'] = str(song_id)
-							_message['status'] = 'Ready'
-							_message['position'] = '0'
+							_message['status'] = 'need_song'
+							_message['position'] = str(0);
+
 							playback_connection_queue.put(_message)
-				else:
-					logging.debug("Upcoming song same as previous upcoming song")
+						else:
+							logging.debug('Song ready for playback')
+							next_song_state = READY
+
+							if current_song_state != PLAYING:
+								# We aren't playing anything right now
+								# So send ready immediately since we have the file
+				
+								_message['id'] = str(song_id)
+								_message['status'] = 'Ready'
+								_message['position'] = '0'
+								playback_connection_queue.put(_message)
+						
+
+						
+				elif song_id == next_song:
+					logging.debug("Upcoming song same as current song")
 
 			else:
 				logging.warning("Unknown update received: " + update_type)
@@ -457,7 +473,7 @@ def communicate_func():
 			# TODO Check response status from the server (Need 200)
 
 			# If we stopped, we need to check if we can start the next song
-			if playback_message['status'] == 'Stopped':
+			if playback_message['status'] == 'Stopped' and next_song != UNKNOWN:
 				
 				# Check if we have the song
 				found_song = 0

@@ -72,6 +72,7 @@
         songInfo.songInfo.songID = [[likeInfo objectForKey:@"id"] integerValue];
         songInfo.likes = [[likeInfo objectForKey:@"likes"] integerValue];
         songInfo.dislikes = [[likeInfo objectForKey:@"dislikes"] integerValue];
+        songInfo.balance = [[likeInfo objectForKey:@"balance"] doubleValue];
         
         [_delegate clientDidReceiveLikeUpdate:songInfo];
     } else if ([updateType isEqualToString:@"votes"]) {
@@ -83,7 +84,6 @@
             info.votes = [[dict objectForKey:@"votes"] integerValue];
             [votes addObject:info];
         }
-        NSLog(@"received vote update: %@", votes);
         [_delegate clientDidReceiveVoteUpdate:votes];
     } else if ([updateType isEqualToString:@"current_song"]) {
         NSDictionary *values = [response objectForKey:@"values"];
@@ -189,10 +189,8 @@
     
     NSString *query = [self createURLQuery:@"client/vote"];
     NSDictionary *params = @{@"id": @(songID)};
-    NSLog(@"sending vote for id %ld", (long)songID);
     [self POST:query parameters:params success:^(NSURLSessionDataTask *task, id responseObject) {
         // Do nothing
-        NSLog(@"vote success");
     } failure:^(NSURLSessionDataTask *task, NSError *error) {
         [_delegate clientDidFailTask:task error:error];
     }];
@@ -248,13 +246,19 @@
         if (_requestingUpdates)
             [self updateRequestLoop];
     } failure:^(NSURLSessionDataTask *task, NSError *error) {
-        if (error.code != -1001) { // timeout error code (these are normal)
+        if (error.code == -1001) { // timeout error code (these are normal)
+            if (_requestingUpdates)
+                [self updateRequestLoop];
+        } else {
             [_delegate clientDidFailTask:task error:error];
-            [NSThread sleepForTimeInterval:1.0];
+            
+            NSLog(@"Stop requesting updates...");
+            
+            _requestingUpdates = NO;
+            
+            //if (_requestingUpdates)
+                //[self updateRequestLoop];
         }
-        
-        if (_requestingUpdates)
-            [self updateRequestLoop];
     }];
 }
 
@@ -302,15 +306,6 @@
         CurrentSongInfo *song = [[CurrentSongInfo alloc] init];
 
         if (count == 0) {
-            song.songInfo.songID = 2;
-            song.songInfo.songName = @"Dark Horse";
-            song.songInfo.songArtist = @"Katy Perry";
-            song.songInfo.songAlbum = @"Prism";
-            song.songInfo.songLength = 160;
-            song.songInfo.status = SS_PLAYING;
-            song.position = 12;
-            count++;
-        } else if (count == 1) {
             song.songInfo.songID = 1;
             song.songInfo.songName = @"Your Guardian Angel";
             song.songInfo.songArtist = @"Red Jumpsuit Apparatus";
@@ -318,6 +313,15 @@
             song.songInfo.songLength = 180;
             song.songInfo.status = SS_PLAYING;
             song.position = 0;
+            count++;
+        } else if (count == 1) {
+            song.songInfo.songID = 2;
+            song.songInfo.songName = @"Dark Horse";
+            song.songInfo.songArtist = @"Katy Perry";
+            song.songInfo.songAlbum = @"Prism";
+            song.songInfo.songLength = 160;
+            song.songInfo.status = SS_PLAYING;
+            song.position = 12;
             count = 0;
         }
         
@@ -325,7 +329,7 @@
         return;
     }
     
-    NSString *query = [self createURLQuery:@"request_song_update"];
+    NSString *query = [self createURLQuery:@"client/request_song_update"];
     [self GET:query parameters:nil success:^(NSURLSessionDataTask *task, id responseObject) {
         [self handleUpdateResponse:responseObject];
     } failure:^(NSURLSessionDataTask *task, NSError *error) {
