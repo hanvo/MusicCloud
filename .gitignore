@@ -5,3 +5,20 @@
 /Server/dist/
 *~
 Test
+
+# XCode ignored file
+*.DS_Store
+
+*.pbxuser
+*.mode1v3
+*.mode2v3
+*.perspectivev3
+*.xcuserstate
+project.xcworkspace/
+xcuserdata/
+
+*.o
+*.pyc
+*.hi
+
+*~.nib
