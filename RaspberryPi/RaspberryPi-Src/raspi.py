@@ -176,8 +176,8 @@ def handle_play_command(song_id):
 		next_song_state = UNKNOWN
 
 		# Start playback via PyGame
-		#pygame.mixer.music.load(str(song_id))
-		#pygame.mixer.music.play()
+		pygame.mixer.music.load(str(song_id))
+		pygame.mixer.music.play()
 
 
 		logging.debug('Started playback through PyGame')
