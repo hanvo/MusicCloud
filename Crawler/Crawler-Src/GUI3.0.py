@@ -13,7 +13,10 @@ import os
 import sys
 from crawling import crawl
 import socket
+import httplib
+import json
 
+log = None
 
 class RedirectText(object):
     def __init__(self,aWxTextCtrl):
@@ -56,8 +59,6 @@ class MyFrame(wx.Frame):
       serverStatus = wx.Button(panel, label='Server Status',size=(100,30))
       self.Bind(wx.EVT_BUTTON,self.btnStatus)
       hbox3.Add(serverStatus)
-      startServer = wx.Button(panel, label='Start Server', size=(100,30))
-      hbox3.Add(startServer, flag=wx.RIGHT|wx.BOTTOM, border=5)
       vbox.Add(hbox3,flag=wx.ALIGN_RIGHT|wx.RIGHT,border=10) 
 
       #Something Not sure. 
@@ -90,13 +91,27 @@ class MyFrame(wx.Frame):
         dlg.Destroy()
 
     def btnStatus(self,event):
-      print 'Pinging Server Status:'
-      
+      print 'Pinging Server Status:...'
+      try:
+        timeout = 50
+        serverSocket = httplib.HTTPConnection('klamath.dnsdynamic.com',5050, timeout = timeout)
+        socket.setdefaulttimeout(timeout)
+        params = json.dumps({"pin":1234},encoding = "ASCII")
+        header = {"Content-Type": "application/json"}
+        serverSocket.request("POST","klamath.dnsydynamic.com:5050/client/authenticate",params,header)
+        serverJson = serverSocket.getresponse()
+        print "Server Online"
+      except Exception, e:
+        print "Server Offline"
+
+    def btnClear(self,event):
+      print 'clear'
+      log.Clear()
 
 
 class MyApp(wx.App):
     def OnInit(self):
-        myFrame = MyFrame(None, -1, "Pimp Daddy Yeezus")
+        myFrame = MyFrame(None, -1, "Daddy Yeezus")
         myFrame.CenterOnScreen()
         myFrame.Show(True)
         return True

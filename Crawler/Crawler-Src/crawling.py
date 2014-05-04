@@ -86,9 +86,9 @@ def crawl(dir):
             else:
                 print "*** No Album Art work - ", y ,"***"
                 #print "\n"
-                artwork = 'null'
-                artType = 'null'
-                artCoverID = 'null'
+                artwork = 'Unknown'
+                artType = 'Unkownn'
+                artCoverID = 'Unkown'
 
             audioFile = eyed3.load(path) #loading for artist/Album
             artist = audioFile.tag.artist
