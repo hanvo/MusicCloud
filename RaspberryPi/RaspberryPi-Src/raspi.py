@@ -476,13 +476,13 @@ def communicate_func():
 					playback_message['position'] = '0'
 					response = send_request(_comm_sock, "status_update", {"clientID": client_id}, playback_message, "POST")		
 					# TODO Check response status
-			else:
+				else:
 				
-				# Ask for the next song
-				playback_message['id'] = next_song
-				playback_message['status'] = 'need_song'
-				playback_message['position'] = '0'	
-				playback_connection_queue.put(playback_message)
+					# Ask for the next song
+					playback_message['id'] = next_song
+					playback_message['status'] = 'need_song'
+					playback_message['position'] = '0'	
+					playback_connection_queue.put(playback_message)
 
 
 if __name__ == "__main__":
