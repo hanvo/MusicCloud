@@ -463,7 +463,7 @@ def communicate_func():
 				found_song = 0
 
 				for file in os.listdir('.'):
-					if fnmatch.fnmatch(file,str(song_id)):
+					if fnmatch.fnmatch(file,str(next_song)):
 						found_song = 1
 					else:
 						pass
