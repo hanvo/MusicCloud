@@ -315,6 +315,8 @@ def playback_func():
 				# Set next song
 				if song_id != current_song:
 
+					fetch_song = False
+
 					# Check if this is a duplicate
 					if song_id != next_song:
 						next_song = song_id
