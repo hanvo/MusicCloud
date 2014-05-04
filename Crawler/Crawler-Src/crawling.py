@@ -88,6 +88,7 @@ def crawl(dir):
             else:
                 print "*** No Album Art work - ", y ,"***"
                 #print "\n"
+		artwork = None
                 artType = 'Unknown'
                 artCoverID = 'Unknown'
 
