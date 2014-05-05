@@ -69,7 +69,12 @@
     self.albumLabel.text = _song.songAlbum;
     self.artistLabel.text = _song.songArtist;
     
-    self.albumImageView.image = _song.albumArt;
+    if (_song.albumArt)
+        self.albumImageView.image = _song.albumArt;
+    else {
+        self.albumImageView.backgroundColor = [UIColor blackColor];
+        self.albumImageView.image = [UIImage imageNamed:@"logo-square.png"];
+    }
 }
 
 @end

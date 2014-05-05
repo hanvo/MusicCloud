@@ -43,7 +43,7 @@
     UIBezierPath *circlePath = [UIBezierPath bezierPathWithOvalInRect:self.bounds];
     [self.circleLayer setPath:[circlePath CGPath]];
     
-    [self.layer insertSublayer:_circleLayer atIndex:0];
+    [self.layer insertSublayer:_circleLayer below:self.imageView.layer];
     
     [self.titleLabel setFont:[UIFont boldSystemFontOfSize:22.0]];
     [self setTitleColor:[UIColor whiteColor] forState:UIControlStateNormal];

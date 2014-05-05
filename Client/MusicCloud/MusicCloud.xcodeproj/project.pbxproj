@@ -41,6 +41,10 @@
 		03E4885D19148297004D527E /* CurrentSongInfo.m in Sources */ = {isa = PBXBuildFile; fileRef = 03E4885C19148297004D527E /* CurrentSongInfo.m */; };
 		03E4886019155DDF004D527E /* ImageFetchSession.m in Sources */ = {isa = PBXBuildFile; fileRef = 03E4885F19155DDF004D527E /* ImageFetchSession.m */; };
 		03E488631915B58A004D527E /* MarqueeLabel.m in Sources */ = {isa = PBXBuildFile; fileRef = 03E488621915B58A004D527E /* MarqueeLabel.m */; };
+		03E488661917224C004D527E /* like.png in Resources */ = {isa = PBXBuildFile; fileRef = 03E488641917224C004D527E /* like.png */; };
+		03E488671917224C004D527E /* like@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = 03E488651917224C004D527E /* like@2x.png */; };
+		03E4886A191723F9004D527E /* dislike.png in Resources */ = {isa = PBXBuildFile; fileRef = 03E48868191723F9004D527E /* dislike.png */; };
+		03E4886B191723F9004D527E /* dislike@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = 03E48869191723F9004D527E /* dislike@2x.png */; };
 		03FCE9AB18FEC49F00D363E2 /* AFHTTPRequestOperation.m in Sources */ = {isa = PBXBuildFile; fileRef = 03FCE99918FEC49F00D363E2 /* AFHTTPRequestOperation.m */; };
 		03FCE9AC18FEC49F00D363E2 /* AFHTTPRequestOperationManager.m in Sources */ = {isa = PBXBuildFile; fileRef = 03FCE99B18FEC49F00D363E2 /* AFHTTPRequestOperationManager.m */; };
 		03FCE9AD18FEC49F00D363E2 /* AFHTTPSessionManager.m in Sources */ = {isa = PBXBuildFile; fileRef = 03FCE99D18FEC49F00D363E2 /* AFHTTPSessionManager.m */; };
@@ -119,6 +123,10 @@
 		03E4885F19155DDF004D527E /* ImageFetchSession.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = ImageFetchSession.m; sourceTree = "<group>"; };
 		03E488611915B58A004D527E /* MarqueeLabel.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MarqueeLabel.h; sourceTree = "<group>"; };
 		03E488621915B58A004D527E /* MarqueeLabel.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MarqueeLabel.m; sourceTree = "<group>"; };
+		03E488641917224C004D527E /* like.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = like.png; sourceTree = "<group>"; };
+		03E488651917224C004D527E /* like@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "like@2x.png"; sourceTree = "<group>"; };
+		03E48868191723F9004D527E /* dislike.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = dislike.png; sourceTree = "<group>"; };
+		03E48869191723F9004D527E /* dislike@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "dislike@2x.png"; sourceTree = "<group>"; };
 		03FCE99818FEC49F00D363E2 /* AFHTTPRequestOperation.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = AFHTTPRequestOperation.h; sourceTree = "<group>"; };
 		03FCE99918FEC49F00D363E2 /* AFHTTPRequestOperation.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = AFHTTPRequestOperation.m; sourceTree = "<group>"; };
 		03FCE99A18FEC49F00D363E2 /* AFHTTPRequestOperationManager.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = AFHTTPRequestOperationManager.h; sourceTree = "<group>"; };
@@ -263,6 +271,10 @@
 		03B5D8DA18FCE960006ACB60 /* images */ = {
 			isa = PBXGroup;
 			children = (
+				03E48868191723F9004D527E /* dislike.png */,
+				03E48869191723F9004D527E /* dislike@2x.png */,
+				03E488641917224C004D527E /* like.png */,
+				03E488651917224C004D527E /* like@2x.png */,
 				038C7131190EB27D00C761B3 /* icon-76.png */,
 				038C7132190EB27D00C761B3 /* icon-120.png */,
 				038C7133190EB27D00C761B3 /* icon-152.png */,
@@ -399,6 +411,9 @@
 				LastUpgradeCheck = 0510;
 				ORGANIZATIONNAME = CS252;
 				TargetAttributes = {
+					03B5D89D18FCE86C006ACB60 = {
+						DevelopmentTeam = J2VAKEVY6P;
+					};
 					03B5D8BE18FCE86C006ACB60 = {
 						TestTargetID = 03B5D89D18FCE86C006ACB60;
 					};
@@ -431,14 +446,18 @@
 				038C713A190EB27D00C761B3 /* logo.png in Resources */,
 				03FCE9BD18FEDBFE00D363E2 /* up.png in Resources */,
 				038C7139190EB27D00C761B3 /* logo-square.png in Resources */,
+				03E4886A191723F9004D527E /* dislike.png in Resources */,
 				03A29C5519039904003210D9 /* SongTileView.xib in Resources */,
+				03E488661917224C004D527E /* like.png in Resources */,
 				03B5D8BA18FCE86C006ACB60 /* Images.xcassets in Resources */,
 				03B5D8EB18FCF719006ACB60 /* menu@2x.png in Resources */,
 				038C7137190EB27D00C761B3 /* icon-120.png in Resources */,
 				03B5D8DC18FCE960006ACB60 /* placeholder.png in Resources */,
+				03E488671917224C004D527E /* like@2x.png in Resources */,
 				03B5D8AC18FCE86C006ACB60 /* InfoPlist.strings in Resources */,
 				038C7138190EB27D00C761B3 /* icon-152.png in Resources */,
 				03B5D8B518FCE86C006ACB60 /* Main.storyboard in Resources */,
+				03E4886B191723F9004D527E /* dislike@2x.png in Resources */,
 				03FCE9BC18FEDBFE00D363E2 /* down.png in Resources */,
 				038C7136190EB27D00C761B3 /* icon-76.png in Resources */,
 			);
@@ -610,11 +629,14 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_LAUNCHIMAGE_NAME = LaunchImage;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = "MusicCloud/MusicCloud-Prefix.pch";
 				INFOPLIST_FILE = "MusicCloud/MusicCloud-Info.plist";
 				IPHONEOS_DEPLOYMENT_TARGET = 7.1;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE = "";
 				WRAPPER_EXTENSION = app;
 			};
 			name = Debug;
@@ -624,11 +646,14 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_LAUNCHIMAGE_NAME = LaunchImage;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = "MusicCloud/MusicCloud-Prefix.pch";
 				INFOPLIST_FILE = "MusicCloud/MusicCloud-Info.plist";
 				IPHONEOS_DEPLOYMENT_TARGET = 7.1;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE = "";
 				WRAPPER_EXTENSION = app;
 			};
 			name = Release;

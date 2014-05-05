@@ -164,20 +164,22 @@
                                     <outlet property="delegate" destination="iOv-Pr-oJ6" id="kyy-x6-JxO"/>
                                 </connections>
                             </tableView>
-                            <button opaque="NO" contentMode="scaleToFill" fixedFrame="YES" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="gbY-Xs-hRZ" customClass="VoteButton">
-                                <rect key="frame" x="97" y="202" width="46" height="50"/>
+                            <button opaque="NO" contentMode="scaleToFill" fixedFrame="YES" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="gbY-Xs-hRZ" customClass="VoteButton">
+                                <rect key="frame" x="70" y="192" width="64" height="64"/>
                                 <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
-                                <state key="normal" title="D">
+                                <fontDescription key="fontDescription" type="system" pointSize="17"/>
+                                <state key="normal" image="dislike.png">
                                     <color key="titleShadowColor" white="0.5" alpha="1" colorSpace="calibratedWhite"/>
                                 </state>
                                 <connections>
                                     <action selector="downVotePressed:" destination="iOv-Pr-oJ6" eventType="touchUpInside" id="4Ng-OR-W8w"/>
                                 </connections>
                             </button>
-                            <button opaque="NO" contentMode="scaleToFill" fixedFrame="YES" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="VeH-nb-ZQV" customClass="VoteButton">
-                                <rect key="frame" x="178" y="202" width="46" height="50"/>
+                            <button opaque="NO" contentMode="scaleToFill" fixedFrame="YES" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="VeH-nb-ZQV" customClass="VoteButton">
+                                <rect key="frame" x="180" y="192" width="64" height="64"/>
                                 <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
-                                <state key="normal" title="U">
+                                <fontDescription key="fontDescription" type="system" pointSize="17"/>
+                                <state key="normal" image="like.png">
                                     <color key="titleShadowColor" white="0.5" alpha="1" colorSpace="calibratedWhite"/>
                                 </state>
                                 <connections>
@@ -343,6 +345,8 @@
         </scene>
     </scenes>
     <resources>
+        <image name="dislike.png" width="46" height="43"/>
+        <image name="like.png" width="46" height="43"/>
         <image name="logo-square.png" width="568" height="568"/>
         <image name="menu.png" width="30" height="30"/>
     </resources>

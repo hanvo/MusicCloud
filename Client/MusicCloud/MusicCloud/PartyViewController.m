@@ -60,7 +60,7 @@
     
     [_session requestSongList];
     [_session requestSongUpdate];
-    //[_session requestLikeUpdate];
+    [_session requestLikeUpdate];
     
     //[self performSelector:@selector(test) withObject:nil afterDelay:3];
     
@@ -167,7 +167,12 @@
     cell.voteLabel.text = [NSString stringWithFormat:@"%ld", (long)info.votes];
     cell.idLabel.text = [NSString stringWithFormat:@"%ld", (long)info.songID];
     
-    cell.albumImageView.image = info.albumArt;
+    if (info.albumArt)
+        cell.albumImageView.image = info.albumArt;
+    else {
+        cell.albumImageView.backgroundColor = [UIColor blackColor];
+        cell.albumImageView.image = [UIImage imageNamed:@"logo-square.png"];
+    }
     
     return cell;
 }
@@ -180,13 +185,9 @@
     
     [self.tableView reloadData];
     
-    dispatch_queue_t queue = dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_HIGH, 0);
-    dispatch_async(queue, ^{
-        for (SongInfo *song in _songList) {
-            [_session requestAlbumArtForSong:song];
-            [NSThread sleepForTimeInterval:0.1];
-        }
-    });
+    for (SongInfo *song in _songList) {
+        [_session requestAlbumArtForSong:song];
+    }
 }
 
 - (void)clientDidReceiveLikeUpdate:(CurrentSongInfo *)song {
@@ -238,12 +239,17 @@
         SongInfo *current = [_songList lastObject];
         newSong = (current.songID != song.songInfo.songID);
     }
+    NSLog(@"new song: %d", newSong);
     
     if (newSong) {
         SongInfo *match = [self songForSongID:song.songInfo.songID];
         if (match) { // already found album art
             song.songInfo.albumArt = match.albumArt;
         }
+        
+        [_tableView setAllowsSelection:YES];
+        NSIndexPath *selectedIP = [_tableView indexPathForSelectedRow];
+        [_tableView deselectRowAtIndexPath:selectedIP animated:YES];
         
         //[_songList addObject:song.songInfo];
         _currentSong = song;
@@ -253,6 +259,8 @@
         [self updateLabels:song];
         [_downVoteButton setTitleColor:[UIColor whiteColor] forState:UIControlStateNormal];
         [_upVoteButton setTitleColor:[UIColor whiteColor] forState:UIControlStateNormal];
+        [_downVoteButton setBackgroundColor:[UIColor blackColor]];
+        [_upVoteButton setBackgroundColor:[UIColor blackColor]];
         [_downVoteButton setEnabled:YES];
         [_upVoteButton setEnabled:YES];
         
@@ -263,13 +271,18 @@
 
 - (void)clientDidReceiveAlbumArt:(UIImage *)image forSong:(SongInfo *)song {
     song.albumArt = image;
-    NSIndexPath *indexPath = [NSIndexPath indexPathForRow:[_songList indexOfObject:song] inSection:0];
-    [self.tableView reloadRowsAtIndexPaths:@[indexPath] withRowAnimation:UITableViewRowAnimationAutomatic];
     
-    if (song.songID == _currentSong.songInfo.songID) {
-        _currentSong.songInfo.albumArt = image;
-        [_songScrollView updateCurrentSong];
-    }
+    NSLog(@"album art %@ for song %ld", image, (long)song.songID);
+    
+    dispatch_async(dispatch_get_main_queue(), ^{
+        NSIndexPath *indexPath = [NSIndexPath indexPathForRow:[_songList indexOfObject:song] inSection:0];
+        [self.tableView reloadRowsAtIndexPaths:@[indexPath] withRowAnimation:UITableViewRowAnimationAutomatic];
+        
+        if (song.songID == _currentSong.songInfo.songID) {
+            _currentSong.songInfo.albumArt = image;
+            [_songScrollView updateCurrentSong];
+        }
+    });
 }
 
 - (void)clientDidReceiveFailure:(NSString *)message {
@@ -279,8 +292,16 @@
 }
 
 - (void)clientDidFailTask:(NSURLSessionDataTask *)task error:(NSError *)err {
-    NSLog(@"Task failed: %@", task.currentRequest.URL);
-    NSLog(@"Failed with err: %@", err);
+    NSURL *url = task.currentRequest.URL;
+    NSString *urlStr = url.absoluteString;
+    if ([urlStr rangeOfString:@"request_photo"].location != NSNotFound) {
+        NSLog(@"No album art for song %@", [urlStr substringFromIndex:urlStr.length-1]);
+    } else if ([urlStr rangeOfString:@"request_like_update"].location != NSNotFound) {
+        [_voteMeterView setBalanceEnabled:NO];
+    } else {
+        NSLog(@"Task failed: %@", task.currentRequest.URL);
+        NSLog(@"Failed with err: %@", err);
+    }
 }
 
 #pragma mark - IBAction
@@ -293,16 +314,14 @@
     [_session sendDislike:_currentSong.songInfo.songID];
     
     [_downVoteButton setBackgroundColor:[UIColor redColor]];
-    [_downVoteButton setEnabled:NO];
-    [_upVoteButton setEnabled:NO];
+    [_upVoteButton setBackgroundColor:[UIColor blackColor]];
 }
 
 - (IBAction)upVotePressed:(id)sender {
     [_session sendLike:_currentSong.songInfo.songID];
     
     [_upVoteButton setBackgroundColor:[UIColor greenColor]];
-    [_downVoteButton setEnabled:NO];
-    [_upVoteButton setEnabled:NO];
+    [_downVoteButton setBackgroundColor:[UIColor blackColor]];
 }
 
 @end

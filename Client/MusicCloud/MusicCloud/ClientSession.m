@@ -59,13 +59,18 @@
             SongInfo *song = [[SongInfo alloc] init];
             song.songID = [[dict objectForKey:@"id"] integerValue];
             song.songName = [dict objectForKey:@"name"];
+            if ([[song.songName substringFromIndex:song.songName.length-4] isEqualToString:@".mp3"])
+                song.songName = [song.songName substringToIndex:song.songName.length-4];
             song.songArtist = [dict objectForKey:@"artist"];
             song.songAlbum = [dict objectForKey:@"album"];
             song.votes = [[dict objectForKey:@"votes"] integerValue];
             [songs addObject:song];
         }
         
-        [_delegate clientDidReceiveSongList:songs];
+        if ([_delegate respondsToSelector:@selector(clientDidReceiveSongList:)]) {
+            [_delegate clientDidReceiveSongList:songs];
+            NSLog(@"clientDidReceiveSongList");
+        }
     } else if ([updateType isEqualToString:@"likes"]) {
         CurrentSongInfo *songInfo = [[CurrentSongInfo alloc] init];
         NSDictionary *likeInfo = [response objectForKey:@"values"];
@@ -74,7 +79,10 @@
         songInfo.dislikes = [[likeInfo objectForKey:@"dislikes"] integerValue];
         songInfo.balance = [[likeInfo objectForKey:@"balance"] doubleValue];
         
-        [_delegate clientDidReceiveLikeUpdate:songInfo];
+        if ([_delegate respondsToSelector:@selector(clientDidReceiveLikeUpdate:)]) {
+            [_delegate clientDidReceiveLikeUpdate:songInfo];
+            NSLog(@"clientDidReceiveLikeUpdate");
+        }
     } else if ([updateType isEqualToString:@"votes"]) {
         NSMutableArray *votes = [NSMutableArray array];
         NSArray *voteDicts = [response objectForKey:@"values"];
@@ -84,13 +92,20 @@
             info.votes = [[dict objectForKey:@"votes"] integerValue];
             [votes addObject:info];
         }
-        [_delegate clientDidReceiveVoteUpdate:votes];
+        if ([_delegate respondsToSelector:@selector(clientDidReceiveVoteUpdate:)]) {
+            [_delegate clientDidReceiveVoteUpdate:votes];
+            NSLog(@"clientDidReceiveVoteUpdate");
+        }
     } else if ([updateType isEqualToString:@"current_song"]) {
         NSDictionary *values = [response objectForKey:@"values"];
+        
+        NSLog(@"vals %@", values);
         
         CurrentSongInfo *song = [[CurrentSongInfo alloc] init];
         song.songInfo.songID = [[values objectForKey:@"id"] integerValue];
         song.songInfo.songName = [values objectForKey:@"name"];
+        if ([[song.songInfo.songName substringFromIndex:song.songInfo.songName.length-4] isEqualToString:@".mp3"])
+            song.songInfo.songName = [song.songInfo.songName substringToIndex:song.songInfo.songName.length-4];
         song.songInfo.songArtist = [values objectForKey:@"artist"];
         song.songInfo.songAlbum = [values objectForKey:@"album"];
         song.songInfo.songLength = [[values objectForKey:@"length"] integerValue];
@@ -103,7 +118,11 @@
             NSLog(@"Unknown song status: %@", status);
         song.position = [[values objectForKey:@"position"] integerValue];
         
-        [_delegate clientDidReceiveSongUpdate:song];
+        NSLog(@"song update %@", song);
+        if ([_delegate respondsToSelector:@selector(clientDidReceiveSongUpdate:)]) {
+            [_delegate clientDidReceiveSongUpdate:song];
+            NSLog(@"clientDidReceiveSongUpdate");
+        }
 
     } else {
         NSLog(@"Error - unknown update type from server.");
@@ -117,7 +136,7 @@
     if (OFFLINE) {
         _clientID = 123456;
         _authenticated = YES;
-        [_delegate clientDidAuthenticate:YES];
+        if ([_delegate respondsToSelector:@selector(clientDidAuthenticate:)]) [_delegate clientDidAuthenticate:YES];
         return;
     }
     
@@ -129,9 +148,11 @@
         NSLog(@"CLIENT ID %ld", (long)clientID);
         
         _authenticated = YES;
-        [_delegate clientDidAuthenticate:YES];
+        if ([_delegate respondsToSelector:@selector(clientDidAuthenticate:)])
+            [_delegate clientDidAuthenticate:YES];
     } failure:^(NSURLSessionDataTask *task, NSError *error) {
-        [_delegate clientDidFailTask:task error:error];
+        if ([_delegate respondsToSelector:@selector(clientDidFailTask:error:)])
+            [_delegate clientDidFailTask:task error:error];
     }];
 }
 
@@ -145,7 +166,8 @@
     [self POST:@"client/deauthenticate" parameters:params success:^(NSURLSessionDataTask *task, id responseObject) {
         _clientID = -1;
     } failure:^(NSURLSessionDataTask *task, NSError *error) {
-        [_delegate clientDidFailTask:task error:error];
+        if ([_delegate respondsToSelector:@selector(clientDidFailTask:error:)])
+            [_delegate clientDidFailTask:task error:error];
     }];
 }
 
@@ -170,7 +192,8 @@
         song3.songAlbum = @"A Rush of Blood to the Head";
         song3.votes = 12;
         NSArray *list = @[song1, song2, song3];
-        [_delegate clientDidReceiveSongList:list];
+        if ([_delegate respondsToSelector:@selector(clientDidReceiveSongList:)])
+            [_delegate clientDidReceiveSongList:list];
         return;
     }
     
@@ -178,7 +201,8 @@
     [self GET:query parameters:nil success:^(NSURLSessionDataTask *task, id responseObject) {
         [self handleUpdateResponse:responseObject];
     } failure:^(NSURLSessionDataTask *task, NSError *error) {
-        [_delegate clientDidFailTask:task error:error];
+        if ([_delegate respondsToSelector:@selector(clientDidFailTask:error:)])
+            [_delegate clientDidFailTask:task error:error];
     }];
 }
 
@@ -192,7 +216,8 @@
     [self POST:query parameters:params success:^(NSURLSessionDataTask *task, id responseObject) {
         // Do nothing
     } failure:^(NSURLSessionDataTask *task, NSError *error) {
-        [_delegate clientDidFailTask:task error:error];
+        if ([_delegate respondsToSelector:@selector(clientDidFailTask:error:)])
+            [_delegate clientDidFailTask:task error:error];
     }];
 }
 
@@ -206,7 +231,8 @@
     [self POST:query parameters:params success:^(NSURLSessionDataTask *task, id responseObject) {
         
     } failure:^(NSURLSessionDataTask *task, NSError *error) {
-        [_delegate clientDidFailTask:task error:error];
+        if ([_delegate respondsToSelector:@selector(clientDidFailTask:error:)])
+            [_delegate clientDidFailTask:task error:error];
     }];
 }
 
@@ -220,7 +246,8 @@
     [self POST:query parameters:params success:^(NSURLSessionDataTask *task, id responseObject) {
         
     } failure:^(NSURLSessionDataTask *task, NSError *error) {
-        [_delegate clientDidFailTask:task error:error];
+        if ([_delegate respondsToSelector:@selector(clientDidFailTask:error:)])
+            [_delegate clientDidFailTask:task error:error];
     }];
 }
 
@@ -230,27 +257,31 @@
         return;
     }
     
-    NSString *query = [self createURLQuery:@"request_like_update"];
+    NSString *query = [self createURLQuery:@"client/request_like_update"];
     [self GET:query parameters:nil success:^(NSURLSessionDataTask *task, id responseObject) {
         
     } failure:^(NSURLSessionDataTask *task, NSError *error) {
-        [_delegate clientDidFailTask:task error:error];
+        if ([_delegate respondsToSelector:@selector(clientDidFailTask:error:)])
+            [_delegate clientDidFailTask:task error:error];
     }];
 }
 
 - (void)updateRequestLoop {
     NSString *query = [self createURLQuery:@"client/request_update"];
+    NSLog(@"request update");
     [self GET:query parameters:nil success:^(NSURLSessionDataTask *task, id responseObject) {
+        NSLog(@"update success");
         [self handleUpdateResponse:responseObject];
         
         if (_requestingUpdates)
-            [self updateRequestLoop];
+            [self performSelectorInBackground:@selector(updateRequestLoop) withObject:nil];
     } failure:^(NSURLSessionDataTask *task, NSError *error) {
         if (error.code == -1001) { // timeout error code (these are normal)
             if (_requestingUpdates)
-                [self updateRequestLoop];
+                [self performSelectorInBackground:@selector(updateRequestLoop) withObject:nil];
         } else {
-            [_delegate clientDidFailTask:task error:error];
+            if ([_delegate respondsToSelector:@selector(clientDidFailTask:error:)])
+                [_delegate clientDidFailTask:task error:error];
             
             NSLog(@"Stop requesting updates...");
             
@@ -296,7 +327,8 @@
     [self GET:query parameters:nil success:^(NSURLSessionDataTask *task, id responseObject) {
         
     } failure:^(NSURLSessionDataTask *task, NSError *error) {
-        [_delegate clientDidFailTask:task error:error];
+        if ([_delegate respondsToSelector:@selector(clientDidFailTask:error:)])
+            [_delegate clientDidFailTask:task error:error];
     }];
 }
 
@@ -325,7 +357,8 @@
             count = 0;
         }
         
-        [_delegate clientDidReceiveSongUpdate:song];
+        if ([_delegate respondsToSelector:@selector(clientDidReceiveSongUpdate:)])
+            [_delegate clientDidReceiveSongUpdate:song];
         return;
     }
     
@@ -333,7 +366,8 @@
     [self GET:query parameters:nil success:^(NSURLSessionDataTask *task, id responseObject) {
         [self handleUpdateResponse:responseObject];
     } failure:^(NSURLSessionDataTask *task, NSError *error) {
-        [_delegate clientDidFailTask:task error:error];
+        if ([_delegate respondsToSelector:@selector(clientDidFailTask:error:)])
+            [_delegate clientDidFailTask:task error:error];
     }];
 }
 
@@ -347,10 +381,15 @@
     
     [_imageFetchSession GET:query parameters:nil success:^(NSURLSessionDataTask *task, id responseObject) {
         UIImage *image = (UIImage *)responseObject;
-        //NSLog(@"image %@ for song %@", image, song);
-        [_delegate clientDidReceiveAlbumArt:image forSong:song];
+        if (!image) {
+            NSLog(@"received null image for songid %ld", (long)song.songID);
+            NSLog(@"response %@", task.response);
+        }
+        if ([_delegate respondsToSelector:@selector(clientDidReceiveAlbumArt:forSong:)])
+            [_delegate clientDidReceiveAlbumArt:image forSong:song];
     } failure:^(NSURLSessionDataTask *task, NSError *error) {
-        [_delegate clientDidFailTask:task error:error];
+        if ([_delegate respondsToSelector:@selector(clientDidFailTask:error:)])
+            [_delegate clientDidFailTask:task error:error];
     }];
 }
 
