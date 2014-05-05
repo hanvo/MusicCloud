@@ -285,7 +285,7 @@ public class ClientHandler extends RequestHandler {
             } catch (NoSuchElementException e) {
                 
                 logger.warn("No current song with stats available");
-                sendError(ctx.channel(), SERVICE_UNAVAILABLE);
+                sendError(ctx.channel(), NOT_FOUND);
                 return;
             } catch (Exception e) {
                 

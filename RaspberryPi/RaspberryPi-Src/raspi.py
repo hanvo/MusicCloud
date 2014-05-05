@@ -161,7 +161,7 @@ def handle_play_command(song_id):
 
 		logging.error('Play command for current song, ignoring')
 
-	elif current_song_state != PLAYING and song_id == next_song and next_song_state == READY:
+	elif song_id == next_song and current_song_state != PLAYING and next_song_state == READY:
 
 		logging.info('Playback command received for next song')
 				
@@ -264,7 +264,7 @@ def handle_upcoming_song_update(song_id):
 			next_song_state = UNKNOWN
 
 			fetch_song = True
-		elif next_song_state == UNKNOWN:
+		elif next_song_state == UNKNOWN and next_song != UNKNOWN:
 			fetch_song = True
 			
 
@@ -299,8 +299,8 @@ def handle_upcoming_song_update(song_id):
 				else:
 					logging.debug("Song ready for playback, waiting for previous song to end")
 
-		else:
-			logging.debug("Not fetching song, download in progress")
+		elif next_song_state == DOWNLOADING:
+			logging.debug("Now fetching song, download in progress")
 												
 	elif song_id == next_song:
 			logging.debug("Duplicate upcoming song update")
@@ -308,7 +308,9 @@ def handle_upcoming_song_update(song_id):
 #
 # Handle a need song request
 #
-def handle_need_song(song_id):
+def handle_need_song(song_id, comm_sock):
+	global client_id
+
 	global next_song
 	global current_song
 	global next_song_state
@@ -321,7 +323,7 @@ def handle_need_song(song_id):
 	# Mark as downloading currently
 	next_song_state = DOWNLOADING
 
-	song_response = send_request(_comm_sock, "request_song", {"clientID": client_id, "songID": song_id})
+	song_response = send_request(comm_sock, "request_song", {"clientID": client_id, "songID": song_id})
 			
 	log_message = create_response_log_message(song_response)
 	logging.debug("Song Data Response: " + log_message)
@@ -338,11 +340,12 @@ def handle_need_song(song_id):
 		next_song_state = READY
 
 		if current_song_state != PLAYING:
-			# Send ready message to the server
-
+			
+			# current song finished, send ready message to the server
 			playback_message['status'] = 'Ready'
+			playback_message['id'] = song_id
 			logging.debug("The Message in playing state is "+str(playback_message))
-			send_request(_comm_sock, "status_update", {"clientID": client_id}, playback_message, "POST")
+			send_request(comm_sock, "status_update", {"clientID": client_id}, playback_message, "POST")
 
 		else:	
 			# Update status in the background and when PyGame finishes playing,
@@ -553,7 +556,7 @@ def communicate_func():
 		logging.info("Message in communication thread: " + str(playback_message))
 
 		logging.debug("communicate_func received request: " + str(playback_message))
-		_comm_sock = httplib.HTTPConnection(server_url, server_port, timeout = timeout)
+		comm_sock = httplib.HTTPConnection(server_url, server_port, timeout = timeout)
 		
 
 		if client_id == UNKNOWN:
@@ -570,11 +573,11 @@ def communicate_func():
 			# Request song data from server
 			song_id = playback_message['id']
 
-			handle_need_song(song_id)
+			handle_need_song(song_id, comm_sock)
 		else:
 	
 			logging.debug("Sending " + str(playback_message['status']) + " status update")
-			response = send_request(_comm_sock, "status_update", {"clientID": client_id}, playback_message, "POST")
+			response = send_request(comm_sock, "status_update", {"clientID": client_id}, playback_message, "POST")
 
 			# TODO Check response status from the server (Need 200)
 
@@ -584,21 +587,27 @@ def communicate_func():
 				# Check if we have the song
 				found_song = check_for_song(next_song)
 				
-				if found_song:
+				if next_song_state == READY:
 
 					# Tell the server we are ready to play the next song
 					playback_message['id'] = next_song
 					playback_message['status'] = 'Ready'
 					playback_message['position'] = '0'
-					response = send_request(_comm_sock, "status_update", {"clientID": client_id}, playback_message, "POST")		
+					response = send_request(comm_sock, "status_update", {"clientID": client_id}, playback_message, "POST")		
 					# TODO Check response status
-				else:
+				elif next_song_state == UNKNOWN:
 				
 					# Ask for the next song
 					playback_message['id'] = next_song
 					playback_message['status'] = 'need_song'
 					playback_message['position'] = '0'	
 					playback_connection_queue.put(playback_message)
+				else:
+				
+					# Still downloading
+					logging.debug("Waiting for download to finish")
+			elif playback_message['status']:
+				logging.warning('upcoming song message never received')
 
 	logging.info("Communication thread exiting")
 

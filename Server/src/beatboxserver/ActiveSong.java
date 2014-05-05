@@ -32,9 +32,11 @@ public class ActiveSong extends Song {
                       String songPath,
                       long songLength,
                       long songVotes,
+                      long position,
                       SongStatus status) {
         super(songID, songName, songArtist, songAlbum, songPath, songLength, songVotes);
         this.status = status;
+        this.position = position;
     }
     
     /**
@@ -53,9 +55,11 @@ public class ActiveSong extends Song {
                       String songAlbum,
                       String songPath,
                       long songLength,
-                      long songVotes) {
+                      long songVotes,
+                      long position) {
         super(songID, songName, songArtist, songAlbum, songPath, songLength, songVotes);
         this.status = SongStatus.Stopped;
+        this.position = position;
     }
     
     
@@ -67,5 +71,10 @@ public class ActiveSong extends Song {
         status = s;
     }
     
+    public long getPosition() {
+        return position;
+    }
+    
+    protected long position;
     protected SongStatus status;
 }

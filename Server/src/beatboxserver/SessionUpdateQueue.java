@@ -19,8 +19,6 @@ import io.netty.channel.Channel;
 import io.netty.handler.codec.http.FullHttpResponse;
 import io.netty.handler.codec.http.HttpResponseStatus;
 
-import java.io.IOException;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -143,13 +141,11 @@ public class SessionUpdateQueue {
      * Removed previously closed channels from the queue
      */
     public void updateQueueSize() {
-        Channel chan;
-        
         logger.debug("Removing stale connections");
         
         while (channelQueue.size() > 0 && !channelQueue.element().isActive()) {
 
-            logger.debug("Removing closed channel");
+            logger.debug("Removing closed channel, %s", channelQueue.element().remoteAddress().toString());
             channelQueue.remove();
         }
     }
