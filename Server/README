@@ -1,0 +1,14 @@
+Author: Jason P. Rahman
+Project: CS252 Lab 6
+
+
+This folder contains the server for our CS252 Lab 6 project
+
+
+We use the following libraries:
+	Jackson - (https://github.com/FasterXML/jackson)
+	JmDNS - (https://github.com/jenkinsci/jmdns)
+	Netty - (http://netty.io/)
+	Log4J2 - (http://logging.apache.org/log4j/2.x/)
+
+All of these libraries are distributed under an Apache license
