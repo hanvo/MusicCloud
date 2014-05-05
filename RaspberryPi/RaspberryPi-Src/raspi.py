@@ -258,7 +258,7 @@ def handle_upcoming_song_update(song_id):
 		fetch_song = False
 
 		# Check if this is a duplicate update message
-		if song_id != next_song and next_song != UNKNOWN:
+		if song_id != next_song:
 
 			next_song = song_id
 			next_song_state = UNKNOWN
