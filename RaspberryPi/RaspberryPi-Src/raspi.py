@@ -258,13 +258,13 @@ def handle_upcoming_song_update(song_id):
 		fetch_song = False
 
 		# Check if this is a duplicate update message
-		if song_id != next_song:
+		if song_id != next_song and next_song != UNKNOWN:
 
 			next_song = song_id
 			next_song_state = UNKNOWN
 
 			fetch_song = True
-		elif next_song_state == UNKNOWN:
+		elif next_song_state == UNKNOWN and next_song != UNKNOWN:
 			fetch_song = True
 			
 
@@ -299,8 +299,8 @@ def handle_upcoming_song_update(song_id):
 				else:
 					logging.debug("Song ready for playback, waiting for previous song to end")
 
-		else:
-			logging.debug("Not fetching song, download in progress")
+		elif next_song_state == DOWNLOADING:
+			logging.debug("Now fetching song, download in progress")
 												
 	elif song_id == next_song:
 			logging.debug("Duplicate upcoming song update")
@@ -343,6 +343,7 @@ def handle_need_song(song_id, comm_sock):
 			
 			# current song finished, send ready message to the server
 			playback_message['status'] = 'Ready'
+			playback_message['id'] = song_id
 			logging.debug("The Message in playing state is "+str(playback_message))
 			send_request(comm_sock, "status_update", {"clientID": client_id}, playback_message, "POST")
 
