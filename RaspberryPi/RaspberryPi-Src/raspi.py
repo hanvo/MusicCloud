@@ -606,6 +606,8 @@ def communicate_func():
 				
 					# Still downloading
 					logging.debug("Waiting for download to finish")
+			elif playback_message['status']:
+				logging.warning('upcoming song message never received')s
 
 	logging.info("Communication thread exiting")
 
