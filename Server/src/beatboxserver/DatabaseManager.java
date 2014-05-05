@@ -171,8 +171,7 @@ public final class DatabaseManager {
         stmt.executeUpdate("CREATE TABLE sessions (id INTEGER PRIMARY KEY AUTOINCREMENT,"
                                                 + "ip_address STRING NOT NULL, "
                                                 + "session_type INTEGER REFERENCES session_types(id) ON DELETE CASCADE NOT NULL, "
-                                                + "time_started INTEGER NOT NULL, "
-                                                + "CONSTRAINT unique_session UNIQUE(ip_address,session_type))");
+                                                + "time_started INTEGER NOT NULL)");
         // Create client_sessions table
         stmt.executeUpdate("CREATE TABLE user_sessions (id INTEGER REFERENCES sessions(id) ON DELETE CASCADE)");
         

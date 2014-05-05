@@ -48,9 +48,9 @@ public final class SessionManager {
     
     /**
      * 
-     * @param pin
-     * @param ipAddress
-     * @param type
+     * @param pin {@link String} pin sent by client
+     * @param ipAddress {@link String} IP address of connecting client
+     * @param type {@link SessionType} to create
      * @return
      * @throws SQLException
      * @throws InvocationTargetException
@@ -69,36 +69,47 @@ public final class SessionManager {
         authenticated = this.authManager.authenticate(pin);
         
         if (authenticated) {
-            try (Statement stmt = databaseMgr.createStatement()) {
-
-                int unixTimestamp = (int)(System.currentTimeMillis() / 1000L);
-                String query = "INSERT INTO sessions (ip_address, session_type, time_started) VALUES ( '" + ipAddress + "', '" + type.ordinal() + "', " + unixTimestamp + ")";
+            
+            int unixTimestamp = (int)(System.currentTimeMillis() / 1000L);
+            String query = "INSERT INTO sessions (ip_address, session_type, time_started, session_type) VALUES ( ?, ?, ?, ?)";
+            try (PreparedStatement stmt = databaseMgr.createPreparedStatement(query)) {
+                stmt.setString(1, ipAddress);
+                stmt.setLong(2, type.ordinal());
+                stmt.setLong(3, unixTimestamp);
+                stmt.setLong(4, type.ordinal());
+                
                 try {
-                    if (stmt.executeUpdate(query) != 1) {
-                        stmt.close();
+                    
+                    // Begin transaction to atomically create a new session
+                    databaseMgr.startTransaction();
+                    
+                    if (stmt.executeUpdate() != 1) {
                         throw new IllegalStateException();
                     }
-                } catch (SQLException e) {
-                    if (e.getMessage().equals("columns ip_address, session_type are not unique")) {
-                        logger.warn("Ignoring duplicate login");
-                        
-                    } else {
-                        throw e;
-                    }
-                }
 
-                // Get the newly created ID of the session
-                // Statment.getGeneratedKeys() doesn't work for SQLite :(
-                try (PreparedStatement s = databaseMgr.createPreparedStatement("SELECT id FROM sessions WHERE ip_address = ? AND session_type = ?")) {
-                    s.setString(1, ipAddress);
-                    s.setLong(2, type.ordinal());
-                    ResultSet rs = s.executeQuery();
-                    sessionID = rs.getLong("id");
+                    // Get the newly created ID of the session
+                    // Statment.getGeneratedKeys() doesn't work for SQLite :(
+                    try (Statement statement = databaseMgr.createStatement()) {
+                        ResultSet rs = statement.executeQuery("SELECT LAST_INSERT_ROWID() as id");
+                        
+                        if (rs.next()) {
+                            sessionID = rs.getLong("id");
+                        } else {
+                            throw new SQLException();
+                        }
+                        
+                        // Insert into child table
+                        tableName = type.toString().toLowerCase() + "_sessions";
+                        statement.executeUpdate("INSERT INTO " + tableName + " (id) VALUES ('" + sessionID + "')");
+                    }
+                    
+                    // TODO, should rollback in event of failure
+
+                } finally {
+                    
+                    // Commit the transaction
+                    databaseMgr.stopTransaction();
                 }
-                
-                // Insert into child table
-                tableName = type.toString().toLowerCase() + "_sessions";
-                stmt.executeUpdate("INSERT INTO " + tableName + " (id) VALUES ('" + sessionID + "')");
 
             }
         } else { 
@@ -170,14 +181,19 @@ public final class SessionManager {
         try (PreparedStatement stmt = databaseMgr.createPreparedStatement(query)) {
             stmt.setLong(1, sessionType);
             ResultSet rs = stmt.executeQuery();
+            long id;
             while (rs.next()) {
-                sessions.add(rs.getLong("id"));
+                id = rs.getLong("id");
+                logger.trace("Adding %d to session ID list", id);
+                sessions.add(id);
             }
         }
         
         synchronized(this) {
             for (long id : sessions) {
                 if (sessionMap.containsKey(id)) {
+                    
+                    logger.debug("Sending update to session %d", id);
                     sessionMap.get(id).sendUpdate(update);
                 }
             }
@@ -227,9 +243,18 @@ public final class SessionManager {
     /**
      * 
      * @return
+     * @throws SQLException
      */
-    public long getSessionCount() {
-        return sessionMap.size();
+    public long getSessionCount() throws SQLException {
+        String query = "SELECT COUNT(*) as sessions FROM sessions WHERE session_type = '" + SessionType.User.ordinal() + "'";
+        try (Statement stmt = databaseMgr.createStatement()) {
+            ResultSet rs = stmt.executeQuery(query);
+            if (rs.next()) {
+                return rs.getLong("sessions");
+            } else {
+                throw new NoSuchElementException();
+            }
+        }
     }
     
     /**

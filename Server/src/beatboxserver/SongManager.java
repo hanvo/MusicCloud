@@ -80,9 +80,6 @@ public final class SongManager {
             
             logger.info("First speaker to connect, scheduling first song");
             scheduleNextSong();
-        } catch (Exception e) {
-            
-            // TODO handle this
         }
     }
     /**
@@ -181,14 +178,18 @@ public final class SongManager {
             // Only bother checking if nextSong is null (Indicates no song selected yet)
             if (nextSong == null) {
                 
-                logger.trace("Evaluating song status");
+                double metric = (double)(stats.getDislikes() - stats.getLikes()) / sessions;
+                
+                logger.trace("Evaluating song status: %f", metric);
                 
                 // Check if enough people hate the current song
-                if ((double)(stats.getDislikes() - stats.getLikes()) / sessions > 0.3) {
+                if (metric > 0.25) {
                     
                     logger.info("Attemping to skip current song");
                     this.skipToNext();
                 }
+            } else {
+                logger.debug("Next song already selected, not overriding");
             }
         }
     }
@@ -207,14 +208,14 @@ public final class SongManager {
         
         logger.debug("Getting like statistics for the active song");
         
-        long songID = -1;
+        long songID = getActiveSong().getID();
         long likes, dislikes;
         try (Statement stmt = databaseMgr.createStatement()) {
             
             // Use the status field to filter out likes for non-active songs
             String query = "SELECT songs.id AS id, value, COUNT(*) AS likes FROM likes "
                     + "INNER JOIN songs ON songs.id = song_id "
-                    + "WHERE status != '" + SongStatus.Inactive.ordinal() + "' "
+                    + "WHERE songs.status != '" + SongStatus.Inactive.ordinal() + "' "
                     + "GROUP BY songs.id, value";
             ResultSet rs = stmt.executeQuery(query);
             
@@ -238,10 +239,7 @@ public final class SongManager {
                 }
             }
         }
-        
-        if (songID == -1) {
-            throw new NoSuchElementException();
-        }
+       
         
         return new LikeData(songID, likes, dislikes, computeLikeBalance(likes, dislikes));
     }
@@ -306,6 +304,11 @@ public final class SongManager {
             } else {
                 logger.debug("Returning cached active song");
             }
+            
+            // Update position
+            int timestamp = (int)(System.currentTimeMillis() / 1000L);
+            activeSong.position = timestamp - songStarttime;
+            
             return activeSong;
         }
     }
@@ -340,6 +343,7 @@ public final class SongManager {
                     rs.getString("path"),
                     rs.getLong("length"),
                     rs.getLong("votes"),
+                    songStarttime,
                     SongStatus.values()[rs.getInt("status")]);
             } else {
                 throw new NoSuchElementException();
@@ -433,19 +437,25 @@ public final class SongManager {
         
         logger.trace("Requesting photo for song: %d", songID);
         
-        try (PreparedStatement stmt = databaseMgr.createPreparedStatement("SELECT image, image_type FROM songs WHERE id = ?")) {
-            stmt.setLong(1, songID);
-            ResultSet rs = stmt.executeQuery();
-            if (rs.next()) {
-                
-                byte[] data = rs.getBytes("image");
+        synchronized(this) {
+            try (PreparedStatement stmt = databaseMgr.createPreparedStatement("SELECT image, image_type FROM songs WHERE id = ?")) {
+                stmt.setLong(1, songID);
+                ResultSet rs = stmt.executeQuery();
+                if (rs.next()) {
 
-                logger.trace("Got %d bytes for song %d photo", data.length, songID);
-                
-                ByteBuf buf = Unpooled.copiedBuffer(data);
-                photo = new SongPhoto(buf, rs.getString("image_type"));
-            } else {
-                throw new NoSuchElementException();
+                    byte[] data = rs.getBytes("image");
+
+                    if (data == null) {
+                        throw new NoSuchElementException();
+                    }
+
+                    logger.trace("Got %d bytes for song %d photo", data.length, songID);
+
+                    ByteBuf buf = Unpooled.copiedBuffer(data);
+                    photo = new SongPhoto(buf, rs.getString("image_type"));
+                } else {
+                    throw new NoSuchElementException();
+                }
             }
         }
         
@@ -481,13 +491,16 @@ public final class SongManager {
                         updatePlayback();
 
                         // Tell the phone clients that something happened
-                        sessionMgr.broadcastUpdate(new SongUpdate(activeSong), SessionType.User.ordinal());
+                        sessionMgr.broadcastUpdate(new SongUpdate(getActiveSong()), SessionType.User.ordinal());
+                        sessionMgr.broadcastUpdate(new LikeUpdate(getStats()), SessionType.User.ordinal());
+                        sessionMgr.broadcastUpdate(new VoteUpdate(getVotes()), SessionType.User.ordinal());
+                        
                     } else if (activeSong != null && update.id != activeSong.getID()){
 
                         logger.trace("Incorrect song being played, attempting correction");
 
                         // Send upcoming song update
-                        sessionMgr.sendUpdate(new UpcomingSongUpdate(activeSong), sessionID);
+                        sessionMgr.sendUpdate(new UpcomingSongUpdate(getActiveSong()), sessionID);
 
                         // Inform the speaker it's confused
                         sessionMgr.sendUpdate(
@@ -543,6 +556,7 @@ public final class SongManager {
                 } else {
 
                     // Inform the speaker it's confused
+                    logger.debug("Wrong ID given in ready, given %d, expecting %d", update.id, nextSong.getID());
                     sessionMgr.sendUpdate(new UpcomingSongUpdate(nextSong), sessionID);
                 }
                 break;
@@ -619,7 +633,7 @@ public final class SongManager {
             throw new IllegalArgumentException();
         }
         
-        logger.debug("Likes: %d Dislikes: %d");
+        logger.debug("In computeLikeBalance() ikes: %d Dislikes: %d", likes, dislikes);
         
         long difference = likes - dislikes;
         long sum = likes + dislikes;
@@ -646,8 +660,19 @@ public final class SongManager {
             public void run() {
                 synchronized(manager) {
                     try {
-                        //manager.skipToNext();
+                       
                         manager.scheduleNextSong();
+                        manager.songTimerTask = new TimerTask() {
+                            @Override
+                            public void run() {
+                                try {
+                                    sessionMgr.broadcastUpdate(new UpcomingSongUpdate(manager.getNextSong()), SessionType.Speaker.ordinal());
+                                } catch (Exception e) {
+                                    // Silently ignore and hope everything is cool
+                                }
+                            }
+                        };
+                        manager.songTimer.schedule(manager.songTimerTask, 5);
                     } catch (Exception e) {
                         // TODO, handle this later
                     }
@@ -655,13 +680,12 @@ public final class SongManager {
             }
         };
         
-        // Schedule to run approx 10 seconds before the end of the song
-        // PROBLEM, what if the song is shorter than 10 seconds???
+        // Schedule to run approx 20 seconds before the end of the song
+        // PROBLEM, what if the song is shorter than 20 seconds???
         logger.trace("Scheduling timer task for %d seconds", nextSong.getLength() - 20);
         songTimer.schedule(songTimerTask, (nextSong.getLength() - 20) * 1000);
         
-        //logger.trace("Scheduling timer task for %d seconds", 30);
-        //songTimer.schedule(songTimerTask, 30 * 1000);
+        songStarttime = (int)(System.currentTimeMillis() / 1000L);
         
         // Update the database with information about the next song
         updateNextSong(activeSong, nextSong);
@@ -673,7 +697,8 @@ public final class SongManager {
                 nextSong.getAlbum(),
                 nextSong.getPath(),
                 nextSong.getLength(),
-                nextSong.getVotes());
+                nextSong.getVotes(),
+                0);
         activeSong.setPlaybackStatus(SongStatus.Playing);
         
         nextSong = null;
@@ -707,12 +732,33 @@ public final class SongManager {
 
         // Broadcast to the client
         sessionMgr.broadcastUpdate(update, SessionType.Speaker.ordinal());
+        
+        // Why not?
+        sessionMgr.broadcastUpdate(update, SessionType.Speaker.ordinal());
 
-        // Send message asking the speakers to stop playing the current song
-        PlaybackCommandUpdate message = new PlaybackCommandUpdate(new PlaybackCommand(PlaybackCommand.Command.Stop, activeSong.getID()));
+        final SongManager manager = this;
+        songTimerTask = new TimerTask() {
+            @Override
+            public void run() {
+                synchronized(manager) {
+                    try {
+                      
+                        // Send stop command
+                        // Send message asking the speakers to stop playing the current song
+                        PlaybackCommandUpdate message = new PlaybackCommandUpdate(new PlaybackCommand(PlaybackCommand.Command.Stop, getActiveSong().getID()));
 
-        // Then broadcast a message the speaker and clients about the new song
-        sessionMgr.broadcastUpdate(message, SessionType.Speaker.ordinal());
+                        // Then broadcast a message the speaker and clients about the new song
+                        sessionMgr.broadcastUpdate(message, SessionType.Speaker.ordinal());
+                    } catch (Exception e) {
+                        // Let's just have this slide....
+                    }
+                }
+            }
+        };
+        
+        // Give the client some time to load the next song
+        songTimer.schedule(songTimerTask, 20*1000);
+        
 
         // Speakers will respond by requesting song data for the next song
         // Then stopping playback
@@ -809,5 +855,9 @@ public final class SongManager {
     private final DatabaseManager databaseMgr;
     private final SessionManager sessionMgr;
     private final static Logger logger = LogManager.getFormatterLogger(SongManager.class.getName());
+    
+    // Record the start time so song update messages can include playback position
+    private long songStarttime = -1;
+    
 //</editor-fold>
 }

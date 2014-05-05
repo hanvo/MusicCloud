@@ -25,8 +25,8 @@ public class LikeData {
             throw new IllegalArgumentException();
         }
         id = songID;
-        likes = 0;
-        dislikes = 0;
+        likes = songLikes;
+        dislikes = songDislikes;
         this.balance = balance;
     }
     
@@ -38,11 +38,11 @@ public class LikeData {
      * Get the number of likes for the given song
      * @return 
      */
-    public int getLikes() {
+    public long getLikes() {
         return likes;
     }
     
-    public int getDislikes() {
+    public long getDislikes() {
         return dislikes;
     }
     
@@ -52,9 +52,9 @@ public class LikeData {
     
     private long id;
             
-    private int likes;
+    private long likes;
     
-    private int dislikes;
+    private long dislikes;
     
     private double balance;
 }
