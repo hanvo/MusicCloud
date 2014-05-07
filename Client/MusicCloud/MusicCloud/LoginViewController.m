@@ -112,7 +112,8 @@
     [UIView animateWithDuration:0.3 animations:^{
         [_overlay setAlpha:0.0];
     } completion:^(BOOL finished) {
-        NSLog(@"error: %@", err);
+        NSLog(@"%@", err);
+        NSLog(@"task %@", task.response);
         UIAlertView *alert = [[UIAlertView alloc] initWithTitle:@"MusicCloud Error" message:@"Could not connect to DJ" delegate:nil cancelButtonTitle:nil otherButtonTitles:@"OK", nil];
         [alert show];
     }];

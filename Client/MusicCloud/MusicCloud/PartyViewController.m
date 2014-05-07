@@ -235,9 +235,8 @@
 
 - (void)clientDidReceiveSongUpdate:(CurrentSongInfo *)song {
     BOOL newSong = YES;
-    if (_songList.count > 0) {
-        SongInfo *current = [_songList lastObject];
-        newSong = (current.songID != song.songInfo.songID);
+    if (_currentSong) {
+        newSong = (_currentSong.songInfo.songID != song.songInfo.songID);
     }
     NSLog(@"new song: %d", newSong);
     
